@@ -149,7 +149,7 @@ Extract each post from the live Kajabi site and save as a `.md` file. Slugs must
 - Client can log into Decap CMS and publish a new post without developer help
 - Post URLs verified against the current Kajabi sitemap (no missing slugs)
 
-**Status:** PENDING
+**Status:** COMPLETE
 
 ---
 
