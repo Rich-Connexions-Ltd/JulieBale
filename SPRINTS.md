@@ -112,7 +112,7 @@ Additional components (where Sprint 2 doesn't cover):
 - Mixed-case slug `/MindTrainingforSingers` resolves correctly (case-sensitive)
 - Mobile responsive; no layout breaks at 375px, 768px, 1280px
 
-**Status:** PENDING
+**Status:** COMPLETE
 
 ---
 
