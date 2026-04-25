@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+---
+
+<BaseLayout
+  title="5 Ways to Create Awesome Performances with Hypnotherapy | Julie Bale"
+  description="Download Julie Bale's free guide: 5 Ways to Create Awesome Performances with Hypnotherapy. Discover how the mind-voice connection unlocks your best performances."
+>
+  <Hero
+    height="medium"
+    bgColor="var(--color-charcoal)"
+    heading="5 Ways to Create Awesome Performances with Hypnotherapy"
+    subheading="The free guide that reveals how clinical hypnotherapy can transform your performance — immediately."
+    textColor="light"
+    eyebrow="Free Guide"
+    ctas={[
+      { label: 'Get the Free Guide', href: '#optin', variant: 'btn--primary' },
+    ]}
+  />
+
+  <!-- What's inside -->
+  <FeatureGrid
+    heading="What You'll Discover"
+    eyebrow="5 Powerful Techniques"
+    columns={3}
+    bgColor="#f8f8f6"
+    items={[
+      {
+        icon: 'fas fa-1',
+        heading: 'Anchor Your Confidence',
+        body: 'Use a simple hypnotic anchoring technique to access a state of calm, powerful confidence — on demand, before you step on stage.',
+      },
+      {
+        icon: 'fas fa-2',
+        heading: 'Silence the Inner Critic',
+        body: 'Learn to recognise and quieten the mental chatter that undermines your voice at exactly the wrong moment.',
+      },
+      {
+        icon: 'fas fa-3',
+        heading: 'Release Physical Tension',
+        body: 'Discover where performance anxiety hides in your body — and how a targeted self-hypnosis scan can release it in minutes.',
+      },
+      {
+        icon: 'fas fa-4',
+        heading: 'Visualise Your Best Performance',
+        body: 'Harness the neuroscience of mental rehearsal to prepare your mind for success before you open your mouth.',
+      },
+      {
+        icon: 'fas fa-5',
+        heading: 'Build Unshakeable Belief',
+        body: 'Rewrite the stories you tell yourself about your voice — and replace them with beliefs that power your best performances.',
+      },
+    ]}
+  />
+
+  <!-- Opt-in form -->
+  <section id="optin" class="section section-optin">
+    <div class="container optin-inner">
+      <div class="optin-copy">
+        <p class="optin-eyebrow">Free Download</p>
+        <h2>Claim Your Free Guide Now</h2>
+        <p>
+          Enter your details and I'll send the guide straight to your inbox. Completely
+          free — just the tools you need to step into your best performances.
+        </p>
+        <ul class="optin-bullets">
+          <li><i class="fas fa-check" aria-hidden="true"></i> Instant access via email</li>
+          <li><i class="fas fa-check" aria-hidden="true"></i> Works for singers, speakers, and performers</li>
+          <li><i class="fas fa-check" aria-hidden="true"></i> Based on clinical hypnotherapy principles</li>
+          <li><i class="fas fa-check" aria-hidden="true"></i> No spam, ever</li>
+        </ul>
+      </div>
+      <FormEmbed
+        formId="2147921082"
+        heading="Yes, I Want the Free Guide!"
+        submitLabel="Send Me the Guide"
+        disclaimer="I respect your privacy. No spam, ever."
+        bgColor="#ffffff"
+      />
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready for the Full Transformation?"
+    body="The From First Note to Final Curtain programme integrates hypnotherapy into every stage of your vocal journey."
+    cta="Discover the Programme"
+    href="https://members.juliebale.com/resource_redirect/landing_pages/2150870945"
+    variant="gold"
+  />
+</BaseLayout>
+
+<style>
+  .section-optin { background-color: var(--color-white); }
+
+  .optin-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .optin-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .optin-copy h2 { margin-bottom: var(--space-4); }
+  .optin-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: var(--space-6); }
+
+  .optin-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .optin-bullets li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-charcoal);
+  }
+
+  .optin-bullets .fa-check {
+    color: var(--color-teal);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .optin-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

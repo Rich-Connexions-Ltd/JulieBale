@@ -1,0 +1,244 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import PricingTable from '../components/PricingTable.astro';
+import TestimonialRow from '../components/TestimonialRow.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+
+const pricingTiers = [
+  {
+    title: '6-Month Circle',
+    subtitle: 'The Foundation Journey',
+    price: '£2,995',
+    altPrice: 'Or £499/month across 6 months',
+    features: [
+      'Weekly group coaching sessions with Julie',
+      'Monthly 1:1 vocal review session',
+      'Diva Energy® method masterclasses',
+      'Clinical hypnotherapy sessions',
+      'Private Diva Circle® community',
+      'Guest expert workshops',
+      'Culminates in a group performance showcase',
+    ],
+    cta: 'Join the 6-Month Circle',
+    href: `${KAJABI}/resource_redirect/offers/roTFfCL5`,
+  },
+  {
+    title: '12-Month Circle',
+    subtitle: 'The Full Transformation',
+    price: '£4,995',
+    altPrice: 'Or £416.25/month across 12 months',
+    features: [
+      'Everything in the 6-Month Circle',
+      'Priority 1:1 lesson booking',
+      'Personal performance recording sessions',
+      'Extended hypnotherapy programme',
+      'Julie\'s personal performance coaching notes',
+      'Full Diva Energy® course library access',
+      'Live gala concert performance opportunity',
+    ],
+    cta: 'Join the 12-Month Circle',
+    href: `${KAJABI}/resource_redirect/offers/auFzWGsQ`,
+    highlight: true,
+    highlightLabel: 'Best Value',
+  },
+];
+
+const testimonials = [
+  {
+    quote: 'The Diva Circle has been the most transformational community I\'ve ever been part of. Julie creates a space where you dare to be exactly who you are — voice and all.',
+    name: 'Rachel Summers',
+    role: 'Diva Circle Member',
+    stars: true,
+  },
+];
+---
+
+<BaseLayout
+  title="Diva Circle® — Membership Programme | Julie Bale"
+  description="The Diva Circle® is Julie Bale's signature group membership programme — combining weekly coaching, 1:1 lessons, hypnotherapy, and a live performance showcase."
+>
+  <Hero
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/c8876ad-5cb0-2a6-21f-8162cebd5bce_193a8d70-aa8b-47c1-876f-bc2c96d61ed3.png"
+    heading="Welcome to the Diva Circle®"
+    subheading="A transformational membership for singers who are serious about their voice — and their life."
+    textColor="light"
+    eyebrow="The Diva Circle®"
+    ctas={[
+      { label: 'Join the Circle', href: `${KAJABI}/resource_redirect/offers/auFzWGsQ`, variant: 'btn--primary' },
+      { label: 'Find Out More', href: '#pricing', variant: 'btn--outline-white' },
+    ]}
+  />
+
+  <!-- What is Diva Circle -->
+  <TextImage
+    heading="More Than a Singing Lesson"
+    eyebrow="A Community of Divas"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/c8876ad-5cb0-2a6-21f-8162cebd5bce_193a8d70-aa8b-47c1-876f-bc2c96d61ed3.png"
+    imageAlt="Diva Circle members performing"
+    reverse={false}
+    accentLine={true}
+  >
+    <p>
+      The Diva Circle® is Julie's signature group coaching membership — a carefully curated
+      community of singers at all levels who are committed to growing their voices, their
+      confidence, and their lives through the Diva Energy® method.
+    </p>
+    <p>
+      Inside the Circle, you get weekly group coaching sessions, monthly 1:1 vocal review
+      sessions with Julie, access to her full library of masterclasses, and the support of a
+      group of like-minded women who genuinely want you to succeed.
+    </p>
+    <p>
+      Every Circle culminates in a live performance showcase — because you don't just learn to
+      sing in the Diva Circle. You learn to perform.
+    </p>
+  </TextImage>
+
+  <!-- What's included -->
+  <section class="section section-included" style="background-color: #f8f8f6;">
+    <div class="container">
+      <div class="included-header">
+        <p class="included-eyebrow">What's Included</p>
+        <h2>Everything You Need to Transform Your Voice</h2>
+      </div>
+      <div class="included-grid">
+        {[
+          { icon: 'fas fa-users', title: 'Weekly Group Sessions', desc: 'Live group coaching with Julie every week. Ask questions, get coached, and grow alongside your fellow Divas.' },
+          { icon: 'fas fa-microphone', title: 'Monthly 1:1 Lessons', desc: 'A private vocal session with Julie each month to work on your personal technique and goals.' },
+          { icon: 'fas fa-brain', title: 'Hypnotherapy Sessions', desc: 'Regular clinical hypnotherapy work to release limiting beliefs and build unshakeable performance confidence.' },
+          { icon: 'fas fa-star', title: 'Masterclasses', desc: 'Deep-dive masterclasses on everything from breath technique to stage presence and performance mindset.' },
+          { icon: 'fas fa-heart', title: 'Community', desc: 'Access to the private Diva Circle® community — a warm, encouraging space to share your journey.' },
+          { icon: 'fas fa-theater-masks', title: 'Live Performance', desc: 'Culminate your journey with a live performance showcase — your moment to shine in front of a real audience.' },
+        ].map(({ icon, title, desc }) => (
+          <div class="included-item">
+            <div class="included-icon" aria-hidden="true"><i class={icon}></i></div>
+            <div>
+              <h3 class="included-title">{title}</h3>
+              <p class="included-desc">{desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <TestimonialRow
+    heading="What Diva Circle Members Say"
+    items={testimonials}
+    columns={1}
+  />
+
+  <!-- Pricing -->
+  <div id="pricing">
+    <PricingTable
+      heading="Join the Diva Circle®"
+      subheading="Choose the journey that's right for you. Both options include the full Diva Circle® experience — the 12-month programme simply goes deeper."
+      tiers={pricingTiers}
+    />
+  </div>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Not Sure Which Is Right for You?"
+    body="Get in touch and we'll find the perfect fit for your goals, your voice, and your life."
+    cta="Get in Touch"
+    href="/contact"
+    variant="teal"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>Stay in the Diva World</h2>
+        <p>Sign up for my weekly newsletter — vocal tips, mindset coaching, and inspiration.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .included-header {
+    text-align: center;
+    margin-bottom: var(--space-12);
+  }
+
+  .included-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .included-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .included-item {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+    padding: var(--space-5);
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .included-icon {
+    font-size: var(--text-xl);
+    color: var(--color-gold);
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .included-title {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-2);
+  }
+
+  .included-desc {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+    margin-bottom: 0;
+  }
+
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 900px) {
+    .included-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+    .included-grid { grid-template-columns: 1fr; }
+  }
+</style>

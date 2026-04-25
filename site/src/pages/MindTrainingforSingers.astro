@@ -1,0 +1,137 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+---
+
+<BaseLayout
+  title="Mind Training for Singers | Julie Bale"
+  description="Explore Julie Bale's mind training approach for singers — combining clinical hypnotherapy, performance psychology, and vocal technique to unlock your full potential."
+>
+  <Hero
+    height="large"
+    bgColor="var(--color-charcoal)"
+    heading="Mind Training for Singers"
+    subheading="Because the biggest block to a great voice isn't technical — it's mental."
+    textColor="light"
+    eyebrow="The Mind-Voice Connection"
+    ctas={[
+      { label: 'Explore the Programme', href: `${KAJABI}/resource_redirect/landing_pages/2150870945`, variant: 'btn--primary' },
+      { label: 'Get in Touch', href: '/contact', variant: 'btn--outline-white' },
+    ]}
+  />
+
+  <!-- What is it -->
+  <TextImage
+    heading="Training the Instrument Behind the Instrument"
+    eyebrow="Mind Training for Singers"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/cf7f4c5-f02-0da2-5ad8-8cb220724e61_38b5d9d9-f7a2-40de-894e-e5b68af34a47.jpeg"
+    imageAlt="Julie Bale — voice specialist and clinical hypnotherapist"
+    reverse={false}
+    accentLine={true}
+  >
+    <p>
+      After 35 years of teaching, I've reached one clear conclusion: the most powerful thing I
+      can do for a singer's voice is work on their mind.
+    </p>
+    <p>
+      Technique matters enormously. But the singer who never performs because they're terrified
+      of judgement, or who loses their voice the moment the stakes are high — no amount of
+      technical coaching can fix that without addressing what's happening beneath the surface.
+    </p>
+    <p>
+      Mind Training for Singers is my approach to exactly that: using the tools of clinical
+      hypnotherapy, performance psychology, and mindset coaching to unlock the vocal power
+      that's already inside you.
+    </p>
+  </TextImage>
+
+  <!-- What it covers -->
+  <FeatureGrid
+    heading="What Mind Training Addresses"
+    eyebrow="The Mental Side of Singing"
+    columns={3}
+    bgColor="#f8f8f6"
+    items={[
+      {
+        icon: 'fas fa-brain',
+        heading: 'Performance Anxiety',
+        body: 'Learn to transform the physiological stress response so it becomes a source of energy rather than a block to your voice.',
+      },
+      {
+        icon: 'fas fa-comment-slash',
+        heading: 'The Inner Critic',
+        body: 'Identify and quieten the internal voice that undermines your confidence and sabotages your best performances.',
+      },
+      {
+        icon: 'fas fa-eye',
+        heading: 'Mental Rehearsal',
+        body: 'Use the neuroscience of visualisation to rehearse success — building neural pathways for confidence before you ever take the stage.',
+      },
+      {
+        icon: 'fas fa-lock-open',
+        heading: 'Releasing Limiting Beliefs',
+        body: 'Reframe the stories you have about your voice — beliefs formed in childhood, from criticism, or from a single bad experience.',
+      },
+      {
+        icon: 'fas fa-heartbeat',
+        heading: 'Nervous System Regulation',
+        body: 'Develop practical tools to regulate your nervous system so you can access a calm, focused state of readiness in any performance scenario.',
+      },
+      {
+        icon: 'fas fa-star',
+        heading: 'Stage Presence & Ownership',
+        body: 'Embody your voice with genuine presence — not a performed version of confidence, but the real thing that comes from believing in yourself.',
+      },
+    ]}
+  />
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Train Your Mind?"
+    body="Mind training is at the heart of everything I do. Start with the Diva Taster Experience."
+    cta="Book Your Taster"
+    href={`${KAJABI}/resource_redirect/landing_pages/2151639319`}
+    variant="gold"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>The Mind-Voice Connection</h2>
+        <p>Sign up for my newsletter — regular insights into the psychology of performance, vocal technique, and mindset coaching.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 768px) {
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

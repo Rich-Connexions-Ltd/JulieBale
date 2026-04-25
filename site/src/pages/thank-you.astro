@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ThankYou from '../components/ThankYou.astro';
+import CTABanner from '../components/CTABanner.astro';
+---
+
+<BaseLayout
+  title="Thank You | Julie Bale"
+  description="Thank you — you're on the list!"
+  noIndex={true}
+>
+  <ThankYou
+    heading="Thank You!"
+    subheading="You're all signed up."
+    body="Check your inbox — I've sent you a confirmation email. I'll be in touch very soon with everything you need."
+    cta="Back to Home"
+    ctaHref="/"
+    ctaVariant="btn--primary"
+    icon="fas fa-envelope"
+  />
+
+  <CTABanner
+    heading="While You're Here…"
+    body="Explore all the ways you can work with me."
+    cta="See All Programmes"
+    href="/workwithme"
+    variant="gold"
+  />
+</BaseLayout>

@@ -1,0 +1,293 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import AudioPlayer from '../components/AudioPlayer.astro';
+import PricingTable from '../components/PricingTable.astro';
+import TestimonialRow from '../components/TestimonialRow.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+
+const pricingTiers = [
+  {
+    title: 'BRAVO Day',
+    subtitle: 'Group Programme',
+    price: '£197',
+    features: [
+      '6 live online group sessions',
+      'The BRAVO Framework® workbook',
+      'Vocal technique for speakers',
+      'Performance confidence coaching',
+      'Nervous system regulation tools',
+      'Recording review & feedback',
+      'Private community access',
+    ],
+    cta: 'Join BRAVO Day',
+    href: `${KAJABI}/resource_redirect/landing_pages/2151826137`,
+  },
+  {
+    title: 'VIP 1:1 Day',
+    subtitle: 'Intensive Private Coaching',
+    price: '£997',
+    features: [
+      'Everything in BRAVO Day',
+      'Full-day private intensive with Julie',
+      'Personalised vocal assessment',
+      'Custom BRAVO action plan',
+      'Hypnotherapy mindset session',
+      '30-day follow-up support',
+      'Priority booking for future programmes',
+    ],
+    cta: 'Book Your VIP Day',
+    href: `${KAJABI}/resource_redirect/landing_pages/2151826137`,
+    highlight: true,
+    highlightLabel: 'Most Transformational',
+  },
+];
+
+const testimonials = [
+  {
+    quote: 'The BRAVO programme completely changed how I show up on stage. Julie\'s combination of voice science and mindset work is unlike anything I\'ve experienced before.',
+    name: 'Sarah Mitchell',
+    role: 'Corporate Trainer',
+    stars: true,
+  },
+  {
+    quote: 'I used to dread presenting. After the BRAVO programme I genuinely look forward to it. My voice has authority now — and I know how to use it.',
+    name: 'David Thornton',
+    role: 'Business Leader',
+    stars: true,
+  },
+];
+---
+
+<BaseLayout
+  title="BRAVO for Speakers — Voice & Mindset Mastery | Julie Bale"
+  description="A transformational 6-week voice and mindset programme for speakers and leaders. The BRAVO Framework® integrates voice science, performance psychology, and nervous system mastery."
+>
+  <Hero
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/cd6852d-536c-3680-b7f8-777517faa8e_554209dc-7eb0-4c4e-95e8-9c83af302774.png"
+    heading="BRAVO for Speakers"
+    subheading="Unlock your most powerful, confident, and influential speaking voice — in just 6 weeks."
+    textColor="light"
+    eyebrow="The BRAVO Framework®"
+    ctas={[
+      { label: 'Join the Programme', href: `${KAJABI}/resource_redirect/landing_pages/2151826137`, variant: 'btn--primary' },
+      { label: 'Book a VIP Day', href: `${KAJABI}/resource_redirect/landing_pages/2151826137`, variant: 'btn--outline-white' },
+    ]}
+  />
+
+  <!-- What is BRAVO -->
+  <TextImage
+    heading="The BRAVO Framework®"
+    eyebrow="Voice Science Meets Performance Psychology"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/cd6852d-536c-3680-b7f8-777517faa8e_554209dc-7eb0-4c4e-95e8-9c83af302774.png"
+    imageAlt="BRAVO for Speakers programme"
+    reverse={false}
+    accentLine={true}
+  >
+    <p>
+      BRAVO for Speakers is a transformational 6-week voice and mindset mastery programme
+      designed for speakers, leaders, coaches, and anyone who uses their voice professionally.
+    </p>
+    <p>
+      The BRAVO Framework® is built on five core pillars: <strong>Breath</strong>, <strong>Resonance</strong>,
+      <strong>Articulation</strong>, <strong>Voice</strong>, and <strong>Ownership</strong>. Together they
+      integrate voice science, performance psychology, and nervous system regulation into one
+      seamless, practical system.
+    </p>
+    <p>
+      Whether you're preparing for a big keynote, wanting to be more influential in meetings,
+      or simply tired of your voice letting you down under pressure — BRAVO was made for you.
+    </p>
+  </TextImage>
+
+  <!-- Audio preview -->
+  <section class="section--sm section-audio">
+    <div class="container audio-inner">
+      <div class="audio-copy">
+        <p class="audio-eyebrow">Hear From Julie</p>
+        <h2>A Message About BRAVO</h2>
+        <p>Listen to Julie explain the BRAVO Framework® and what you can expect from the programme.</p>
+      </div>
+      <div class="audio-player-col">
+        <AudioPlayer id="hsz5tw7re2" title="BRAVO for Speakers — message from Julie" />
+      </div>
+    </div>
+  </section>
+
+  <!-- What you'll learn -->
+  <section class="section section-curriculum" style="background-color: #f8f8f6;">
+    <div class="container">
+      <div class="curriculum-header">
+        <p class="curriculum-eyebrow">The Programme</p>
+        <h2>What You'll Cover</h2>
+        <p class="curriculum-intro">Six weeks. Six transformations. One powerful voice.</p>
+      </div>
+      <div class="curriculum-grid">
+        {[
+          { week: 'Week 1', title: 'Breath & Foundation', desc: 'Master diaphragmatic breathing to create power, presence, and control from your very first word.' },
+          { week: 'Week 2', title: 'Resonance & Richness', desc: 'Discover the resonant chambers in your body and learn to project your voice with natural warmth and depth.' },
+          { week: 'Week 3', title: 'Articulation & Clarity', desc: 'Sharpen consonants, open vowels, and eliminate the mumblings and trailing sentences that undermine authority.' },
+          { week: 'Week 4', title: 'Vocal Variety & Pace', desc: 'Use pitch, pace, pause, and power to hold attention, land key points, and keep audiences engaged.' },
+          { week: 'Week 5', title: 'Nervous System & Mindset', desc: 'Apply clinical hypnotherapy tools to calm performance nerves, anchor confidence, and speak from a place of ease.' },
+          { week: 'Week 6', title: 'Live Coaching & Ownership', desc: 'Rehearse a real presentation and receive expert live feedback. Integrate everything and step into ownership of your voice.' },
+        ].map(({ week, title, desc }) => (
+          <div class="curriculum-item">
+            <span class="curriculum-week">{week}</span>
+            <h3 class="curriculum-title">{title}</h3>
+            <p class="curriculum-desc">{desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <TestimonialRow
+    heading="What Speakers Say About BRAVO"
+    items={testimonials}
+    columns={2}
+  />
+
+  <!-- Pricing -->
+  <PricingTable
+    heading="Choose Your BRAVO Journey"
+    subheading="Whether you join the group programme or want an intensive VIP day, both options deliver the same BRAVO transformation."
+    tiers={pricingTiers}
+    bgColor="#f8f8f6"
+  />
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Find Your Speaking Voice?"
+    body="Join speakers and leaders who have transformed how they show up with BRAVO."
+    cta="Join the Programme"
+    href={`${KAJABI}/resource_redirect/landing_pages/2151826137`}
+    variant="charcoal"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>Not Quite Ready Yet?</h2>
+        <p>Sign up for my weekly newsletter and I'll send you vocal tips, mindset coaching, and inspiration — free.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section-audio { background-color: var(--color-white); }
+
+  .audio-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .audio-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .audio-copy h2 { margin-bottom: var(--space-4); }
+  .audio-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  .curriculum-header {
+    text-align: center;
+    margin-bottom: var(--space-12);
+  }
+
+  .curriculum-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-teal-muted);
+    margin-bottom: var(--space-3);
+  }
+
+  .curriculum-header h2 { margin-bottom: var(--space-4); }
+
+  .curriculum-intro {
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: var(--text-xl);
+    color: var(--color-charcoal);
+    margin-bottom: 0;
+  }
+
+  .curriculum-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .curriculum-item {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+  }
+
+  .curriculum-week {
+    display: inline-block;
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-2);
+  }
+
+  .curriculum-title {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+  }
+
+  .curriculum-desc {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+    margin-bottom: 0;
+  }
+
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 900px) {
+    .curriculum-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .audio-inner,
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+    .curriculum-grid { grid-template-columns: 1fr; }
+  }
+</style>

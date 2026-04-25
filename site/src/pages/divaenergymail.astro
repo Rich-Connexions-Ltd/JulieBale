@@ -1,0 +1,103 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+import CTABanner from '../components/CTABanner.astro';
+---
+
+<BaseLayout
+  title="Join the Diva Energy® Mailing List | Julie Bale"
+  description="Get on the Diva Energy® mailing list for early access to programmes, event invitations, and Julie Bale's vocal tips and mindset coaching."
+  noIndex={true}
+>
+  <Hero
+    height="banner"
+    bgColor="var(--color-charcoal)"
+    heading="Join the Diva Energy® Mailing List"
+    subheading="Be first to hear about new programmes, live events, and exclusive offers."
+    textColor="light"
+    eyebrow="Stay Connected"
+  />
+
+  <section class="section section-form">
+    <div class="container form-inner">
+      <div class="form-copy">
+        <p class="form-eyebrow">What You'll Receive</p>
+        <h2>Early Access & Exclusive Invitations</h2>
+        <p>
+          Joining the Diva Energy® mailing list means you'll be among the first to know when
+          new programmes open, when live events are announced, and when exclusive offers
+          are available to the community.
+        </p>
+        <ul class="form-benefits">
+          <li><i class="fas fa-check" aria-hidden="true"></i> Early access to programme enrolments</li>
+          <li><i class="fas fa-check" aria-hidden="true"></i> Invitations to live events and masterclasses</li>
+          <li><i class="fas fa-check" aria-hidden="true"></i> Exclusive community offers</li>
+          <li><i class="fas fa-check" aria-hidden="true"></i> Julie's weekly vocal tips and mindset coaching</li>
+        </ul>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        heading="Sign Up Now"
+        submitLabel="Join the List"
+        disclaimer="I respect your privacy. No spam, ever. Unsubscribe at any time."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+
+  <CTABanner
+    heading="Ready to Start Your Vocal Journey?"
+    body="See all the ways you can work with me."
+    cta="Explore Programmes"
+    href="/workwithme"
+    variant="gold"
+  />
+</BaseLayout>
+
+<style>
+  .section-form { background-color: var(--color-white); }
+
+  .form-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .form-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .form-copy h2 { margin-bottom: var(--space-4); }
+  .form-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: var(--space-6); }
+
+  .form-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .form-benefits li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-charcoal);
+  }
+
+  .form-benefits .fa-check {
+    color: var(--color-teal);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .form-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

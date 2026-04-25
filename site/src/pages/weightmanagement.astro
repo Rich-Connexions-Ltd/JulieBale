@@ -1,0 +1,159 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+---
+
+<BaseLayout
+  title="Weight Management with Hypnotherapy | Julie Bale"
+  description="Explore Julie Bale's approach to weight management using clinical hypnotherapy — addressing the root causes of your relationship with food and your body."
+>
+  <Hero
+    height="large"
+    bgColor="var(--color-charcoal)"
+    heading="A Different Approach to Weight Management"
+    subheading="When diets don't work, it's because they don't address the real problem — your mind."
+    textColor="light"
+    eyebrow="Hypnotherapy for Weight Management"
+    ctas={[
+      { label: 'Find Out More', href: '#approach', variant: 'btn--primary' },
+      { label: 'Get in Touch', href: '/contact', variant: 'btn--outline-white' },
+    ]}
+  />
+
+  <!-- Approach -->
+  <div id="approach">
+    <TextImage
+      heading="The Mind-Body Connection"
+      eyebrow="Why Diets Fail"
+      image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/cf7f4c5-f02-0da2-5ad8-8cb220724e61_38b5d9d9-f7a2-40de-894e-e5b68af34a47.jpeg"
+      imageAlt="Julie Bale — clinical hypnotherapist"
+      reverse={false}
+      accentLine={true}
+    >
+      <p>
+        As a qualified clinical hypnotherapist, I work with weight management in a fundamentally
+        different way from conventional approaches. Rather than focusing on what you eat, I focus
+        on <em>why</em> you eat — the emotional patterns, the hidden beliefs, and the habitual
+        responses that no calorie-counting regime can touch.
+      </p>
+      <p>
+        My approach uses the same clinical hypnotherapy tools I've developed over years of working
+        with singers and performers — adapted specifically to address your relationship with food,
+        your body, and your sense of self.
+      </p>
+      <p>
+        This is not a quick fix. It's a genuine, lasting transformation in how you think and feel
+        about your body — authored by <em>you</em>, supported by clinical science.
+      </p>
+    </TextImage>
+  </div>
+
+  <!-- What I offer -->
+  <FeatureGrid
+    heading="What the Programme Addresses"
+    eyebrow="The Hypnotherapy Approach"
+    columns={3}
+    bgColor="#f8f8f6"
+    items={[
+      {
+        icon: 'fas fa-brain',
+        heading: 'Emotional Eating',
+        body: 'Identify and reframe the emotional triggers that lead to eating for comfort, stress, or avoidance — and replace them with healthier responses.',
+      },
+      {
+        icon: 'fas fa-heart',
+        heading: 'Body Image',
+        body: 'Address the deeply held beliefs about your body that keep you stuck — and begin to build a kinder, more accurate self-perception.',
+      },
+      {
+        icon: 'fas fa-redo',
+        heading: 'Breaking Patterns',
+        body: 'Use hypnotherapy to interrupt habitual patterns around food that are almost impossible to break with willpower alone.',
+      },
+      {
+        icon: 'fas fa-balance-scale',
+        heading: 'Food Relationships',
+        body: 'Develop a healthier, more balanced relationship with food that doesn\'t rely on restriction, guilt, or reward cycles.',
+      },
+      {
+        icon: 'fas fa-shield-alt',
+        heading: 'Confidence & Self-Worth',
+        body: 'Build genuine self-worth that doesn\'t depend on a number on the scales — because sustainable change requires a foundation of self-respect.',
+      },
+      {
+        icon: 'fas fa-leaf',
+        heading: 'Long-Term Change',
+        body: 'Unlike diets, hypnotherapy addresses the subconscious patterns that maintain your weight — creating lasting change from the inside out.',
+      },
+    ]}
+  />
+
+  <!-- My book -->
+  <TextImage
+    heading="The Real Me Isn't Fat"
+    eyebrow="Julie's Book on Weight & Identity"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/cf7f4c5-f02-0da2-5ad8-8cb220724e61_38b5d9d9-f7a2-40de-894e-e5b68af34a47.jpeg"
+    imageAlt="The Real Me Isn't Fat — book by Julie Bale"
+    reverse={true}
+    accentLine={true}
+  >
+    <p>
+      As someone who has lived the experience of using food and weight as a way to hide,
+      I wrote <em>The Real Me Isn't Fat</em> to share what I've learned — about the relationship
+      between identity, self-worth, and the body.
+    </p>
+    <p>
+      Featured in Metro, Woman, and Woman's Weekly, this book has helped thousands of women
+      begin to see themselves — and their bodies — differently.
+    </p>
+    <a href="/book" class="btn btn--md btn--outline">Read More About the Book</a>
+  </TextImage>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Change Your Relationship with Your Body?"
+    body="Get in touch to find out how hypnotherapy can support you."
+    cta="Get in Touch"
+    href="/contact"
+    variant="teal"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>Stay in the Diva World</h2>
+        <p>Sign up for my weekly newsletter — mindset coaching, vocal tips, and inspiration.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 768px) {
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

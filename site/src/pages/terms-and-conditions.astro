@@ -1,0 +1,162 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout
+  title="Terms & Conditions | Julie Bale"
+  description="Terms and Conditions for Julie Bale's programmes and services at juliebale.com."
+>
+  <Hero
+    height="banner"
+    bgColor="var(--color-charcoal)"
+    heading="Terms &amp; Conditions"
+    subheading="The terms that govern your use of this website and my services."
+    textColor="light"
+  />
+
+  <section class="section legal-section">
+    <div class="container legal-body">
+      <p class="legal-updated">Last updated: April 2026</p>
+
+      <h2>About These Terms</h2>
+      <p>
+        These Terms and Conditions govern your use of juliebale.com and your engagement with
+        Julie Bale's programmes and services. By using this website or purchasing any programme,
+        you agree to these terms. Please read them carefully.
+      </p>
+      <p>
+        "Julie Bale", "I", "me" and "my" refer to Julie Bale, trading as Diva Energy®.
+        "You" and "your" refer to the visitor or client.
+      </p>
+
+      <h2>Services</h2>
+      <p>
+        I offer vocal coaching, performance coaching, clinical hypnotherapy, and related programmes
+        and resources. Specific terms for individual programmes (including session schedules,
+        refund policies, and programme delivery details) are set out at the point of purchase.
+      </p>
+
+      <h2>Bookings & Payment</h2>
+      <p>
+        Programme enrolments and bookings are processed via Kajabi at members.juliebale.com.
+        Payment is required at the time of booking unless a payment plan is explicitly offered.
+        All prices are stated in pounds sterling (GBP) and include VAT where applicable.
+      </p>
+
+      <h2>Cancellation & Refunds</h2>
+      <p>
+        Cancellation and refund terms vary by programme and are communicated clearly at the point
+        of purchase. In general:
+      </p>
+      <ul>
+        <li>Individual sessions cancelled with less than 24 hours' notice are non-refundable.</li>
+        <li>Programme enrolments may be subject to cooling-off periods under UK consumer law (14 days for digital products purchased online).</li>
+        <li>Group programme places are non-transferable without prior agreement.</li>
+      </ul>
+      <p>
+        If you have a query about a specific booking, please <a href="/contact">get in touch</a>.
+      </p>
+
+      <h2>Intellectual Property</h2>
+      <p>
+        All content on this website — including text, images, the Diva Energy® brand, the BRAVO
+        Framework® name and methodology, and all programme materials — is owned by or licensed to
+        Julie Bale. You may not reproduce, distribute, or create derivative works from any content
+        without my written permission.
+      </p>
+
+      <h2>Disclaimer</h2>
+      <p>
+        My coaching and hypnotherapy services are for personal development and performance
+        enhancement. They are not a substitute for medical, psychological, or psychiatric treatment.
+        If you have a medical condition or mental health concern, please consult a qualified
+        healthcare professional.
+      </p>
+      <p>
+        Results from coaching and hypnotherapy vary from person to person. I cannot guarantee
+        specific outcomes.
+      </p>
+
+      <h2>Limitation of Liability</h2>
+      <p>
+        To the maximum extent permitted by law, I shall not be liable for any indirect,
+        incidental, or consequential loss arising from your use of this website or my services.
+        My total liability to you shall not exceed the amount you have paid to me in the 12
+        months preceding the claim.
+      </p>
+
+      <h2>Governing Law</h2>
+      <p>
+        These Terms and Conditions are governed by the laws of England and Wales. Any disputes
+        shall be subject to the exclusive jurisdiction of the courts of England and Wales.
+      </p>
+
+      <h2>Changes to These Terms</h2>
+      <p>
+        I may update these Terms and Conditions from time to time. Continued use of this website
+        or my services following any changes constitutes acceptance of the updated terms.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        For any questions about these terms, please use the <a href="/contact">contact form</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .legal-section {
+    background-color: var(--color-white);
+  }
+
+  .legal-body {
+    max-width: 760px;
+  }
+
+  .legal-updated {
+    font-size: var(--text-sm);
+    color: var(--color-teal-muted);
+    margin-bottom: var(--space-10);
+  }
+
+  .legal-body h2 {
+    font-size: var(--text-xl);
+    margin-top: var(--space-10);
+    margin-bottom: var(--space-4);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .legal-body h2:first-of-type {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .legal-body p,
+  .legal-body li {
+    font-size: var(--text-base);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+  }
+
+  .legal-body ul {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-4);
+  }
+
+  .legal-body li {
+    margin-bottom: var(--space-2);
+  }
+
+  .legal-body a {
+    color: var(--color-teal-muted);
+    text-decoration: underline;
+  }
+
+  .legal-body a:hover {
+    color: var(--color-gold);
+  }
+</style>

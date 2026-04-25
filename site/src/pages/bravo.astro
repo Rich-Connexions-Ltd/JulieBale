@@ -1,0 +1,129 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+---
+
+<BaseLayout
+  title="BRAVO — The Voice & Mindset Framework | Julie Bale"
+  description="Discover the BRAVO Framework® — Julie Bale's proven system for vocal power, performance confidence, and leadership presence."
+  canonicalURL="https://www.juliebale.com/bravo"
+>
+  <Hero
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/cd6852d-536c-3680-b7f8-777517faa8e_554209dc-7eb0-4c4e-95e8-9c83af302774.png"
+    heading="The BRAVO Framework®"
+    subheading="Five pillars to an extraordinary voice — for singers and speakers alike."
+    textColor="light"
+    eyebrow="The BRAVO Method"
+    ctas={[
+      { label: 'BRAVO for Speakers', href: '/bravoforspeakers', variant: 'btn--primary' },
+      { label: 'The Diva Programme', href: `${KAJABI}/resource_redirect/landing_pages/2150870945`, variant: 'btn--outline-white' },
+    ]}
+  />
+
+  <!-- What is BRAVO -->
+  <TextImage
+    heading="Five Letters. One Extraordinary Voice."
+    eyebrow="The BRAVO Framework®"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/cd6852d-536c-3680-b7f8-777517faa8e_554209dc-7eb0-4c4e-95e8-9c83af302774.png"
+    imageAlt="The BRAVO Framework"
+    reverse={false}
+    accentLine={true}
+  >
+    <p>
+      The BRAVO Framework® is Julie's proven system for developing a voice that commands
+      attention, carries emotion, and communicates with genuine authority — whether you're
+      singing on stage or speaking in a boardroom.
+    </p>
+    <p>
+      Built on 35 years of teaching vocal technique and integrating clinical hypnotherapy,
+      BRAVO addresses all five dimensions of a truly powerful voice: the physical, the
+      technical, the psychological, the performative, and the personal.
+    </p>
+  </TextImage>
+
+  <!-- The 5 pillars -->
+  <FeatureGrid
+    heading="The Five BRAVO Pillars"
+    eyebrow="What BRAVO Stands For"
+    columns={3}
+    bgColor="#f8f8f6"
+    items={[
+      {
+        icon: 'fas fa-wind',
+        heading: 'B — Breath',
+        body: 'The foundation of everything. Proper breath support creates power, control, and endurance — eliminating tension and strain from the root.',
+      },
+      {
+        icon: 'fas fa-broadcast-tower',
+        heading: 'R — Resonance',
+        body: 'Discover the resonant chambers in your body and learn to project your voice with natural warmth, depth, and carrying power.',
+      },
+      {
+        icon: 'fas fa-comment',
+        heading: 'A — Articulation',
+        body: 'Clear, precise articulation ensures your voice is understood and commands authority — without effort or over-pronunciation.',
+      },
+      {
+        icon: 'fas fa-music',
+        heading: 'V — Vocal Variety',
+        body: 'Pitch, pace, pause, and power — the dynamic tools that hold attention, land key points, and keep audiences engaged.',
+      },
+      {
+        icon: 'fas fa-crown',
+        heading: 'O — Ownership',
+        body: 'The final and most important pillar: owning your voice. Integrating everything through performance, mindset, and the belief that this voice is yours.',
+      },
+    ]}
+  />
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Experience BRAVO?"
+    body="The BRAVO for Speakers programme puts the full framework into practice over 6 transformational weeks."
+    cta="Explore BRAVO for Speakers"
+    href="/bravoforspeakers"
+    variant="charcoal"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>The BRAVO Newsletter</h2>
+        <p>Vocal tips, performance coaching, and mindset insights — free, every week.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 768px) {
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

@@ -1,0 +1,169 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import EventCard from '../components/EventCard.astro';
+import TextImage from '../components/TextImage.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+
+const upcomingEvents = [
+  {
+    title: 'Diva Energy Live — London Showcase',
+    date: '2026-06-14',
+    venue: 'St James\'s Church, Piccadilly',
+    location: 'London',
+    description: 'An evening of vocal performance from Julie\'s Diva Circle® and From First Note to Final Curtain students. Expect powerful voices, transformed lives, and a room full of Diva Energy®.',
+    cta: 'Reserve Your Seat',
+    href: `${KAJABI}/resource_redirect/landing_pages/2150870945`,
+    tags: ['Live Event', 'Showcase'],
+  },
+  {
+    title: 'BRAVO Masterday — Voice for Leaders',
+    date: '2026-07-19',
+    venue: 'Central London (Venue TBC)',
+    location: 'London',
+    description: 'A full-day intensive workshop applying the BRAVO Framework® to high-stakes speaking scenarios. For leaders, coaches, and speakers who want to command the room with total authority.',
+    cta: 'Book Your Place',
+    href: `${KAJABI}/resource_redirect/landing_pages/2151826137`,
+    tags: ['Workshop', 'BRAVO'],
+  },
+];
+---
+
+<BaseLayout
+  title="Diva Energy Live Events | Julie Bale"
+  description="Live events, workshops, gala showcases, and masterclasses with Julie Bale — voice specialist and founder of Diva Energy®."
+>
+  <Hero
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/45e6fe0-ae8-babf-dd23-40f0860d551_ed182231-602c-4d11-8722-12777372ac30.jpeg"
+    heading="Diva Energy Live"
+    subheading="Workshops, masterclasses, and gala showcases that bring the Diva Energy® method to life."
+    textColor="light"
+    eyebrow="Live Events"
+    ctas={[
+      { label: 'See Upcoming Events', href: '#events', variant: 'btn--primary' },
+    ]}
+  />
+
+  <!-- Intro -->
+  <TextImage
+    heading="Experiences That Transform"
+    eyebrow="More Than a Workshop"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/c8876ad-5cb0-2a6-21f-8162cebd5bce_193a8d70-aa8b-47c1-876f-bc2c96d61ed3.png"
+    imageAlt="Julie Bale live event"
+    reverse={false}
+    accentLine={true}
+  >
+    <p>
+      Diva Energy Live events are where the transformation happens in real time — in front of
+      a room full of people who are all there to witness the same thing: the moment a person
+      discovers what their voice can truly do.
+    </p>
+    <p>
+      Whether it's a gala showcase where my students perform live for the first time, or a
+      full-day BRAVO intensive for corporate speakers, every event is designed to create an
+      experience you won't forget.
+    </p>
+    <p>
+      Check below for upcoming events — and if you'd like to be the first to know about new
+      dates, sign up to my newsletter.
+    </p>
+  </TextImage>
+
+  <!-- Events listing -->
+  <section id="events" class="section section-events">
+    <div class="container">
+      <div class="events-header">
+        <p class="events-eyebrow">Upcoming Events</p>
+        <h2>What's On</h2>
+      </div>
+
+      {upcomingEvents.length > 0 ? (
+        <div class="events-list">
+          {upcomingEvents.map(event => <EventCard {...event} />)}
+        </div>
+      ) : (
+        <div class="events-empty">
+          <p>No events are currently scheduled. Sign up below to be the first to know when new dates are announced.</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Want to Perform Live?"
+    body="The From First Note to Final Curtain programme culminates in a real gala concert. Take the first step."
+    cta="Explore the Programme"
+    href={`${KAJABI}/resource_redirect/landing_pages/2150870945`}
+    variant="gold"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>Be First to Hear About New Events</h2>
+        <p>Sign up to my newsletter and I'll let you know as soon as new dates are announced.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section-events { background-color: var(--color-white); }
+
+  .events-header {
+    margin-bottom: var(--space-10);
+  }
+
+  .events-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .events-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    max-width: 860px;
+  }
+
+  .events-empty {
+    background-color: #f8f8f6;
+    border-radius: var(--radius-md);
+    padding: var(--space-12);
+    text-align: center;
+    color: var(--color-grey);
+  }
+
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 768px) {
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

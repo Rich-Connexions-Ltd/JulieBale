@@ -1,0 +1,152 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import TestimonialRow from '../components/TestimonialRow.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+---
+
+<BaseLayout
+  title="Discover Singing — Is Singing Really For You? | Julie Bale"
+  description="Think you can't sing? Discover the truth about your voice — and what's really possible when you have the right technique and the right mindset."
+>
+  <Hero
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/c434b7f-6a4-403c-f222-700e44cf675b_uuid_FA71A6C2-3566-4244-91A4-922AFA7B2EF5_library_1_type_1_mode_1_loc_true_cap_true.jpeg"
+    heading="Singing Is For You"
+    subheading="Even if you've been told otherwise. Even if you've never believed it yourself."
+    textColor="light"
+    eyebrow="Discover Singing"
+    ctas={[
+      { label: 'Take the First Step', href: `${KAJABI}/resource_redirect/landing_pages/2151639319`, variant: 'btn--primary' },
+      { label: 'Learn More', href: '#discover', variant: 'btn--outline-white' },
+    ]}
+  />
+
+  <!-- The truth about singing -->
+  <div id="discover">
+    <TextImage
+      heading="Nobody is Tone Deaf"
+      eyebrow="The Truth About Your Voice"
+      image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/cf7f4c5-f02-0da2-5ad8-8cb220724e61_38b5d9d9-f7a2-40de-894e-e5b68af34a47.jpeg"
+      imageAlt="Julie Bale teaching singing"
+      reverse={false}
+      accentLine={true}
+    >
+      <p>
+        In 35 years of teaching, I have never met someone who truly cannot sing. What I have
+        met — again and again — is people who have been told they can't. A teacher's throwaway
+        comment in primary school. A parent who didn't mean to hurt you. A voice that shook
+        once when it mattered, and never quite recovered.
+      </p>
+      <p>
+        These are stories. Powerful stories — but stories nonetheless. And stories can be changed.
+      </p>
+      <p>
+        With the right technique, the right mindset, and someone who genuinely believes in you,
+        your voice can do things you currently cannot imagine. I've seen it happen over 1,000 times.
+      </p>
+    </TextImage>
+  </div>
+
+  <!-- What singing can do for you -->
+  <FeatureGrid
+    heading="Why People Come to Singing Later in Life"
+    eyebrow="It's Never Too Late"
+    columns={3}
+    bgColor="#f8f8f6"
+    items={[
+      {
+        icon: 'fas fa-heart',
+        heading: 'Joy & Self-Expression',
+        body: 'Singing is one of the most natural forms of human expression. Many of my clients describe it as coming home to themselves.',
+      },
+      {
+        icon: 'fas fa-shield-alt',
+        heading: 'Confidence & Presence',
+        body: 'Learning to use your voice properly transforms not just how you sing — but how you carry yourself in every situation.',
+      },
+      {
+        icon: 'fas fa-users',
+        heading: 'Community & Belonging',
+        body: 'The Diva world is a community of people who refused to believe the stories they were told about themselves. You\'ll fit right in.',
+      },
+      {
+        icon: 'fas fa-brain',
+        heading: 'Mindset & Wellbeing',
+        body: 'The combination of vocal work and clinical hypnotherapy creates benefits that extend far beyond your singing voice.',
+      },
+      {
+        icon: 'fas fa-theater-masks',
+        heading: 'Performance & Achievement',
+        body: 'Many of my clients perform on stage for the first time — and describe it as one of the most significant moments of their lives.',
+      },
+      {
+        icon: 'fas fa-music',
+        heading: 'Lifelong Skill',
+        body: 'Proper vocal technique, once learned, stays with you. My oldest student is in her 80s. It is never too late.',
+      },
+    ]}
+  />
+
+  <!-- Testimonials -->
+  <TestimonialRow
+    heading="What Singers Say"
+    items={[
+      {
+        quote: 'Julie has truly transformed every day of my future. Now, each morning feels like a song I can sing with confidence. She unlocked something deep within me and lifted my whole world to a new level.',
+        name: 'Eve Stanway',
+        stars: true,
+      },
+    ]}
+    columns={1}
+  />
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Discover Your Voice?"
+    body="Start with the Diva Taster Experience — a focused 60-minute 1:1 session to explore what's possible."
+    cta="Book Your Taster"
+    href={`${KAJABI}/resource_redirect/landing_pages/2151639319`}
+    variant="gold"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>Not Ready Yet?</h2>
+        <p>Sign up for my newsletter — gentle encouragement, vocal tips, and the occasional story about someone who discovered their voice against all odds.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 768px) {
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

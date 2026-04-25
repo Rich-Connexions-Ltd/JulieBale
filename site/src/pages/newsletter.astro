@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+import CTABanner from '../components/CTABanner.astro';
+---
+
+<BaseLayout
+  title="Join the Diva Newsletter | Julie Bale"
+  description="Sign up for Julie Bale's weekly newsletter — vocal tips, mindset coaching, and inspiration delivered to your inbox every week."
+>
+  <Hero
+    height="banner"
+    bgColor="var(--color-charcoal)"
+    heading="The Diva Newsletter"
+    subheading="Weekly vocal tips, mindset coaching, and inspiration — delivered to your inbox."
+    textColor="light"
+    eyebrow="Join the Diva World"
+    ctas={[
+      { label: 'Sign Up Free', href: '#signup', variant: 'btn--primary' },
+    ]}
+  />
+
+  <!-- What you get -->
+  <FeatureGrid
+    heading="What to Expect Each Week"
+    eyebrow="Inside the Newsletter"
+    columns={3}
+    bgColor="#f8f8f6"
+    items={[
+      {
+        icon: 'fas fa-music',
+        heading: 'Vocal Tips & Technique',
+        body: 'Practical vocal exercises, technique tips, and guidance you can apply immediately — whether you\'re a singer or a speaker.',
+      },
+      {
+        icon: 'fas fa-brain',
+        heading: 'Mindset Coaching',
+        body: 'Short, powerful mindset tools from my clinical hypnotherapy practice to help you perform with more confidence and less fear.',
+      },
+      {
+        icon: 'fas fa-star',
+        heading: 'Behind the Diva Curtain',
+        body: 'Stories, reflections, and updates from the Diva world — including student breakthroughs, upcoming events, and programme news.',
+      },
+    ]}
+  />
+
+  <!-- Sign-up form -->
+  <section id="signup" class="section section-signup">
+    <div class="container signup-inner">
+      <div class="signup-copy">
+        <p class="signup-eyebrow">Join the Community</p>
+        <h2>Let's Stay Connected</h2>
+        <p>
+          Over 1,000 singers and speakers are already part of the Diva world. Join them
+          and receive a weekly dose of vocal wisdom, performance psychology, and genuine
+          encouragement straight to your inbox.
+        </p>
+        <p>
+          I write every word myself. No AI, no ghostwriters. Just me, sharing what I know —
+          and what I believe can make a real difference to your voice and your life.
+        </p>
+        <p class="signup-ps">No spam. No selling. Just value. Unsubscribe any time.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        heading="Sign Up for Free"
+        submitLabel="Join the Diva Newsletter"
+        disclaimer="I respect your privacy. No spam, ever. Unsubscribe at any time."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Want More Than a Newsletter?"
+    body="Explore my programmes and find the right way to work together."
+    cta="See All Programmes"
+    href="/workwithme"
+    variant="gold"
+  />
+</BaseLayout>
+
+<style>
+  .section-signup { background-color: var(--color-white); }
+
+  .signup-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .signup-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .signup-copy h2 { margin-bottom: var(--space-5); }
+  .signup-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: var(--space-4); }
+
+  .signup-ps {
+    font-size: var(--text-sm);
+    font-style: italic;
+    color: var(--color-teal-muted) !important;
+    margin-bottom: 0 !important;
+  }
+
+  @media (max-width: 768px) {
+    .signup-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

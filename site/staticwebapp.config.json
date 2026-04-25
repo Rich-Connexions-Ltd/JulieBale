@@ -38,6 +38,15 @@
       "route": "/a/*",
       "redirect": "https://members.juliebale.com/a/{*}",
       "statusCode": 301
+    },
+    {
+      "route": "/thank-you/*",
+      "rewrite": "/thank-you/index.html"
+    },
+    {
+      "route": "/forms/*",
+      "redirect": "https://members.juliebale.com/forms/{*}",
+      "statusCode": 301
     }
   ],
   "navigationFallback": {

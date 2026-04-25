@@ -1,0 +1,225 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+---
+
+<BaseLayout
+  title="Diva Taster Experience — Your First Step | Julie Bale"
+  description="The Diva Taster Experience is a focused 60-minute 1:1 session with Julie Bale — your powerful introduction to the Diva Energy® method and what's possible for your voice."
+>
+  <Hero
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/a7dce-b34-8b51-d1ee-65fc176c557_d085d1b5-188b-4743-a0d2-a0f71e4b57f7.png"
+    heading="The Diva Taster Experience"
+    subheading="Your 60-minute journey to vocal power and presence."
+    textColor="light"
+    eyebrow="The First Step"
+    ctas={[
+      { label: 'Book Your Taster', href: `${KAJABI}/resource_redirect/landing_pages/2151639319`, variant: 'btn--primary' },
+    ]}
+  />
+
+  <!-- What it is -->
+  <TextImage
+    heading="Not Sure Where to Start?"
+    eyebrow="A Taster Made for You"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/a7dce-b34-8b51-d1ee-65fc176c557_d085d1b5-188b-4743-a0d2-a0f71e4b57f7.png"
+    imageAlt="Diva Taster Experience"
+    reverse={false}
+    accentLine={true}
+  >
+    <p>
+      If you've been curious about working with me but aren't ready to commit to a full programme,
+      the Diva Taster Experience is the perfect place to begin.
+    </p>
+    <p>
+      In one focused 60-minute 1:1 session, you'll get a genuine taste of the Diva Energy®
+      method — vocal technique, performance coaching, and a glimpse of what's possible when
+      you approach your voice from the inside out.
+    </p>
+    <p>
+      It's not a trial. It's a transformation in miniature. You'll leave with clarity about
+      your voice, your blocks, and your next steps.
+    </p>
+  </TextImage>
+
+  <!-- What's included -->
+  <FeatureGrid
+    heading="What Happens in Your Taster Session"
+    eyebrow="Your 60 Minutes"
+    columns={3}
+    bgColor="#f8f8f6"
+    items={[
+      {
+        icon: 'fas fa-search',
+        heading: 'Vocal Assessment',
+        body: 'Julie listens to your voice and identifies exactly where you are right now — and what\'s holding you back.',
+      },
+      {
+        icon: 'fas fa-lightbulb',
+        heading: 'Diva Energy® Introduction',
+        body: 'You\'ll experience the core principles of the Diva Energy® method — and feel the difference it makes immediately.',
+      },
+      {
+        icon: 'fas fa-brain',
+        heading: 'Mindset Insight',
+        body: 'A glimpse into how your thoughts and beliefs are shaping your voice — and what\'s possible when you shift them.',
+      },
+      {
+        icon: 'fas fa-map-signs',
+        heading: 'Your Clear Next Steps',
+        body: 'You\'ll leave with a personalised view of the best next step for your vocal journey — whether that\'s the Diva Programme or something else entirely.',
+      },
+      {
+        icon: 'fas fa-music',
+        heading: 'A Real Vocal Breakthrough',
+        body: 'Most people notice a tangible difference in their voice within the session. This is a working coaching session, not a sales call.',
+      },
+      {
+        icon: 'fas fa-shield-alt',
+        heading: 'Completely No Pressure',
+        body: 'There\'s no obligation to continue. The taster stands on its own — though many clients go on to join the full Diva Programme.',
+      },
+    ]}
+  />
+
+  <!-- Price + CTA -->
+  <section class="section section-price">
+    <div class="container price-inner">
+      <div class="price-copy">
+        <p class="price-eyebrow">Investment</p>
+        <h2>Begin Your Diva Journey</h2>
+        <p>
+          The Diva Taster Experience is a full coaching session, priced to make it easy
+          to take that first step. Everything you pay is credited if you go on to join
+          the From First Note to Final Curtain programme.
+        </p>
+        <a
+          href={`${KAJABI}/resource_redirect/landing_pages/2151639319`}
+          class="btn btn--lg btn--primary"
+        >
+          Book Your Taster Session
+        </a>
+      </div>
+      <div class="price-block">
+        <div class="price-display">
+          <span class="price-label">Single Session</span>
+          <span class="price-amount">£97</span>
+          <span class="price-note">60 minutes · 1:1 with Julie · Online via Zoom</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready for the Full Programme?"
+    body="The From First Note to Final Curtain programme is the ultimate vocal transformation — 6 or 12 months of weekly 1:1 lessons culminating in a live gala concert."
+    cta="Explore the Diva Programme"
+    href={`${KAJABI}/resource_redirect/landing_pages/2150870945`}
+    variant="charcoal"
+  />
+
+  <!-- Newsletter -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>Not Ready for a Taster Yet?</h2>
+        <p>Sign up for my newsletter — vocal tips and inspiration straight to your inbox.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section-price { background-color: var(--color-white); }
+
+  .price-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .price-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .price-copy h2 { margin-bottom: var(--space-4); }
+  .price-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: var(--space-8); }
+
+  .price-block {
+    display: flex;
+    justify-content: center;
+  }
+
+  .price-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f8f8f6;
+    border: 2px solid var(--color-gold);
+    border-radius: var(--radius-lg);
+    padding: var(--space-10) var(--space-12);
+    text-align: center;
+    gap: var(--space-3);
+  }
+
+  .price-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-teal-muted);
+  }
+
+  .price-amount {
+    font-family: var(--font-editorial);
+    font-size: var(--text-5xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-charcoal);
+    line-height: 1;
+  }
+
+  .price-note {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    max-width: 200px;
+    line-height: var(--leading-loose);
+  }
+
+  .section-newsletter { background-color: #f8f8f6; }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 768px) {
+    .price-inner,
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

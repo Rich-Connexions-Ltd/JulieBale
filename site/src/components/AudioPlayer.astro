@@ -1,0 +1,31 @@
+---
+interface Props {
+  id: string;
+  title?: string;
+  bgColor?: string;
+}
+
+const {
+  id,
+  title = 'Audio Player',
+  bgColor = 'var(--color-gold)',
+} = Astro.props;
+---
+
+<div class="audio-player-wrapper" style={`--player-bg: ${bgColor};`}>
+  <script src="https://fast.wistia.com/assets/external/E-v1.js" async is:inline></script>
+  <div
+    class={`wistia_embed wistia_async_${id} playerColor=c19b33 videoFoam=true`}
+    style="height:84px;position:relative;width:100%;"
+    aria-label={title}
+  >&nbsp;</div>
+</div>
+
+<style>
+  .audio-player-wrapper {
+    background-color: var(--player-bg);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    overflow: hidden;
+  }
+</style>
