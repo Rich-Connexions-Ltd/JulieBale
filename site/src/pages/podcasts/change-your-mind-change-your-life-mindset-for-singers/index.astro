@@ -1,0 +1,212 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CTABanner from '../../../components/CTABanner.astro';
+
+const SHOW_SLUG = 'change-your-mind-change-your-life-mindset-for-singers';
+
+const episodes = [
+  {
+    id: '2147844748',
+    title: 'Welcome to Change Your Mind, Change Your Life',
+    description: 'Julie Bale introduces the podcast — what it is, who it\'s for, and why mindset is the missing ingredient in most vocal training.',
+    pubDate: '2023-06-01',
+  },
+  {
+    id: '2147847399',
+    title: 'The Singer\'s Inner Critic — and How to Silence It',
+    description: 'We all have a voice in our heads that says "you\'re not good enough." In this episode Julie explores where that voice comes from and how clinical hypnotherapy can quiet it for good.',
+    pubDate: '2023-06-15',
+  },
+  {
+    id: '2147850457',
+    title: 'How to Use Self-Hypnosis for Imposter Syndrome',
+    description: 'Imposter syndrome affects even the most accomplished performers. Julie shares a practical self-hypnosis technique you can use backstage or in the practice room.',
+    pubDate: '2023-07-01',
+  },
+];
+---
+
+<BaseLayout
+  title="Change Your Mind, Change Your Life — Mindset for Singers Podcast"
+  description="A podcast for singers and speakers who want to master the mental side of performance. Hosted by Julie Bale — voice specialist and clinical hypnotherapist."
+>
+  <!-- Hero -->
+  <section class="section podcast-hero">
+    <div class="container">
+      <p class="eyebrow">Podcast</p>
+      <h1>Change Your Mind,<br/>Change Your Life</h1>
+      <p class="podcast-tagline">Mindset for Singers</p>
+      <p class="podcast-description">
+        The podcast where voice, mind, and performance meet. Each episode, Julie Bale —
+        professional soprano, voice teacher, and clinical hypnotherapist — shares the
+        mental-performance techniques she uses with singers and speakers across the world.
+      </p>
+      <div class="podcast-listen-links">
+        <a
+          href="https://podcasts.apple.com/gb/podcast/change-your-mind-change-your-life-mindset-for-singers/id1688567890"
+          class="btn btn--primary"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Listen on Apple Podcasts
+        </a>
+        <a
+          href="https://open.spotify.com/show/juliebale"
+          class="btn btn--outline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Listen on Spotify
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Episode list -->
+  <section class="section episode-list-section">
+    <div class="container">
+      <h2 class="section-heading">Episodes</h2>
+      <div class="episode-list">
+        {episodes.map((ep, i) => (
+          <article class="episode-card">
+            <div class="episode-number">Ep {episodes.length - i}</div>
+            <div class="episode-body">
+              <p class="episode-date">{new Date(ep.pubDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <h3 class="episode-title">
+                <a href={`/podcasts/${SHOW_SLUG}/episodes/${ep.id}`}>{ep.title}</a>
+              </h3>
+              <p class="episode-description">{ep.description}</p>
+              <a href={`/podcasts/${SHOW_SLUG}/episodes/${ep.id}`} class="btn btn--sm btn--outline">
+                Listen Now
+              </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <CTABanner
+    heading="Combine Mindset Work With One-to-One Coaching"
+    body="The podcast gives you the tools — Julie's programmes give you the transformation. Explore how to work with Julie directly."
+    cta="Work With Julie"
+    href="/workwithme"
+    variant="teal"
+  />
+</BaseLayout>
+
+<style>
+  .podcast-hero {
+    background-color: var(--color-charcoal);
+    color: var(--color-white);
+    text-align: center;
+  }
+
+  .podcast-hero h1 {
+    color: var(--color-white);
+    font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
+    line-height: var(--leading-tight);
+    margin-bottom: var(--space-3);
+  }
+
+  .podcast-tagline {
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: var(--text-xl);
+    color: var(--color-gold);
+    margin-bottom: var(--space-6);
+  }
+
+  .podcast-description {
+    max-width: 680px;
+    margin-inline: auto;
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.85);
+    line-height: var(--leading-loose);
+    margin-bottom: var(--space-8);
+  }
+
+  .podcast-listen-links {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .podcast-hero .btn--outline {
+    color: rgba(255,255,255,0.8);
+    border-color: rgba(255,255,255,0.4);
+  }
+
+  .podcast-hero .btn--outline:hover {
+    color: var(--color-white);
+    border-color: var(--color-white);
+  }
+
+  .episode-list-section { background-color: var(--color-white); }
+
+  .section-heading { margin-bottom: var(--space-10); }
+
+  .episode-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .episode-card {
+    display: flex;
+    gap: var(--space-6);
+    padding: var(--space-6);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-off-white);
+  }
+
+  .episode-number {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    background-color: var(--color-gold);
+    color: var(--color-white);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .episode-body { flex: 1; }
+
+  .episode-date {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    margin-bottom: var(--space-2);
+  }
+
+  .episode-title {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-3);
+  }
+
+  .episode-title a {
+    color: var(--color-charcoal);
+    text-decoration: none;
+  }
+
+  .episode-title a:hover { color: var(--color-gold); }
+
+  .episode-description {
+    font-size: var(--text-base);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+    margin-bottom: var(--space-4);
+  }
+
+  @media (max-width: 480px) {
+    .episode-card { flex-direction: column; }
+    .episode-number { width: 48px; height: 48px; }
+  }
+</style>

@@ -1,0 +1,269 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import CTABanner from '../../../../components/CTABanner.astro';
+
+const SHOW_SLUG = 'change-your-mind-change-your-life-mindset-for-singers';
+const KAJABI_PODCAST_ID = '2147509010';
+
+export function getStaticPaths() {
+  const episodes = [
+    {
+      id: '2147844748',
+      title: 'Welcome to Change Your Mind, Change Your Life',
+      description: 'Julie Bale introduces the podcast — what it is, who it\'s for, and why mindset is the missing ingredient in most vocal training. Whether you\'re a classical singer, musical theatre performer, or simply love singing, this episode sets the scene for everything that follows.',
+      pubDate: '2023-06-01',
+      duration: '18:42',
+    },
+    {
+      id: '2147847399',
+      title: 'The Singer\'s Inner Critic — and How to Silence It',
+      description: 'We all have a voice in our heads that says "you\'re not good enough." In this episode Julie explores where that voice comes from, how it sabotages auditions and performances, and how clinical hypnotherapy can quiet it for good. Includes a simple reframing exercise you can try today.',
+      pubDate: '2023-06-15',
+      duration: '24:17',
+    },
+    {
+      id: '2147850457',
+      title: 'How to Use Self-Hypnosis for Imposter Syndrome',
+      description: 'Imposter syndrome affects even the most accomplished performers. Julie shares a practical self-hypnosis technique you can use backstage or in the practice room, and explains the neuroscience behind why it works so fast for singers and speakers.',
+      pubDate: '2023-07-01',
+      duration: '21:55',
+    },
+  ];
+  return episodes.map((ep, i) => ({
+    params: { id: ep.id },
+    props: { episode: ep, allEpisodes: episodes, episodeIndex: i },
+  }));
+}
+
+const { episode, allEpisodes, episodeIndex } = Astro.props;
+const { id, title, description, pubDate, duration } = episode;
+
+const prevEpisode = episodeIndex < allEpisodes.length - 1 ? allEpisodes[episodeIndex + 1] : null;
+const nextEpisode = episodeIndex > 0 ? allEpisodes[episodeIndex - 1] : null;
+
+const formattedDate = new Date(pubDate).toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric'
+});
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+>
+  <!-- Episode header -->
+  <section class="section episode-hero">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/podcasts/change-your-mind-change-your-life-mindset-for-singers">
+          ← Back to all episodes
+        </a>
+      </nav>
+      <p class="eyebrow">Podcast Episode</p>
+      <h1>{title}</h1>
+      <div class="episode-meta">
+        <span class="episode-date">{formattedDate}</span>
+        {duration && <span class="episode-duration">{duration}</span>}
+      </div>
+      <p class="episode-intro">{description}</p>
+    </div>
+  </section>
+
+  <!-- Player -->
+  <section class="section--sm player-section">
+    <div class="container">
+      <div class="kajabi-player-wrapper">
+        <iframe
+          src={`https://app.kajabi.com/podcasts/${KAJABI_PODCAST_ID}/episodes/${id}/embed`}
+          width="100%"
+          height="200"
+          frameborder="0"
+          scrolling="no"
+          allow="autoplay"
+          title={`Listen: ${title}`}
+        ></iframe>
+      </div>
+      <div class="listen-links">
+        <p class="listen-label">Also available on:</p>
+        <div class="listen-buttons">
+          <a
+            href="https://podcasts.apple.com/gb/podcast/change-your-mind-change-your-life-mindset-for-singers/id1688567890"
+            class="btn btn--sm btn--outline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Apple Podcasts
+          </a>
+          <a
+            href="https://open.spotify.com/show/juliebale"
+            class="btn btn--sm btn--outline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Spotify
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Episode navigation -->
+  <section class="section--sm episode-nav-section">
+    <div class="container">
+      <div class="episode-nav">
+        {prevEpisode && (
+          <a href={`/podcasts/${SHOW_SLUG}/episodes/${prevEpisode.id}`} class="episode-nav-link episode-nav-link--prev">
+            <span class="nav-label">← Previous Episode</span>
+            <span class="nav-title">{prevEpisode.title}</span>
+          </a>
+        )}
+        <a href={`/podcasts/${SHOW_SLUG}`} class="episode-nav-link episode-nav-link--all">
+          All Episodes
+        </a>
+        {nextEpisode && (
+          <a href={`/podcasts/${SHOW_SLUG}/episodes/${nextEpisode.id}`} class="episode-nav-link episode-nav-link--next">
+            <span class="nav-label">Next Episode →</span>
+            <span class="nav-title">{nextEpisode.title}</span>
+          </a>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <CTABanner
+    heading="Want Personalised Mindset Coaching?"
+    body="Julie works one-to-one with singers and speakers who want to transform their relationship with performance. Explore the options."
+    cta="Work With Julie"
+    href="/workwithme"
+    variant="gold"
+  />
+</BaseLayout>
+
+<style>
+  .episode-hero {
+    background-color: var(--color-charcoal);
+    color: var(--color-white);
+  }
+
+  .breadcrumb {
+    margin-bottom: var(--space-4);
+  }
+
+  .breadcrumb a {
+    font-size: var(--text-sm);
+    color: var(--color-gold);
+    text-decoration: none;
+  }
+
+  .breadcrumb a:hover {
+    text-decoration: underline;
+  }
+
+  .episode-hero h1 {
+    color: var(--color-white);
+    font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
+    line-height: var(--leading-tight);
+    max-width: 800px;
+    margin-bottom: var(--space-4);
+  }
+
+  .episode-meta {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+  }
+
+  .episode-date, .episode-duration {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.7);
+  }
+
+  .episode-duration::before {
+    content: '·';
+    margin-right: var(--space-4);
+  }
+
+  .episode-intro {
+    max-width: 720px;
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.85);
+    line-height: var(--leading-loose);
+    margin-bottom: 0;
+  }
+
+  .player-section { background-color: var(--color-white); }
+
+  .kajabi-player-wrapper {
+    margin-bottom: var(--space-6);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background-color: var(--color-off-white);
+  }
+
+  .listen-links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .listen-label {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    margin-bottom: 0;
+  }
+
+  .listen-buttons {
+    display: flex;
+    gap: var(--space-3);
+  }
+
+  .episode-nav-section { background-color: var(--color-off-white); }
+
+  .episode-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .episode-nav-link {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    text-decoration: none;
+    max-width: 320px;
+  }
+
+  .episode-nav-link--all {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    text-decoration: underline;
+    flex-direction: row;
+  }
+
+  .episode-nav-link--next {
+    text-align: right;
+  }
+
+  .nav-label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-gold);
+  }
+
+  .nav-title {
+    font-size: var(--text-sm);
+    color: var(--color-charcoal);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--leading-snug);
+  }
+
+  .episode-nav-link:hover .nav-title {
+    color: var(--color-gold);
+  }
+</style>

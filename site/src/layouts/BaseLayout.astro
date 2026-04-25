@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import CookieConsent from '../components/CookieConsent.astro';
 
 interface Props {
   title: string;
@@ -14,14 +15,12 @@ interface Props {
 const {
   title,
   description = 'Julie Bale — Voice Specialist, Clinical Hypnotherapist and Founder of Diva Energy®.',
-  ogImage = '/images/og-default.png',
+  ogImage = 'https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/themes/3455706/settings_images/RRdrdN3R8iBCPLsEPMmC_JB-hero.jpg',
   noIndex = false,
 } = Astro.props;
 
 const canonicalURL = Astro.props.canonicalURL ?? new URL(Astro.url.pathname, Astro.site).href;
-const pageTitle = title === 'Julie Bale Voice Specialist | Diva Energy®'
-  ? title
-  : `${title} | Julie Bale`;
+const pageTitle = title.endsWith('| Julie Bale') ? title : `${title} | Julie Bale`;
 
 ---
 
@@ -75,37 +74,6 @@ const pageTitle = title === 'Julie Bale Voice Specialist | Diva Energy®'
     <!-- Additional head content from pages -->
     <slot name="head" />
 
-    <!-- ============================================================
-         Analytics — Sprint 5 will gate these behind CookieYes consent.
-         IDs are public (already in live site HTML) so hardcoding is fine.
-         ============================================================ -->
-
-    <!-- Google tag (GA4 + Google Ads) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T7NFPMTGT1" is:inline></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-T7NFPMTGT1');
-      gtag('config', 'AW-11248288364');
-    </script>
-
-    <!-- Meta Pixel -->
-    <script is:inline>
-      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
-        n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)
-      }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init','1064912124894806');
-      fbq('track','PageView');
-    </script>
-    <noscript>
-      <img height="1" width="1" style="display:none"
-        src="https://www.facebook.com/tr?id=1064912124894806&ev=PageView&noscript=1"
-      />
-    </noscript>
   </head>
 
   <body>
@@ -116,5 +84,6 @@ const pageTitle = title === 'Julie Bale Voice Specialist | Diva Energy®'
     </main>
 
     <Footer />
+    <CookieConsent />
   </body>
 </html>
