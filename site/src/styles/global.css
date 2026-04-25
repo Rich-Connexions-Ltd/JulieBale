@@ -1,0 +1,227 @@
+@import './tokens.css';
+
+/* ============================================================
+   Global reset and base styles
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-editorial);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+h6 {
+  font-family: var(--font-script);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--leading-normal);
+}
+
+h1 { font-size: var(--text-4xl); }
+h2 { font-size: var(--text-3xl); }
+h3 { font-size: var(--text-2xl); }
+h4 { font-size: var(--text-xl); }
+h5 { font-size: var(--text-lg); }
+h6 { font-size: var(--text-2xl); }
+
+p {
+  line-height: var(--leading-loose);
+  margin-bottom: var(--space-4);
+}
+p:last-child { margin-bottom: 0; }
+
+/* ============================================================
+   Layout utilities
+   ============================================================ */
+
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-pad);
+}
+
+.section {
+  padding-block: var(--space-16);
+}
+
+.section--sm {
+  padding-block: var(--space-10);
+}
+
+.section--lg {
+  padding-block: var(--space-24);
+}
+
+/* ============================================================
+   Button system
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-font-weight);
+  letter-spacing: var(--btn-letter-spacing);
+  text-transform: var(--btn-text-transform);
+  border-radius: var(--btn-radius);
+  border: 2px solid transparent;
+  transition: var(--btn-transition);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Sizes */
+.btn--sm {
+  font-size: var(--btn-sm-text);
+  padding: var(--btn-sm-py) var(--btn-sm-px);
+}
+.btn--md {
+  font-size: var(--btn-md-text);
+  padding: var(--btn-md-py) var(--btn-md-px);
+}
+.btn--lg {
+  font-size: var(--btn-lg-text);
+  padding: var(--btn-lg-py) var(--btn-lg-px);
+}
+.btn--full { width: 100%; }
+
+/* Variants */
+.btn--primary {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-white);
+}
+.btn--primary:hover {
+  background-color: #a8842a;
+  border-color: #a8842a;
+}
+
+.btn--secondary {
+  background-color: var(--color-teal);
+  border-color: var(--color-teal);
+  color: var(--color-white);
+}
+.btn--secondary:hover {
+  background-color: #559898;
+  border-color: #559898;
+}
+
+.btn--accent {
+  background-color: var(--color-pink);
+  border-color: var(--color-pink);
+  color: var(--color-white);
+}
+.btn--accent:hover {
+  background-color: #c94ca0;
+  border-color: #c94ca0;
+}
+
+.btn--outline {
+  background-color: transparent;
+  border-color: currentColor;
+  color: var(--color-gold);
+}
+.btn--outline:hover {
+  background-color: var(--color-gold);
+  color: var(--color-white);
+}
+
+.btn--outline-white {
+  background-color: transparent;
+  border-color: var(--color-white);
+  color: var(--color-white);
+}
+.btn--outline-white:hover {
+  background-color: var(--color-white);
+  color: var(--color-charcoal);
+}
+
+.btn--dark {
+  background-color: var(--color-charcoal);
+  border-color: var(--color-charcoal);
+  color: var(--color-white);
+}
+.btn--dark:hover {
+  background-color: #1a252f;
+  border-color: #1a252f;
+}
+
+/* ============================================================
+   Visually hidden (screen-reader only)
+   ============================================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -1,0 +1,208 @@
+---
+const navLinks = [
+  { label: 'Home',                    href: '/homepage' },
+  { label: 'About',                   href: '/about' },
+  { label: 'Work With Me',            href: '/workwithme' },
+  { label: 'Diva Energy Live Events', href: '/divaenergylive' },
+  { label: 'BRAVO for Speakers',      href: '/bravoforspeakers' },
+  { label: 'Blog',                    href: '/blog' },
+];
+
+const legalLinks = [
+  { label: 'Privacy Policy',    href: '/privacy-policy' },
+  { label: 'Terms & Conditions', href: '/terms-and-conditions' },
+];
+
+const socialLinks = [
+  { label: 'Facebook',  href: 'https://www.facebook.com/julie.gray.9400',                icon: 'fab fa-facebook-f' },
+  { label: 'Instagram', href: 'https://www.instagram.com/juliebalevoiceandmindtraining', icon: 'fab fa-instagram' },
+  { label: 'LinkedIn',  href: 'https://www.linkedin.com/in/juliebale',                   icon: 'fab fa-linkedin-in' },
+  { label: 'YouTube',   href: 'https://www.youtube.com/@JulieBale',                      icon: 'fab fa-youtube' },
+];
+
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <a href="/" class="footer-logo" aria-label="Julie Bale — Home">
+        <img
+          src="/images/logo-wordmark.png"
+          alt="Julie Bale | Diva Energy®"
+          width="160"
+          height="48"
+          loading="lazy"
+        />
+      </a>
+      <p class="footer-tagline">Voice Specialist · Clinical Hypnotherapist · Soprano</p>
+      <ul class="social-list" aria-label="Social media">
+        {socialLinks.map(({ label, href, icon }) => (
+          <li>
+            <a href={href} class="social-link" target="_blank" rel="noopener noreferrer" aria-label={label}>
+              <i class={icon} aria-hidden="true"></i>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <ul class="footer-nav-list">
+        {navLinks.map(({ label, href }) => (
+          <li><a href={href} class="footer-nav-link">{label}</a></li>
+        ))}
+        <li>
+          <a href="https://members.juliebale.com/login" class="footer-nav-link" rel="noopener">
+            Member Login
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="footer-bottom">
+    <div class="container footer-bottom-inner">
+      <p class="footer-copy">
+        &copy; {currentYear} Julie Bale · Diva Energy® is a registered trademark.
+      </p>
+      <ul class="legal-list">
+        {legalLinks.map(({ label, href }) => (
+          <li><a href={href} class="legal-link">{label}</a></li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background-color: var(--color-charcoal);
+    color: var(--color-off-white);
+    padding-top: var(--space-12);
+  }
+
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    padding-bottom: var(--space-12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* Brand column */
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .footer-logo img {
+    height: 48px;
+    width: auto;
+    /* Invert to white on dark background where needed;
+       adjust once we see the actual asset colour */
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+  }
+
+  .footer-tagline {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 0;
+  }
+
+  /* Social icons */
+  .social-list {
+    display: flex;
+    gap: var(--space-3);
+  }
+
+  .social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: var(--color-off-white);
+    font-size: var(--text-base);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: var(--radius-full);
+    transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+  }
+
+  .social-link:hover {
+    color: var(--color-gold);
+    border-color: var(--color-gold);
+    background-color: rgba(193, 155, 51, 0.12);
+  }
+
+  /* Nav column */
+  .footer-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .footer-nav-link {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.75);
+    transition: color var(--transition-fast);
+  }
+
+  .footer-nav-link:hover {
+    color: var(--color-gold);
+  }
+
+  /* Bottom bar */
+  .footer-bottom {
+    padding-block: var(--space-4);
+    background-color: rgba(0,0,0,0.2);
+  }
+
+  .footer-bottom-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .footer-copy {
+    font-size: var(--text-xs);
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 0;
+  }
+
+  .legal-list {
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  .legal-link {
+    font-size: var(--text-xs);
+    color: rgba(255,255,255,0.5);
+    transition: color var(--transition-fast);
+  }
+
+  .legal-link:hover {
+    color: var(--color-gold);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .footer-inner {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+
+    .footer-bottom-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-2);
+    }
+  }
+</style>

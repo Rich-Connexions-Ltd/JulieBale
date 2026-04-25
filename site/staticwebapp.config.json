@@ -1,0 +1,63 @@
+{
+  "routes": [
+    {
+      "route": "/homepage",
+      "rewrite": "/homepage/index.html"
+    },
+    {
+      "route": "/login",
+      "redirect": "https://members.juliebale.com/login",
+      "statusCode": 301
+    },
+    {
+      "route": "/store",
+      "redirect": "/workwithme",
+      "statusCode": 301
+    },
+    {
+      "route": "/resource_redirect/offers/*",
+      "redirect": "https://members.juliebale.com/resource_redirect/offers/{*}",
+      "statusCode": 301
+    },
+    {
+      "route": "/resource_redirect/landing_pages/*",
+      "redirect": "https://members.juliebale.com/resource_redirect/landing_pages/{*}",
+      "statusCode": 301
+    },
+    {
+      "route": "/library",
+      "redirect": "https://members.juliebale.com/library",
+      "statusCode": 301
+    },
+    {
+      "route": "/app",
+      "redirect": "https://members.juliebale.com/app",
+      "statusCode": 301
+    },
+    {
+      "route": "/a/*",
+      "redirect": "https://members.juliebale.com/a/{*}",
+      "statusCode": 301
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/404/index.html",
+    "exclude": ["/images/*", "/fonts/*", "*.{css,js,ico,png,svg,jpg,jpeg,webp,gif,woff,woff2}"]
+  },
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/404/index.html",
+      "statusCode": 404
+    }
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  },
+  "mimeTypes": {
+    ".json": "application/json",
+    ".woff2": "font/woff2"
+  }
+}

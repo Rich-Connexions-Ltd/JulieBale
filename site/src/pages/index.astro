@@ -1,0 +1,155 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Julie Bale Voice Specialist | Diva Energy®"
+  description="I teach you how to sing and how to use your mind to transform your life using my unique, proven vocal transformation programme From First Note to Final Curtain."
+>
+  <section class="placeholder-hero section">
+    <div class="container">
+      <p class="eyebrow">Sprint 1 — Design System &amp; Shell</p>
+      <h1>Julie Bale<br /><em>Voice Specialist &amp; Diva Energy®</em></h1>
+      <p class="lead">
+        The full site is coming. This page confirms the design system, header, and footer
+        are rendering correctly with the correct brand fonts and colours.
+      </p>
+      <div class="btn-group">
+        <a href="/workwithme" class="btn btn--primary btn--md">Work With Me</a>
+        <a href="/about" class="btn btn--outline btn--md">About Julie</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tokens-demo section--sm">
+    <div class="container">
+      <h2>Design System Preview</h2>
+
+      <h3>Colour Palette</h3>
+      <div class="swatch-grid">
+        <div class="swatch" style="background:var(--color-gold)"><span>Gold</span></div>
+        <div class="swatch" style="background:var(--color-teal)"><span>Teal</span></div>
+        <div class="swatch" style="background:var(--color-pink)"><span>Pink</span></div>
+        <div class="swatch" style="background:var(--color-charcoal)"><span>Charcoal</span></div>
+        <div class="swatch" style="background:var(--color-teal-muted)"><span>Teal Muted</span></div>
+        <div class="swatch" style="background:var(--color-olive)"><span>Olive</span></div>
+      </div>
+
+      <h3>Typography</h3>
+      <p style="font-family:var(--font-body)">Raleway — Body &amp; Navigation (the quick brown fox)</p>
+      <p style="font-family:var(--font-editorial)">Playfair Display — Editorial Headings (the quick brown fox)</p>
+      <p style="font-family:var(--font-script); font-size:var(--text-3xl)">Licorice — Decorative Script</p>
+      <p style="font-family:var(--font-accent-1); font-size:var(--text-3xl)">Allison — Accent</p>
+
+      <h3>Buttons</h3>
+      <div class="btn-row">
+        <a href="#" class="btn btn--primary btn--md">Primary (Gold)</a>
+        <a href="#" class="btn btn--secondary btn--md">Secondary (Teal)</a>
+        <a href="#" class="btn btn--accent btn--md">Accent (Pink)</a>
+        <a href="#" class="btn btn--outline btn--md">Outline</a>
+        <a href="#" class="btn btn--dark btn--md">Dark</a>
+      </div>
+      <div class="btn-row" style="margin-top:var(--space-3)">
+        <a href="#" class="btn btn--primary btn--sm">Small</a>
+        <a href="#" class="btn btn--primary btn--md">Medium</a>
+        <a href="#" class="btn btn--primary btn--lg">Large</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .placeholder-hero {
+    background: linear-gradient(135deg, var(--color-charcoal) 0%, #1a252f 100%);
+    color: var(--color-white);
+    padding-block: var(--space-24);
+    text-align: center;
+  }
+
+  .placeholder-hero h1 {
+    color: var(--color-white);
+    font-size: var(--text-5xl);
+    margin-block: var(--space-4) var(--space-6);
+  }
+
+  .placeholder-hero h1 em {
+    font-style: italic;
+    color: var(--color-gold);
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-4);
+  }
+
+  .lead {
+    max-width: 540px;
+    margin-inline: auto;
+    margin-bottom: var(--space-8);
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.8);
+    line-height: var(--leading-loose);
+  }
+
+  .btn-group {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Token demo */
+  .tokens-demo {
+    background-color: #f8f8f8;
+  }
+
+  .tokens-demo h2 {
+    margin-bottom: var(--space-8);
+  }
+
+  .tokens-demo h3 {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-teal-muted);
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-4);
+  }
+
+  .swatch-grid {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .swatch {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-2);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .swatch span {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-white);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+</style>

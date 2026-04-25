@@ -1,0 +1,116 @@
+/* ============================================================
+   Design Tokens — juliebale.com
+   Source: extracted from live Kajabi site, April 2026
+   ============================================================ */
+
+:root {
+  /* --- Colour palette --- */
+  --color-gold:        #c19b33; /* primary brand; audio players, gold accents */
+  --color-teal:        #66bcbc; /* secondary; borders, section highlights */
+  --color-pink:        #e65cb4; /* accent; opt-in headings, special CTAs */
+  --color-charcoal:    #2c3e50; /* primary text, dark headings */
+  --color-teal-muted:  #608082; /* soft accent text */
+  --color-olive:       #556542; /* animated word highlights */
+  --color-off-white:   #ecf0f1; /* near-white text on dark backgrounds */
+  --color-grey:        #444444; /* secondary body text */
+  --color-white:       #ffffff;
+  --color-black:       #000000;
+
+  /* Semantic aliases */
+  --color-text:            var(--color-charcoal);
+  --color-text-light:      var(--color-off-white);
+  --color-text-muted:      var(--color-grey);
+  --color-bg:              var(--color-white);
+  --color-border:          #d1d5db;
+  --color-focus-ring:      var(--color-teal);
+
+  /* --- Typography --- */
+  --font-body:        'Raleway', sans-serif;
+  --font-editorial:   'Playfair Display', serif;
+  --font-script:      'Licorice', cursive;        /* h6, decorative */
+  --font-accent-1:    'Allison', cursive;          /* special display */
+  --font-accent-2:    'Comforter', cursive;        /* special display */
+
+  /* Type scale (1.25 major third) */
+  --text-xs:    0.75rem;   /*  12px */
+  --text-sm:    0.875rem;  /*  14px */
+  --text-base:  1rem;      /*  16px */
+  --text-lg:    1.125rem;  /*  18px */
+  --text-xl:    1.25rem;   /*  20px */
+  --text-2xl:   1.563rem;  /*  25px */
+  --text-3xl:   1.953rem;  /*  31px */
+  --text-4xl:   2.441rem;  /*  39px */
+  --text-5xl:   3.052rem;  /*  49px */
+
+  --font-weight-normal: 400;
+  --font-weight-bold:   700;
+
+  --leading-tight:  1.25;
+  --leading-normal: 1.6;
+  --leading-loose:  1.8;
+
+  /* --- Spacing (8px grid) --- */
+  --space-1:   0.25rem;  /*  4px */
+  --space-2:   0.5rem;   /*  8px */
+  --space-3:   0.75rem;  /* 12px */
+  --space-4:   1rem;     /* 16px */
+  --space-5:   1.25rem;  /* 20px */
+  --space-6:   1.5rem;   /* 24px */
+  --space-8:   2rem;     /* 32px */
+  --space-10:  2.5rem;   /* 40px */
+  --space-12:  3rem;     /* 48px */
+  --space-16:  4rem;     /* 64px */
+  --space-20:  5rem;     /* 80px */
+  --space-24:  6rem;     /* 96px */
+
+  /* --- Layout --- */
+  --container-max:  1200px;
+  --container-pad:  var(--space-6);
+
+  /* --- Borders --- */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   16px;
+  --radius-full: 9999px;
+  --border-width: 1px;
+  --border-accent-width: 2px;
+
+  /* --- Shadows --- */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 6px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg:  0 10px 25px rgba(0,0,0,0.15);
+
+  /* --- Buttons --- */
+  --btn-font:         var(--font-body);
+  --btn-font-weight:  var(--font-weight-bold);
+  --btn-letter-spacing: 0.05em;
+  --btn-text-transform: uppercase;
+  --btn-radius:       var(--radius-sm);
+  --btn-transition:   background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+  /* Button sizes */
+  --btn-sm-px:   var(--space-4);
+  --btn-sm-py:   var(--space-2);
+  --btn-sm-text: var(--text-sm);
+
+  --btn-md-px:   var(--space-6);
+  --btn-md-py:   var(--space-3);
+  --btn-md-text: var(--text-base);
+
+  --btn-lg-px:   var(--space-8);
+  --btn-lg-py:   var(--space-4);
+  --btn-lg-text: var(--text-lg);
+
+  /* --- Z-index scale --- */
+  --z-below:   -1;
+  --z-base:     0;
+  --z-raised:   10;
+  --z-header:   100;
+  --z-overlay:  200;
+  --z-modal:    300;
+
+  /* --- Transitions --- */
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow:   0.4s ease;
+}
