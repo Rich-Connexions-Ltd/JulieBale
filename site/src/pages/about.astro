@@ -24,8 +24,10 @@ const credentials = [
 >
   <!-- Hero banner -->
   <Hero
-    height="banner"
-    bgColor="var(--color-charcoal)"
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159662559/settings_images/0a6bb3f-0330-5f41-3c4f-24a8f5a02f2d_0bcceab8-233c-49cd-9768-310811165487.jpeg"
+    overlay={true}
+    overlayOpacity={0.1}
     heading="About Julie"
     subheading="Singer · Voice Teacher · Clinical Hypnotherapist · Author"
     textColor="light"
@@ -75,7 +77,7 @@ const credentials = [
   </TextImage>
 
   <!-- My Story -->
-  <section class="section section-story" style="background-color: #f8f8f6;">
+  <section class="section section-story" style="background-color: #1e3f4a;">
     <div class="container story-inner">
       <div class="story-copy">
         <p class="story-eyebrow">My Story</p>
@@ -103,6 +105,14 @@ const credentials = [
           <footer>— The belief that drives everything I do</footer>
         </blockquote>
       </div>
+    </div>
+  </section>
+
+  <!-- Mission statement (from original: hot-pink full-bleed section) -->
+  <section class="section section-mission">
+    <div class="container mission-inner">
+      <p class="mission-tagline">I'm on a mission...</p>
+      <p class="mission-statement">I want everyone and anyone who wants to sing to know that they can.</p>
     </div>
   </section>
 
@@ -206,12 +216,12 @@ const credentials = [
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--color-teal-muted);
+    color: var(--color-gold);
     margin-bottom: var(--space-3);
   }
 
-  .story-copy h2 { margin-bottom: var(--space-5); }
-  .story-copy p { color: var(--color-grey); line-height: var(--leading-loose); }
+  .story-copy h2 { margin-bottom: var(--space-5); color: var(--color-white); }
+  .story-copy p { color: rgba(255, 255, 255, 0.82); line-height: var(--leading-loose); }
 
   .story-quote-block {
     display: flex;
@@ -227,14 +237,14 @@ const credentials = [
     font-family: var(--font-editorial);
     font-style: italic;
     font-size: var(--text-2xl);
-    color: var(--color-charcoal);
+    color: rgba(255, 255, 255, 0.92);
     line-height: var(--leading-tight);
     margin-bottom: var(--space-3);
   }
 
   .story-quote footer {
     font-size: var(--text-sm);
-    color: var(--color-teal-muted);
+    color: var(--color-gold);
   }
 
   /* Credentials */
@@ -275,6 +285,32 @@ const credentials = [
     font-size: var(--text-sm);
     color: var(--color-grey);
     line-height: var(--leading-normal);
+    margin-bottom: 0;
+  }
+
+  /* Mission */
+  .section-mission {
+    background-color: #d81e8c;
+    text-align: center;
+  }
+
+  .mission-inner {
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  .mission-tagline {
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
+    color: var(--color-white);
+    margin-bottom: var(--space-3);
+  }
+
+  .mission-statement {
+    font-size: clamp(var(--text-lg), 3vw, var(--text-2xl));
+    color: rgba(255, 255, 255, 0.9);
+    line-height: var(--leading-loose);
     margin-bottom: 0;
   }
 

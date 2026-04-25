@@ -9,6 +9,35 @@ import CTABanner from '../components/CTABanner.astro';
 import FormEmbed from '../components/FormEmbed.astro';
 
 const KAJABI = 'https://members.juliebale.com';
+const CALENDLY = 'https://calendly.com/hypnotherapyforperformance/discover-your-voice-30';
+
+const bravoPillars = [
+  {
+    letter: 'B',
+    title: 'Belief',
+    desc: 'Build unshakeable internal certainty so your voice carries conviction.',
+  },
+  {
+    letter: 'R',
+    title: 'Resonance',
+    desc: 'Unlock the natural depth, warmth, and richness in your voice.',
+  },
+  {
+    letter: 'A',
+    title: 'Authority',
+    desc: 'Develop vocal and physical presence that establishes instant credibility.',
+  },
+  {
+    letter: 'V',
+    title: 'Vocal Presence',
+    desc: 'Learn to use breath, pacing, tone, and silence to captivate attention.',
+  },
+  {
+    letter: 'O',
+    title: 'Ownership',
+    desc: 'Step fully into your identity as a confident, compelling speaker.',
+  },
+];
 
 const pricingTiers = [
   {
@@ -16,32 +45,32 @@ const pricingTiers = [
     subtitle: 'Group Programme',
     price: '£197',
     features: [
-      '6 live online group sessions',
-      'The BRAVO Framework® workbook',
-      'Vocal technique for speakers',
-      'Performance confidence coaching',
+      'Live in-person group day (Watford)',
+      'The BRAVO Framework® vocal training',
       'Nervous system regulation tools',
-      'Recording review & feedback',
-      'Private community access',
+      'Performance confidence coaching',
+      'Practise your keynote with live expert feedback',
+      'Limited to 10 people for personalised coaching',
+      'Next BRAVO Day: 4th October',
     ],
-    cta: 'Join BRAVO Day',
-    href: `${KAJABI}/resource_redirect/landing_pages/2151826137`,
+    cta: 'Book a Call',
+    href: CALENDLY,
   },
   {
     title: 'VIP 1:1 Day',
     subtitle: 'Intensive Private Coaching',
     price: '£997',
     features: [
-      'Everything in BRAVO Day',
-      'Full-day private intensive with Julie',
-      'Personalised vocal assessment',
-      'Custom BRAVO action plan',
-      'Hypnotherapy mindset session',
-      '30-day follow-up support',
-      'Priority booking for future programmes',
+      'Full-day private intensive with Julie (Watford)',
+      'Core vocal techniques and mindset work',
+      'Live expert vocal coaching on your talk',
+      'Immediate, tangible transformation',
+      'Foundation for ongoing BRAVO Days',
+      'Dates available June, July & September',
+      'Priority: can start with VIP Day or BRAVO Day',
     ],
-    cta: 'Book Your VIP Day',
-    href: `${KAJABI}/resource_redirect/landing_pages/2151826137`,
+    cta: 'Book a Call',
+    href: CALENDLY,
     highlight: true,
     highlightLabel: 'Most Transformational',
   },
@@ -49,15 +78,15 @@ const pricingTiers = [
 
 const testimonials = [
   {
-    quote: 'The BRAVO programme completely changed how I show up on stage. Julie\'s combination of voice science and mindset work is unlike anything I\'ve experienced before.',
-    name: 'Sarah Mitchell',
-    role: 'Corporate Trainer',
+    quote: 'It is rare in life to find something so profound, yet something you can actually purchase — the experience of being among men and women discovering their own voices. It is an extraordinary moment of abundance.',
+    name: 'Evie',
+    role: 'BRAVO Programme',
     stars: true,
   },
   {
-    quote: 'I used to dread presenting. After the BRAVO programme I genuinely look forward to it. My voice has authority now — and I know how to use it.',
-    name: 'David Thornton',
-    role: 'Business Leader',
+    quote: 'What happened for me was that you unlocked my voice AND my singing voice, and for me that makes me so, so happy. Having been told that I can\'t sing, now I know that I can sing — and that was really special.',
+    name: 'Nicola',
+    role: 'BRAVO Programme',
     stars: true,
   },
 ];
@@ -69,16 +98,46 @@ const testimonials = [
 >
   <Hero
     height="large"
-    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/cd6852d-536c-3680-b7f8-777517faa8e_554209dc-7eb0-4c4e-95e8-9c83af302774.png"
+    bgColor="#0b1c2d"
     heading="BRAVO for Speakers"
-    subheading="Unlock your most powerful, confident, and influential speaking voice — in just 6 weeks."
+    subheading="Become the speaker your message deserves."
     textColor="light"
     eyebrow="The BRAVO Framework®"
     ctas={[
-      { label: 'Join the Programme', href: `${KAJABI}/resource_redirect/landing_pages/2151826137`, variant: 'btn--primary' },
-      { label: 'Book a VIP Day', href: `${KAJABI}/resource_redirect/landing_pages/2151826137`, variant: 'btn--outline-white' },
+      { label: 'How Do I Book?', href: CALENDLY, variant: 'btn--primary' },
+      { label: 'Book a VIP Day', href: CALENDLY, variant: 'btn--outline-white' },
     ]}
   />
+
+  <!-- Why Voice Changes Everything -->
+  <TextImage
+    heading="Why Voice Changes Everything"
+    eyebrow="You Know Your Message Matters"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159794714/settings_images/d4f32e7-7e77-4247-625-4cf327c2fd43_126938a2-15b8-44a3-bf8b-bab9821b028e.png"
+    imageAlt="Voice changes everything — Julie Bale BRAVO for Speakers"
+    reverse={false}
+    accentLine={true}
+    bgColor="#c9a24d"
+  >
+    <p>
+      You see the impact your message could have. The clients it could attract. The doors it could open.
+    </p>
+    <p>
+      But when it's time to speak — on stage, on video, or in a room full of opportunity — your voice
+      doesn't always reflect the authority, confidence, and conviction you feel inside.
+    </p>
+    <p>This is not a message problem. This is a voice, nervous system, and identity problem. And it is entirely trainable.</p>
+    <p>People decide whether to trust you in seconds. Not just based on your words, but on your tone, your presence, and your certainty. When your voice aligns with your message:</p>
+    <ul>
+      <li>People listen more closely</li>
+      <li>They trust you more deeply</li>
+      <li>They remember you longer</li>
+      <li>And they act more readily</li>
+    </ul>
+    <p>Your voice becomes your greatest asset in business and leadership.</p>
+    <h3>Who This Is For</h3>
+    <p>This programme is for founders, entrepreneurs, coaches, consultants, leaders, executives, and aspiring and experienced speakers who want their voice to match the power of their message.</p>
+  </TextImage>
 
   <!-- What is BRAVO -->
   <TextImage
@@ -86,24 +145,42 @@ const testimonials = [
     eyebrow="Voice Science Meets Performance Psychology"
     image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/cd6852d-536c-3680-b7f8-777517faa8e_554209dc-7eb0-4c4e-95e8-9c83af302774.png"
     imageAlt="BRAVO for Speakers programme"
-    reverse={false}
+    reverse={true}
     accentLine={true}
+    bgColor="#c9a24d"
   >
     <p>
-      BRAVO for Speakers is a transformational 6-week voice and mindset mastery programme
-      designed for speakers, leaders, coaches, and anyone who uses their voice professionally.
+      BRAVO for Speakers is a transformational voice and mindset mastery programme designed for
+      speakers, leaders, coaches, and anyone who uses their voice professionally.
     </p>
     <p>
-      The BRAVO Framework® is built on five core pillars: <strong>Breath</strong>, <strong>Resonance</strong>,
-      <strong>Articulation</strong>, <strong>Voice</strong>, and <strong>Ownership</strong>. Together they
-      integrate voice science, performance psychology, and nervous system regulation into one
-      seamless, practical system.
+      Through expert vocal training, performance coaching, and mindset work, you will develop a voice that
+      commands attention, creates trust instantly, conveys authority effortlessly, and moves people to act.
     </p>
     <p>
-      Whether you're preparing for a big keynote, wanting to be more influential in meetings,
-      or simply tired of your voice letting you down under pressure — BRAVO was made for you.
+      This is the work that changes how people perceive you — and how you perceive yourself.
     </p>
   </TextImage>
+
+  <!-- BRAVO Pillars -->
+  <section class="section section-pillars" style="background-color: var(--color-charcoal);">
+    <div class="container">
+      <div class="pillars-header">
+        <p class="pillars-eyebrow">The Framework</p>
+        <h2 class="pillars-heading">Introducing The BRAVO Framework® for Speakers</h2>
+        <p class="pillars-intro">A proven framework integrating voice science, performance psychology, and nervous system mastery.</p>
+      </div>
+      <div class="pillars-grid">
+        {bravoPillars.map(({ letter, title, desc }) => (
+          <div class="pillar-card">
+            <span class="pillar-letter">{letter}</span>
+            <h3 class="pillar-title">{title}</h3>
+            <p class="pillar-desc">{desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
 
   <!-- Audio preview -->
   <section class="section--sm section-audio">
@@ -119,29 +196,54 @@ const testimonials = [
     </div>
   </section>
 
-  <!-- What you'll learn -->
-  <section class="section section-curriculum" style="background-color: #f8f8f6;">
+  <!-- Programme Experience: Phase 1 + Phase 2 -->
+  <section class="section section-programme" style="background-color: #f8f8f6;">
     <div class="container">
-      <div class="curriculum-header">
-        <p class="curriculum-eyebrow">The Programme</p>
-        <h2>What You'll Cover</h2>
-        <p class="curriculum-intro">Six weeks. Six transformations. One powerful voice.</p>
+      <div class="programme-header">
+        <p class="programme-eyebrow">The Programme Experience</p>
+        <h2>How It Works</h2>
       </div>
-      <div class="curriculum-grid">
-        {[
-          { week: 'Week 1', title: 'Breath & Foundation', desc: 'Master diaphragmatic breathing to create power, presence, and control from your very first word.' },
-          { week: 'Week 2', title: 'Resonance & Richness', desc: 'Discover the resonant chambers in your body and learn to project your voice with natural warmth and depth.' },
-          { week: 'Week 3', title: 'Articulation & Clarity', desc: 'Sharpen consonants, open vowels, and eliminate the mumblings and trailing sentences that undermine authority.' },
-          { week: 'Week 4', title: 'Vocal Variety & Pace', desc: 'Use pitch, pace, pause, and power to hold attention, land key points, and keep audiences engaged.' },
-          { week: 'Week 5', title: 'Nervous System & Mindset', desc: 'Apply clinical hypnotherapy tools to calm performance nerves, anchor confidence, and speak from a place of ease.' },
-          { week: 'Week 6', title: 'Live Coaching & Ownership', desc: 'Rehearse a real presentation and receive expert live feedback. Integrate everything and step into ownership of your voice.' },
-        ].map(({ week, title, desc }) => (
-          <div class="curriculum-item">
-            <span class="curriculum-week">{week}</span>
-            <h3 class="curriculum-title">{title}</h3>
-            <p class="curriculum-desc">{desc}</p>
-          </div>
-        ))}
+      <div class="programme-phases">
+
+        <div class="phase-card">
+          <div class="phase-label">Phase 1</div>
+          <h3 class="phase-title">VIP 1:1 In-Person Intensive Day — Watford</h3>
+          <p class="phase-intro">You'll begin with a powerful live immersion where you will:</p>
+          <ul class="phase-list">
+            <li>Learn core vocal techniques</li>
+            <li>Understand how your mindset affects your voice</li>
+            <li>Rehearse your talk and receive live expert vocal coaching</li>
+            <li>Experience immediate, tangible transformation</li>
+          </ul>
+          <p>This day establishes the foundation for everything that follows.</p>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-label">Phase 2</div>
+          <h3 class="phase-title">Join the BRAVO Speaker Days</h3>
+          <p class="phase-intro">Bi-monthly live sessions where you will practise:</p>
+          <ul class="phase-list">
+            <li>Calming your nervous system and accessing vocal stability</li>
+            <li>Improving vocal strength, resonance, and range</li>
+            <li>Improving clarity, articulation, and authority</li>
+            <li>Building confidence through performance coaching</li>
+            <li>Elevating your keynotes</li>
+          </ul>
+          <p>You will deliver your keynote with confidence, authority, emotional connection, and vocal mastery. You will experience yourself as a powerful, confident speaker.</p>
+        </div>
+
+      </div>
+
+      <div class="programme-outcomes">
+        <h3>What You Leave With</h3>
+        <p>A permanent shift in how you speak, show up, and lead. You will leave with:</p>
+        <ul class="outcomes-list">
+          <li>Fully performance-ready keynotes</li>
+          <li>A confident, reliable, and powerful voice</li>
+          <li>Tools to regulate nerves before any speaking opportunity</li>
+          <li>Greater authority and executive presence</li>
+          <li>Skills that serve you for life</li>
+        </ul>
       </div>
     </div>
   </section>
@@ -153,6 +255,36 @@ const testimonials = [
     columns={2}
   />
 
+  <!-- Bio: Hi I'm Julie -->
+  <TextImage
+    heading="Hi, I'm Julie..."
+    eyebrow="Why Work With Me"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159794714/settings_images/5b052f-03f-881-6a25-10145e605312_38b5d9d9-f7a2-40de-894e-e5b68af34a47.jpeg"
+    imageAlt="Julie Bale — opera singer, voice teacher and clinical hypnotherapist"
+    reverse={true}
+    accentLine={true}
+  >
+    <p>
+      An opera singer, voice teacher, choral conductor, keynote speaker, and certified clinical hypnotherapist.
+    </p>
+    <p>
+      I've taught people at all levels of experience and ability for over 35 years and have a diploma from the
+      Royal College of Music. I've also been a resident voice teacher with top London choirs such as the
+      London Oriana Choir.
+    </p>
+    <p>
+      It's my mission to help everyone who wants to learn how the power of their voice can affect their lives
+      in so many ways. I have worked with over 1,000 people using my unique mixture of vocal technique
+      (how the body works), performance technique (how you connect to the audience), and performance
+      mindset (using my skills as a clinical hypnotherapist) — giving you the confidence and belief to give
+      your best performance.
+    </p>
+    <p>
+      I realise that the same techniques I use with my singers are equally powerful for speakers. That's why
+      I created the BRAVO Framework®.
+    </p>
+  </TextImage>
+
   <!-- Pricing -->
   <PricingTable
     heading="Choose Your BRAVO Journey"
@@ -161,12 +293,33 @@ const testimonials = [
     bgColor="#f8f8f6"
   />
 
+  <!-- Book a Call -->
+  <section class="section section-book" id="book-a-call">
+    <div class="container book-inner">
+      <div class="book-copy">
+        <p class="book-eyebrow">Apply for a Place</p>
+        <h2>Ready to Become the Speaker Your Message Deserves?</h2>
+        <p>
+          To apply for a place please book a call with me. It's important to check that we feel
+          we can work together and that I can help you before making this investment.
+        </p>
+        <p class="book-details">
+          <strong>VIP Days:</strong> Booking for June, July &amp; September — Watford<br/>
+          <strong>BRAVO Day:</strong> 4th October — Watford (limited to 10 people)
+        </p>
+        <a href={CALENDLY} class="btn btn--primary book-cta" target="_blank" rel="noopener">
+          Book a Call
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- CTA -->
   <CTABanner
     heading="Ready to Find Your Speaking Voice?"
     body="Join speakers and leaders who have transformed how they show up with BRAVO."
-    cta="Join the Programme"
-    href={`${KAJABI}/resource_redirect/landing_pages/2151826137`}
+    cta="Book a Call"
+    href={CALENDLY}
     variant="charcoal"
   />
 
@@ -189,6 +342,9 @@ const testimonials = [
 </BaseLayout>
 
 <style>
+  /* ----------------------------------------
+     Audio section
+  ---------------------------------------- */
   .section-audio { background-color: var(--color-white); }
 
   .audio-inner {
@@ -210,12 +366,84 @@ const testimonials = [
   .audio-copy h2 { margin-bottom: var(--space-4); }
   .audio-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
 
-  .curriculum-header {
+  /* ----------------------------------------
+     BRAVO Pillars section
+  ---------------------------------------- */
+  .section-pillars { color: var(--color-white); }
+
+  .pillars-header {
     text-align: center;
     margin-bottom: var(--space-12);
   }
 
-  .curriculum-eyebrow {
+  .pillars-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .pillars-heading {
+    color: var(--color-white);
+    margin-bottom: var(--space-4);
+  }
+
+  .pillars-intro {
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: var(--text-xl);
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 0;
+  }
+
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-5);
+  }
+
+  .pillar-card {
+    background-color: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    text-align: center;
+  }
+
+  .pillar-letter {
+    display: block;
+    font-size: var(--text-4xl);
+    font-family: var(--font-editorial);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gold);
+    line-height: 1;
+    margin-bottom: var(--space-3);
+  }
+
+  .pillar-title {
+    font-size: var(--text-base);
+    color: var(--color-white);
+    margin-bottom: var(--space-2);
+  }
+
+  .pillar-desc {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.65);
+    line-height: var(--leading-loose);
+    margin-bottom: 0;
+  }
+
+  /* ----------------------------------------
+     Programme phases section
+  ---------------------------------------- */
+  .programme-header {
+    text-align: center;
+    margin-bottom: var(--space-12);
+  }
+
+  .programme-eyebrow {
     font-size: var(--text-sm);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.1em;
@@ -224,51 +452,153 @@ const testimonials = [
     margin-bottom: var(--space-3);
   }
 
-  .curriculum-header h2 { margin-bottom: var(--space-4); }
+  .programme-header h2 { margin-bottom: 0; }
 
-  .curriculum-intro {
-    font-family: var(--font-editorial);
-    font-style: italic;
-    font-size: var(--text-xl);
-    color: var(--color-charcoal);
-    margin-bottom: 0;
-  }
-
-  .curriculum-grid {
+  .programme-phases {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-6);
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    margin-bottom: var(--space-12);
   }
 
-  .curriculum-item {
+  .phase-card {
     background-color: var(--color-white);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--space-6);
+    padding: var(--space-8);
   }
 
-  .curriculum-week {
+  .phase-label {
     display: inline-block;
     font-size: var(--text-xs);
     font-weight: var(--font-weight-bold);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--color-gold);
-    margin-bottom: var(--space-2);
+    color: var(--color-white);
+    background-color: var(--color-gold);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-3);
+    margin-bottom: var(--space-4);
   }
 
-  .curriculum-title {
-    font-size: var(--text-lg);
+  .phase-title {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-4);
+  }
+
+  .phase-intro {
+    color: var(--color-grey);
     margin-bottom: var(--space-3);
   }
 
-  .curriculum-desc {
-    font-size: var(--text-sm);
-    color: var(--color-grey);
-    line-height: var(--leading-loose);
-    margin-bottom: 0;
+  .phase-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--space-4) 0;
   }
 
+  .phase-list li {
+    padding: var(--space-1) 0 var(--space-1) var(--space-5);
+    color: var(--color-grey);
+    font-size: var(--text-sm);
+    line-height: var(--leading-loose);
+    position: relative;
+  }
+
+  .phase-list li::before {
+    content: '•';
+    position: absolute;
+    left: var(--space-2);
+    color: var(--color-gold);
+  }
+
+  .phase-card p:last-child { margin-bottom: 0; color: var(--color-charcoal); }
+
+  .programme-outcomes {
+    background-color: var(--color-charcoal);
+    color: var(--color-white);
+    border-radius: var(--radius-md);
+    padding: var(--space-10);
+    text-align: center;
+  }
+
+  .programme-outcomes h3 {
+    color: var(--color-white);
+    margin-bottom: var(--space-4);
+  }
+
+  .programme-outcomes > p {
+    color: rgba(255,255,255,0.8);
+    margin-bottom: var(--space-6);
+  }
+
+  .outcomes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-3) var(--space-8);
+  }
+
+  .outcomes-list li {
+    color: rgba(255,255,255,0.85);
+    font-size: var(--text-sm);
+    padding-left: var(--space-5);
+    position: relative;
+  }
+
+  .outcomes-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--color-gold);
+    font-weight: bold;
+  }
+
+  /* ----------------------------------------
+     Book a Call section
+  ---------------------------------------- */
+  .section-book {
+    background-color: var(--color-white);
+    border-top: 4px solid var(--color-gold);
+  }
+
+  .book-inner {
+    max-width: 680px;
+    text-align: center;
+  }
+
+  .book-eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .book-inner h2 { margin-bottom: var(--space-6); }
+  .book-inner p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: var(--space-4); }
+
+  .book-details {
+    background-color: #f8f8f6;
+    border-radius: var(--radius-md);
+    padding: var(--space-5) var(--space-6);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-6) !important;
+  }
+
+  .book-details strong { color: var(--color-charcoal); }
+
+  .book-cta {
+    display: inline-block;
+  }
+
+  /* ----------------------------------------
+     Newsletter section
+  ---------------------------------------- */
   .section-newsletter { background-color: #f8f8f6; }
 
   .newsletter-inner {
@@ -281,13 +611,27 @@ const testimonials = [
   .newsletter-copy h2 { margin-bottom: var(--space-4); }
   .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
 
+  /* ----------------------------------------
+     Responsive
+  ---------------------------------------- */
+  @media (max-width: 1100px) {
+    .pillars-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
   @media (max-width: 900px) {
-    .curriculum-grid { grid-template-columns: repeat(2, 1fr); }
+    .pillars-grid { grid-template-columns: repeat(3, 1fr); }
+    .programme-phases { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 768px) {
     .audio-inner,
     .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
-    .curriculum-grid { grid-template-columns: 1fr; }
+    .pillars-grid { grid-template-columns: repeat(2, 1fr); }
+    .outcomes-list { flex-direction: column; align-items: flex-start; padding: 0 var(--space-4); }
+    .book-inner { text-align: left; }
+  }
+
+  @media (max-width: 480px) {
+    .pillars-grid { grid-template-columns: 1fr; }
   }
 </style>
