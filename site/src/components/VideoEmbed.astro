@@ -1,0 +1,64 @@
+---
+interface Props {
+  type: 'wistia' | 'youtube';
+  id: string;
+  title?: string;
+  aspectRatio?: '16/9' | '4/3' | '1/1';
+  bgColor?: string;
+}
+
+const {
+  type,
+  id,
+  title = 'Video',
+  aspectRatio = '16/9',
+  bgColor,
+} = Astro.props;
+
+const youtubeUrl = `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`;
+---
+
+<div
+  class="video-embed"
+  style={`--aspect-ratio: ${aspectRatio};${bgColor ? ` background-color: ${bgColor};` : ''}`}
+>
+  {type === 'youtube' && (
+    <iframe
+      src={youtubeUrl}
+      title={title}
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+      loading="lazy"
+      class="video-embed-frame"
+    ></iframe>
+  )}
+
+  {type === 'wistia' && (
+    <>
+      <script src="https://fast.wistia.com/assets/external/E-v1.js" async is:inline></script>
+      <div
+        class={`wistia_embed wistia_async_${id}`}
+        style="height:100%;position:relative;width:100%"
+      >&nbsp;</div>
+    </>
+  )}
+</div>
+
+<style>
+  .video-embed {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--aspect-ratio, 16/9);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background-color: var(--color-charcoal);
+  }
+
+  .video-embed-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+</style>

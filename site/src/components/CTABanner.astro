@@ -1,0 +1,89 @@
+---
+interface Props {
+  heading: string;
+  body?: string;
+  cta: string;
+  href: string;
+  ctaVariant?: string;
+  variant?: 'gold' | 'teal' | 'charcoal' | 'dark' | 'light';
+  target?: string;
+}
+
+const {
+  heading,
+  body,
+  cta,
+  href,
+  ctaVariant,
+  variant = 'gold',
+  target,
+} = Astro.props;
+
+const btnVariantMap: Record<string, string> = {
+  gold:     'btn--outline-white',
+  teal:     'btn--outline-white',
+  charcoal: 'btn--outline-white',
+  dark:     'btn--outline-white',
+  light:    'btn--primary',
+};
+
+const btnClass = ctaVariant ?? btnVariantMap[variant];
+---
+
+<section class:list={['cta-banner', 'section--sm', `cta-banner--${variant}`]}>
+  <div class="container cta-banner-inner">
+    <div class="cta-banner-copy">
+      <h2 class="cta-banner-heading">{heading}</h2>
+      {body && <p class="cta-banner-body">{body}</p>}
+    </div>
+    <a
+      href={href}
+      class={`btn btn--lg ${btnClass}`}
+      target={target}
+      rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+    >
+      {cta}
+    </a>
+  </div>
+</section>
+
+<style>
+  .cta-banner {
+    text-align: center;
+  }
+
+  .cta-banner--gold     { background-color: var(--color-gold); }
+  .cta-banner--teal     { background-color: var(--color-teal); }
+  .cta-banner--charcoal { background-color: var(--color-charcoal); }
+  .cta-banner--dark     { background-color: #1a252f; }
+  .cta-banner--light    { background-color: #f8f8f6; }
+
+  .cta-banner-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .cta-banner-heading {
+    font-size: var(--text-3xl);
+    color: var(--color-white);
+    margin-bottom: 0;
+  }
+
+  .cta-banner--light .cta-banner-heading {
+    color: var(--color-charcoal);
+  }
+
+  .cta-banner-body {
+    font-size: var(--text-lg);
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 560px;
+    margin-bottom: 0;
+    line-height: var(--leading-loose);
+  }
+
+  .cta-banner--light .cta-banner-body {
+    color: var(--color-grey);
+  }
+</style>

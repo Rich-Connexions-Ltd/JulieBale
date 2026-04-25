@@ -1,0 +1,296 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import TestimonialRow from '../components/TestimonialRow.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+
+const credentials = [
+  { icon: 'fas fa-music', heading: 'BA (Hons) Music & German', body: 'Undergraduate degree combining musical performance with language and culture.' },
+  { icon: 'fas fa-award', heading: 'ARCM — Royal College of Music', body: 'Postgraduate performance diploma from the Royal College of Music, London.' },
+  { icon: 'fas fa-brain', heading: 'Clinical Hypnotherapist', body: 'HPD / Dip.Hyp / NLP Diploma. Registered with the NCH and CNHC.' },
+  { icon: 'fas fa-users', heading: '35+ Years Teaching', body: 'Trained with renowned voice specialist Janice Chapman. Resident Singing Teacher with the London Oriana Choir.' },
+  { icon: 'fas fa-theater-masks', heading: 'Choral Director', body: 'Founder of OperaHerts and Bushey Opera Group. PGCE qualified teacher.' },
+  { icon: 'fas fa-microphone', heading: 'Author & Speaker', body: 'Author of "The Real Me Isn\'t Fat". Featured in Metro, Woman, Woman\'s Weekly, Classical Music Magazine, and BBC.' },
+];
+---
+
+<BaseLayout
+  title="About Julie Bale"
+  description="Julie Bale is a professional soprano, voice teacher, clinical hypnotherapist, author and keynote speaker — founder of the Diva Energy® programme."
+>
+  <!-- Hero banner -->
+  <Hero
+    height="banner"
+    bgColor="var(--color-charcoal)"
+    heading="About Julie"
+    subheading="Singer · Voice Teacher · Clinical Hypnotherapist · Author"
+    textColor="light"
+  />
+
+  <!-- Welcome -->
+  <section class="section section-welcome">
+    <div class="container welcome-inner">
+      <div class="welcome-accent" aria-hidden="true"></div>
+      <div class="welcome-copy">
+        <p class="welcome-eyebrow">Hello &amp; Welcome</p>
+        <h2>I'm really glad you've found me.</h2>
+        <p>
+          I'm Julie, and I champion those who want to sing — particularly those who have ever felt
+          excluded from singing — and help them find their true voice.
+        </p>
+        <p>
+          "I always thought singing was a party that I was not invited to."
+          If that resonates with you, you're in exactly the right place.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bio with photo -->
+  <TextImage
+    heading="Hi, I'm Julie"
+    image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/cf7f4c5-f02-0da2-5ad8-8cb220724e61_38b5d9d9-f7a2-40de-894e-e5b68af34a47.jpeg"
+    imageAlt="Julie Bale — voice specialist and clinical hypnotherapist"
+    reverse={true}
+    accentLine={true}
+  >
+    <p>
+      I'm a singer, voice teacher, hypnotherapist, author and speaker. I've been singing
+      forever and teaching singing in schools, community groups, and privately for over 35 years.
+    </p>
+    <p>
+      I hold a BA (Hons) in Music, a PGCE, and a postgraduate performance diploma from the
+      Royal College of Music. I trained with the renowned voice specialist Janice Chapman for
+      over 25 years, and I'm a qualified clinical hypnotherapist registered with the NCH and CNHC.
+    </p>
+    <p>
+      My purpose is simple: to give people the vocal skills and the belief that they can sing.
+      Through Diva Energy®, I bring together vocal technique, performance coaching, and
+      the transformational power of hypnotherapy into one seamless programme.
+    </p>
+  </TextImage>
+
+  <!-- My Story -->
+  <section class="section section-story" style="background-color: #f8f8f6;">
+    <div class="container story-inner">
+      <div class="story-copy">
+        <p class="story-eyebrow">My Story</p>
+        <h2>A voice worth fighting for</h2>
+        <p>
+          I fell in love with singing early. Classical training led me to choral direction and
+          performance — I founded OperaHerts and Bushey Opera Group, and served as Resident
+          Singing Teacher with the London Oriana Choir.
+        </p>
+        <p>
+          Along the way I discovered something more profound: the people who needed singing
+          the most were often the ones who believed it wasn't for them. So I trained in clinical
+          hypnotherapy and developed a completely new approach — one that addresses the mind
+          as well as the voice.
+        </p>
+        <p>
+          The result is Diva Energy® — a proven system that has helped over 1,000 people
+          find their voices, perform with genuine confidence, and transform not just how they
+          sing, but how they show up in the world.
+        </p>
+      </div>
+      <div class="story-quote-block">
+        <blockquote class="story-quote">
+          <p>"I always thought singing was a party that I was not invited to."</p>
+          <footer>— The belief that drives everything I do</footer>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- Credentials grid -->
+  <section class="section">
+    <div class="container">
+      <h2 class="credentials-heading">Credentials &amp; Experience</h2>
+      <ul class="credentials-grid" role="list">
+        {credentials.map(({ icon, heading, body }) => (
+          <li class="credential-item">
+            <div class="credential-icon" aria-hidden="true">
+              <i class={icon}></i>
+            </div>
+            <div>
+              <h3 class="credential-heading">{heading}</h3>
+              <p class="credential-body">{body}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <TestimonialRow
+    heading="What My Singers Say"
+    items={[
+      {
+        quote: 'Julie has truly transformed every day of my future. Now, each morning feels like a song I can sing with confidence. She unlocked something deep within me and lifted my whole world to a new level.',
+        name: 'Eve Stanway',
+        stars: true,
+      },
+    ]}
+    columns={1}
+  />
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Work With Me?"
+    body="Take the first step towards finding your voice and stepping into your Diva Energy®."
+    cta="Tell Me More"
+    href={`${KAJABI}/resource_redirect/landing_pages/2151642696`}
+    variant="gold"
+  />
+
+  <!-- Newsletter signup -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        heading="Stay in the Diva World"
+        subheading="Sign up for my weekly newsletter — inspiration, vocal tips, and mindset coaching delivered to your inbox."
+        submitLabel="Sign Up"
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Welcome section */
+  .welcome-inner {
+    display: grid;
+    grid-template-columns: 4px 1fr;
+    gap: var(--space-8);
+    align-items: start;
+    max-width: 760px;
+  }
+
+  .welcome-accent {
+    background-color: var(--color-gold);
+    border-radius: 2px;
+    align-self: stretch;
+    min-height: 120px;
+  }
+
+  .welcome-eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .welcome-copy h2 { margin-bottom: var(--space-5); }
+
+  /* Story */
+  .story-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: start;
+  }
+
+  .story-eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-teal-muted);
+    margin-bottom: var(--space-3);
+  }
+
+  .story-copy h2 { margin-bottom: var(--space-5); }
+  .story-copy p { color: var(--color-grey); line-height: var(--leading-loose); }
+
+  .story-quote-block {
+    display: flex;
+    align-items: center;
+  }
+
+  .story-quote {
+    border-left: 3px solid var(--color-gold);
+    padding-left: var(--space-6);
+  }
+
+  .story-quote p {
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: var(--text-2xl);
+    color: var(--color-charcoal);
+    line-height: var(--leading-tight);
+    margin-bottom: var(--space-3);
+  }
+
+  .story-quote footer {
+    font-size: var(--text-sm);
+    color: var(--color-teal-muted);
+  }
+
+  /* Credentials */
+  .credentials-heading {
+    text-align: center;
+    margin-bottom: var(--space-10);
+  }
+
+  .credentials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .credential-item {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+    padding: var(--space-5);
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .credential-icon {
+    font-size: var(--text-xl);
+    color: var(--color-gold);
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .credential-heading {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-2);
+  }
+
+  .credential-body {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    line-height: var(--leading-normal);
+    margin-bottom: 0;
+  }
+
+  /* Newsletter */
+  .newsletter-inner {
+    max-width: 560px;
+    margin-inline: auto;
+  }
+
+  @media (max-width: 768px) {
+    .story-inner { grid-template-columns: 1fr; }
+    .welcome-inner { grid-template-columns: 4px 1fr; }
+    .credentials-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 580px) {
+    .credentials-grid { grid-template-columns: 1fr; }
+  }
+</style>

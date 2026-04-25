@@ -1,0 +1,180 @@
+---
+interface Cta {
+  label: string;
+  href: string;
+  variant?: string;
+  target?: string;
+}
+
+interface Props {
+  heading: string;
+  subheading?: string;
+  eyebrow?: string;
+  bgImage?: string;
+  bgColor?: string;
+  textColor?: 'light' | 'dark';
+  overlay?: boolean;
+  overlayOpacity?: number;
+  height?: 'full' | 'large' | 'medium' | 'banner';
+  ctas?: Cta[];
+  centered?: boolean;
+}
+
+const {
+  heading,
+  subheading,
+  eyebrow,
+  bgImage,
+  bgColor = 'var(--color-charcoal)',
+  textColor = 'light',
+  overlay = true,
+  overlayOpacity = 0.45,
+  height = 'large',
+  ctas = [],
+  centered = true,
+} = Astro.props;
+
+const hasSlot = Astro.slots.has('default');
+---
+
+<section
+  class:list={['hero', `hero--${height}`, `hero--${textColor}`, { 'hero--centered': centered }]}
+  style={bgImage
+    ? `--hero-bg: url('${bgImage}'); --overlay-opacity: ${overlayOpacity};`
+    : `--hero-bg: none; --hero-bg-color: ${bgColor};`}
+>
+  {bgImage && overlay && <div class="hero-overlay" aria-hidden="true"></div>}
+
+  <div class="container hero-content">
+    {eyebrow && <p class="hero-eyebrow">{eyebrow}</p>}
+    <h1 class="hero-heading" set:html={heading} />
+    {subheading && <p class="hero-subheading">{subheading}</p>}
+    {hasSlot && <div class="hero-slot"><slot /></div>}
+    {ctas.length > 0 && (
+      <div class="hero-ctas">
+        {ctas.map(({ label, href, variant = 'btn--primary', target }) => (
+          <a
+            href={href}
+            class={`btn btn--md ${variant}`}
+            target={target}
+            rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+          >
+            {label}
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: var(--hero-bg-color, var(--color-charcoal));
+    background-image: var(--hero-bg, none);
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+  }
+
+  /* Heights */
+  .hero--full  { min-height: 100svh; }
+  .hero--large { min-height: 560px; padding-block: var(--space-20); }
+  .hero--medium { min-height: 400px; padding-block: var(--space-16); }
+  .hero--banner { min-height: 260px; padding-block: var(--space-12); }
+
+  /* Overlay */
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, var(--overlay-opacity, 0.45));
+    pointer-events: none;
+  }
+
+  /* Content */
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+  }
+
+  .hero--centered .hero-content {
+    text-align: center;
+  }
+
+  .hero--centered .hero-ctas {
+    justify-content: center;
+  }
+
+  /* Text — light */
+  .hero--light .hero-eyebrow,
+  .hero--light .hero-heading,
+  .hero--light .hero-subheading {
+    color: var(--color-white);
+  }
+
+  /* Text — dark */
+  .hero--dark .hero-eyebrow { color: var(--color-teal-muted); }
+  .hero--dark .hero-heading  { color: var(--color-charcoal); }
+  .hero--dark .hero-subheading { color: var(--color-grey); }
+
+  .hero-eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-4);
+  }
+
+  .hero-heading {
+    font-size: clamp(var(--text-3xl), 5vw, var(--text-5xl));
+    margin-bottom: var(--space-6);
+    color: var(--color-white);
+    max-width: 800px;
+  }
+
+  .hero--centered .hero-heading {
+    margin-inline: auto;
+  }
+
+  .hero-subheading {
+    font-family: var(--font-body);
+    font-size: var(--text-lg);
+    line-height: var(--leading-loose);
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 600px;
+    margin-bottom: var(--space-8);
+  }
+
+  .hero--centered .hero-subheading {
+    margin-inline: auto;
+  }
+
+  .hero-slot {
+    margin-bottom: var(--space-8);
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 640px) {
+    .hero--large  { min-height: 440px; }
+    .hero--medium { min-height: 320px; }
+
+    .hero-ctas {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .hero--centered .hero-ctas {
+      align-items: center;
+    }
+  }
+</style>

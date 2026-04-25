@@ -1,0 +1,203 @@
+---
+/**
+ * Kajabi-compatible form embed.
+ *
+ * Posts to members.juliebale.com/forms/<formId>/form_submissions.
+ * Kajabi requires an authenticity_token and kjb_fk_checksum for CSRF
+ * protection — these are server-generated and unavailable from a static
+ * site. Sprint 5 will add an Azure Function proxy to handle this.
+ * Until then, the form renders correctly but submission needs the proxy.
+ */
+
+interface Props {
+  formId: string;
+  landingPageId?: string;
+  heading?: string;
+  subheading?: string;
+  submitLabel?: string;
+  hasMessage?: boolean;
+  bgColor?: string;
+  textColor?: 'light' | 'dark';
+  disclaimer?: string;
+}
+
+const {
+  formId,
+  landingPageId,
+  heading,
+  subheading,
+  submitLabel = 'Sign Up',
+  hasMessage = false,
+  bgColor,
+  textColor = 'dark',
+  disclaimer = 'I respect your privacy. No spam, ever.',
+} = Astro.props;
+
+const actionUrl = `https://members.juliebale.com/forms/${formId}/form_submissions`;
+---
+
+<div
+  class:list={['form-embed', `form-embed--${textColor}`]}
+  style={bgColor ? `background-color: ${bgColor};` : ''}
+>
+  {heading && <h3 class="form-embed-heading">{heading}</h3>}
+  {subheading && <p class="form-embed-sub">{subheading}</p>}
+
+  <!-- TODO Sprint 5: route through Azure Function proxy to supply Kajabi CSRF token -->
+  <form
+    class="form-embed-form"
+    action={actionUrl}
+    method="post"
+    accept-charset="UTF-8"
+  >
+    {landingPageId && (
+      <input type="hidden" name="form_submission[landing_page_id]" value={landingPageId} />
+    )}
+    <!-- Honeypot anti-spam field (must stay hidden) -->
+    <input type="text" name="website_url" autocomplete="off" tabindex="-1" aria-hidden="true" style="display:none" />
+
+    <div class="form-field">
+      <label for={`form-name-${formId}`} class="form-label">Name</label>
+      <input
+        type="text"
+        id={`form-name-${formId}`}
+        name="form_submission[name]"
+        placeholder="Your name"
+        required
+        class="form-input"
+        autocomplete="given-name"
+      />
+    </div>
+
+    <div class="form-field">
+      <label for={`form-email-${formId}`} class="form-label">Email</label>
+      <input
+        type="email"
+        id={`form-email-${formId}`}
+        name="form_submission[email]"
+        placeholder="Your email address"
+        required
+        class="form-input"
+        autocomplete="email"
+      />
+    </div>
+
+    {hasMessage && (
+      <div class="form-field">
+        <label for={`form-message-${formId}`} class="form-label">Message</label>
+        <textarea
+          id={`form-message-${formId}`}
+          name="form_submission[message]"
+          placeholder="Your message"
+          rows="4"
+          class="form-input form-textarea"
+        ></textarea>
+      </div>
+    )}
+
+    <button type="submit" class="btn btn--primary btn--md btn--full form-submit">
+      {submitLabel}
+    </button>
+
+    {disclaimer && (
+      <p class="form-disclaimer">
+        <i class="fas fa-lock" aria-hidden="true"></i>
+        {disclaimer}
+      </p>
+    )}
+  </form>
+</div>
+
+<style>
+  .form-embed {
+    padding: var(--space-8);
+    border-radius: var(--radius-md);
+  }
+
+  .form-embed-heading {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-3);
+  }
+
+  .form-embed--light .form-embed-heading {
+    color: var(--color-white);
+  }
+
+  .form-embed-sub {
+    font-size: var(--text-base);
+    color: var(--color-grey);
+    margin-bottom: var(--space-6);
+    line-height: var(--leading-loose);
+  }
+
+  .form-embed--light .form-embed-sub {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .form-embed-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .form-label {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-charcoal);
+  }
+
+  .form-embed--light .form-label {
+    color: var(--color-off-white);
+  }
+
+  .form-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    color: var(--color-charcoal);
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    outline: none;
+  }
+
+  .form-input:focus {
+    border-color: var(--color-teal);
+    box-shadow: 0 0 0 3px rgba(102, 188, 188, 0.2);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .form-submit {
+    margin-top: var(--space-2);
+  }
+
+  .form-disclaimer {
+    font-size: var(--text-xs);
+    color: var(--color-teal-muted);
+    text-align: center;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .form-embed--light .form-disclaimer {
+    color: rgba(255, 255, 255, 0.6);
+  }
+</style>

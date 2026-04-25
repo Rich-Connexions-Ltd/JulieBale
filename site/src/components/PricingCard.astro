@@ -1,0 +1,196 @@
+---
+interface Props {
+  title: string;
+  subtitle?: string;
+  price: string;
+  period?: string;
+  altPrice?: string;
+  description: string;
+  features?: string[];
+  cta: string;
+  href: string;
+  highlight?: boolean;
+  highlightLabel?: string;
+}
+
+const {
+  title,
+  subtitle,
+  price,
+  period,
+  altPrice,
+  description,
+  features = [],
+  cta,
+  href,
+  highlight = false,
+  highlightLabel = 'Most popular',
+} = Astro.props;
+---
+
+<div class:list={['pricing-card', { 'pricing-card--highlight': highlight }]}>
+  {highlight && (
+    <div class="pricing-card-badge" aria-label={highlightLabel}>
+      {highlightLabel}
+    </div>
+  )}
+
+  <div class="pricing-card-header">
+    <h3 class="pricing-card-title">{title}</h3>
+    {subtitle && <p class="pricing-card-subtitle">{subtitle}</p>}
+    <div class="pricing-card-price">
+      <span class="price-amount">{price}</span>
+      {period && <span class="price-period">{period}</span>}
+    </div>
+    {altPrice && <p class="price-alt">{altPrice}</p>}
+  </div>
+
+  <div class="pricing-card-body">
+    <p class="pricing-card-description">{description}</p>
+    {features.length > 0 && (
+      <ul class="pricing-card-features" role="list">
+        {features.map(f => (
+          <li class="pricing-feature">
+            <i class="fas fa-check" aria-hidden="true"></i>
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+
+  <div class="pricing-card-footer">
+    <a
+      href={href}
+      class:list={['btn', 'btn--md', 'btn--full', highlight ? 'btn--primary' : 'btn--outline']}
+      rel="noopener"
+    >
+      {cta}
+    </a>
+  </div>
+</div>
+
+<style>
+  .pricing-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-normal);
+  }
+
+  .pricing-card:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .pricing-card--highlight {
+    border-color: var(--color-gold);
+    border-width: 2px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .pricing-card-badge {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-gold);
+    color: var(--color-white);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+  }
+
+  .pricing-card-header {
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .pricing-card-title {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-2);
+  }
+
+  .pricing-card-subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-teal-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-4);
+  }
+
+  .pricing-card-price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .price-amount {
+    font-family: var(--font-editorial);
+    font-size: var(--text-4xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-charcoal);
+    line-height: 1;
+  }
+
+  .price-period {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+  }
+
+  .price-alt {
+    font-size: var(--text-sm);
+    color: var(--color-teal-muted);
+    margin-top: var(--space-2);
+    margin-bottom: 0;
+  }
+
+  .pricing-card-body {
+    flex: 1;
+    margin-bottom: var(--space-6);
+  }
+
+  .pricing-card-description {
+    font-size: var(--text-base);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+    margin-bottom: var(--space-5);
+  }
+
+  .pricing-card-features {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .pricing-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-charcoal);
+    line-height: var(--leading-normal);
+  }
+
+  .pricing-feature .fa-check {
+    color: var(--color-teal);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .pricing-card-footer {
+    margin-top: auto;
+  }
+</style>

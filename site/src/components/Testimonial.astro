@@ -1,0 +1,102 @@
+---
+interface Props {
+  quote: string;
+  name: string;
+  role?: string;
+  image?: string;
+  stars?: boolean;
+}
+
+const { quote, name, role, image, stars = true } = Astro.props;
+---
+
+<blockquote class="testimonial">
+  {stars && (
+    <div class="testimonial-stars" aria-label="Five stars">
+      {Array.from({ length: 5 }).map(() => (
+        <i class="fas fa-star" aria-hidden="true"></i>
+      ))}
+    </div>
+  )}
+  <p class="testimonial-quote">{quote}</p>
+  <footer class="testimonial-footer">
+    {image && (
+      <img
+        src={image}
+        alt={name}
+        width="48"
+        height="48"
+        loading="lazy"
+        class="testimonial-avatar"
+      />
+    )}
+    <div>
+      <cite class="testimonial-name">{name}</cite>
+      {role && <p class="testimonial-role">{role}</p>}
+    </div>
+  </footer>
+</blockquote>
+
+<style>
+  .testimonial {
+    background-color: var(--color-white);
+    border-radius: var(--radius-md);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-sm);
+    border-left: 3px solid var(--color-gold);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .testimonial-stars {
+    display: flex;
+    gap: var(--space-1);
+    color: var(--color-gold);
+    font-size: var(--text-sm);
+  }
+
+  .testimonial-quote {
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: var(--text-lg);
+    line-height: var(--leading-loose);
+    color: var(--color-charcoal);
+    margin-bottom: 0;
+    flex: 1;
+  }
+
+  .testimonial-quote::before { content: '\201C'; }
+  .testimonial-quote::after  { content: '\201D'; }
+
+  .testimonial-footer {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: auto;
+  }
+
+  .testimonial-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .testimonial-name {
+    font-style: normal;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--text-sm);
+    color: var(--color-charcoal);
+    display: block;
+  }
+
+  .testimonial-role {
+    font-size: var(--text-xs);
+    color: var(--color-teal-muted);
+    margin-bottom: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>

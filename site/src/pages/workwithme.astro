@@ -1,0 +1,204 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TextImage from '../components/TextImage.astro';
+import CTABanner from '../components/CTABanner.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+
+const KAJABI = 'https://members.juliebale.com';
+
+const programmes = [
+  {
+    id: 'firstnote',
+    title: 'From First Note to Final Curtain',
+    subtitle: 'The Diva Programme',
+    description: 'The ultimate way to work with me. My proven unique vocal transformation programme over 6 or 12 months, combining weekly 1:1 lessons, performance coaching, mindset and hypnotherapy work, and culminating in a live gala concert performance.',
+    features: [
+      'Weekly 1:1 vocal and performance lessons',
+      'Clinical hypnotherapy for performance mindset',
+      'Group workshops and masterclasses',
+      'Culminates in a live gala concert',
+      '6-month or 12-month programme options',
+    ],
+    href: `${KAJABI}/resource_redirect/landing_pages/2150870945`,
+    image: 'https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/c8876ad-5cb0-2a6-21f-8162cebd5bce_193a8d70-aa8b-47c1-876f-bc2c96d61ed3.png',
+    imageAlt: 'From First Note to Final Curtain programme',
+    reverse: false,
+  },
+  {
+    id: 'bravo',
+    title: 'BRAVO for Speakers',
+    subtitle: 'The 6-Week Course for Speakers',
+    description: 'A transformational 6-week voice and mindset mastery programme designed to unlock your most powerful, confident, and influential speaking voice. The BRAVO Framework® integrates voice science, performance psychology, and nervous system mastery.',
+    features: [
+      'The BRAVO Framework® — 6 weeks of live sessions',
+      'Expert vocal training for speaking and presenting',
+      'Performance confidence and nervous system coaching',
+      'Rehearse and receive live expert vocal coaching',
+      'VIP 1:1 Day option available',
+    ],
+    href: `${KAJABI}/resource_redirect/landing_pages/2151826137`,
+    image: 'https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/cd6852d-536c-3680-b7f8-777517faa8e_554209dc-7eb0-4c4e-95e8-9c83af302774.png',
+    imageAlt: 'BRAVO for Speakers programme',
+    reverse: true,
+  },
+  {
+    id: 'taster',
+    title: 'Diva Taster Experience',
+    subtitle: 'The 60-Minute Journey to Vocal Power & Presence',
+    description: 'Not ready to sign up for the full programme? The Diva Taster Experience may be just what you need to get started. A focused, one-to-one session designed to give you a powerful taste of what is possible for your voice and your confidence.',
+    features: [
+      '60-minute 1:1 coaching session',
+      'Vocal technique assessment',
+      'Introduction to the Diva Energy® method',
+      'Mindset and performance insight',
+      'Clear next steps for your vocal journey',
+    ],
+    href: `${KAJABI}/resource_redirect/landing_pages/2151639319`,
+    image: 'https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/a7dce-b34-8b51-d1ee-65fc176c557_d085d1b5-188b-4743-a0d2-a0f71e4b57f7.png',
+    imageAlt: 'Diva Taster Experience',
+    reverse: false,
+  },
+];
+---
+
+<BaseLayout
+  title="Ways to Work with Me"
+  description="All of my courses and offers — from the transformational 6-month Diva Programme to the BRAVO for Speakers course and the Diva Taster Experience."
+>
+  <!-- Hero -->
+  <Hero
+    height="large"
+    bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2163398396/settings_images/45e6fe0-ae8-babf-dd23-40f0860d551_ed182231-602c-4d11-8722-12777372ac30.jpeg"
+    heading="Work With Me"
+    subheading="All the ways you can work with me…"
+    textColor="light"
+    ctas={[
+      { label: 'Jump to Programmes', href: '#programmes', variant: 'btn--outline-white' },
+    ]}
+  />
+
+  <!-- Intro -->
+  <section class="section--sm intro-section">
+    <div class="container intro-inner">
+      <p class="intro-text">
+        Whether you're a complete beginner who has always wanted to sing, a singer looking to
+        take your performance to the next level, or a business leader who wants to command
+        the room with your voice — there's a programme designed for you.
+      </p>
+    </div>
+  </section>
+
+  <!-- Programmes -->
+  <div id="programmes">
+    {programmes.map(({ title, subtitle, description, features, href, image, imageAlt, reverse }) => (
+      <TextImage
+        heading={title}
+        image={image}
+        imageAlt={imageAlt}
+        reverse={reverse}
+        accentLine={true}
+        eyebrow={subtitle}
+        cta={{ label: 'Find Out More', href }}
+      >
+        <p>{description}</p>
+        <ul class="programme-features">
+          {features.map(f => (
+            <li>
+              <i class="fas fa-check" aria-hidden="true"></i>
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      </TextImage>
+    ))}
+  </div>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Not sure which programme is right for you?"
+    body="Get in touch and we'll find the best fit for your goals, your voice, and your life."
+    cta="Get in Touch"
+    href="/contact"
+    variant="teal"
+  />
+
+  <!-- Newsletter signup -->
+  <section class="section--sm section-newsletter">
+    <div class="container newsletter-inner">
+      <div class="newsletter-copy">
+        <h2>Want to Know More About the Diva World?</h2>
+        <p>Sign up for my weekly newsletter — vocal tips, mindset coaching, and inspiration direct to your inbox.</p>
+      </div>
+      <FormEmbed
+        formId="2148925970"
+        landingPageId="2151642696"
+        submitLabel="Sign Up"
+        disclaimer="I respect your privacy. No spam. Ever."
+        bgColor="#f8f8f6"
+      />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .intro-section {
+    background-color: #f8f8f6;
+    text-align: center;
+  }
+
+  .intro-inner {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+
+  .intro-text {
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: var(--text-xl);
+    color: var(--color-charcoal);
+    line-height: var(--leading-loose);
+    margin-bottom: 0;
+  }
+
+  .programme-features {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+    margin-bottom: 0;
+  }
+
+  .programme-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-charcoal);
+    line-height: var(--leading-normal);
+  }
+
+  .programme-features .fa-check {
+    color: var(--color-teal);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .section-newsletter {
+    background-color: #f8f8f6;
+  }
+
+  .newsletter-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .newsletter-copy h2 { margin-bottom: var(--space-4); }
+  .newsletter-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
+
+  @media (max-width: 768px) {
+    .newsletter-inner { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+</style>

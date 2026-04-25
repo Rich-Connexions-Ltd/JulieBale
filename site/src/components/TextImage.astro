@@ -1,0 +1,136 @@
+---
+interface Props {
+  heading?: string;
+  image: string;
+  imageAlt: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  reverse?: boolean;
+  bgColor?: string;
+  accentLine?: boolean;
+  accentColor?: string;
+  eyebrow?: string;
+  cta?: { label: string; href: string; variant?: string };
+}
+
+const {
+  heading,
+  image,
+  imageAlt,
+  imageWidth = 560,
+  imageHeight = 480,
+  reverse = false,
+  bgColor,
+  accentLine = false,
+  accentColor = 'var(--color-teal)',
+  eyebrow,
+  cta,
+} = Astro.props;
+---
+
+<section
+  class:list={['text-image', 'section', { 'text-image--reverse': reverse }]}
+  style={bgColor ? `background-color: ${bgColor};` : ''}
+>
+  <div class="container text-image-inner">
+    <div class="text-image-copy">
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      {accentLine && (
+        <div class="accent-line" style={`border-color: ${accentColor};`} aria-hidden="true"></div>
+      )}
+      {heading && <h2 class="text-image-heading">{heading}</h2>}
+      <div class="text-image-body">
+        <slot />
+      </div>
+      {cta && (
+        <a href={cta.href} class={`btn btn--md ${cta.variant ?? 'btn--primary'}`}>
+          {cta.label}
+        </a>
+      )}
+    </div>
+
+    <div class="text-image-media">
+      <img
+        src={image}
+        alt={imageAlt}
+        width={imageWidth}
+        height={imageHeight}
+        loading="lazy"
+        decoding="async"
+        class="text-image-img"
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .text-image-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .text-image--reverse .text-image-inner {
+    direction: rtl;
+  }
+
+  .text-image--reverse .text-image-copy,
+  .text-image--reverse .text-image-media {
+    direction: ltr;
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-teal-muted);
+    margin-bottom: var(--space-3);
+  }
+
+  .accent-line {
+    width: 0;
+    height: 70px;
+    border-left: 2px solid var(--color-teal);
+    margin-bottom: var(--space-5);
+  }
+
+  .text-image-heading {
+    margin-bottom: var(--space-5);
+  }
+
+  .text-image-body {
+    font-size: var(--text-base);
+    line-height: var(--leading-loose);
+    color: var(--color-grey);
+    margin-bottom: var(--space-6);
+  }
+
+  .text-image-body :global(p) {
+    margin-bottom: var(--space-4);
+  }
+
+  .text-image-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .text-image-img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    box-shadow: var(--shadow-lg);
+  }
+
+  @media (max-width: 768px) {
+    .text-image-inner {
+      grid-template-columns: 1fr;
+    }
+
+    .text-image--reverse .text-image-inner {
+      direction: ltr;
+    }
+  }
+</style>

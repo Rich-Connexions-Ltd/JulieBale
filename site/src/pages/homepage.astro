@@ -1,4 +1,8 @@
 ---
+/**
+ * /homepage mirrors the root / page.
+ * Both canonical to / so Google picks the root URL as authoritative.
+ */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import TextImage from '../components/TextImage.astro';
@@ -45,8 +49,8 @@ const testimonials = [
 <BaseLayout
   title="Julie Bale Voice Specialist | Diva Energy®"
   description="I teach you how to sing and how to use your mind to transform your life using my unique, proven vocal transformation programme From First Note to Final Curtain."
+  canonicalURL="https://www.juliebale.com/"
 >
-  <!-- Hero -->
   <Hero
     height="large"
     bgImage="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/c434b7f-6a4-403c-f222-700e44cf675b_uuid_FA71A6C2-3566-4244-91A4-922AFA7B2EF5_library_1_type_1_mode_1_loc_true_cap_true.jpeg"
@@ -61,12 +65,10 @@ const testimonials = [
     </div>
   </Hero>
 
-  <!-- What singing can do for you -->
   <TextImage
     heading="Want to Know How Singing Can Improve Your Life?"
     image="https://kajabi-storefronts-production.kajabi-cdn.com/kajabi-storefronts-production/file-uploads/themes/2159675705/settings_images/cf7f4c5-f02-0da2-5ad8-8cb220724e61_38b5d9d9-f7a2-40de-894e-e5b68af34a47.jpeg"
     imageAlt="Julie Bale teaching a singing workshop"
-    reverse={false}
   >
     <p>
       Many people carry a belief that singing isn't for them — that they're "tone deaf", or that
@@ -81,24 +83,15 @@ const testimonials = [
     </p>
   </TextImage>
 
-  <!-- As Featured In -->
   <section class="featured-in section--sm">
     <div class="container">
       <p class="featured-in-label">As featured in</p>
-      <p class="featured-in-outlets">
-        Metro · Woman · Woman's Weekly · Classical Music Magazine · BBC
-      </p>
+      <p class="featured-in-outlets">Metro · Woman · Woman's Weekly · Classical Music Magazine · BBC</p>
     </div>
   </section>
 
-  <!-- Testimonials -->
-  <TestimonialRow
-    heading="What My Singers Say"
-    items={testimonials}
-    columns={1}
-  />
+  <TestimonialRow heading="What My Singers Say" items={testimonials} columns={1} />
 
-  <!-- Programme cards -->
   <FeatureGrid
     heading="All the Ways You Can Work with Me"
     eyebrow="Programmes"
@@ -129,7 +122,6 @@ const testimonials = [
     bgColor="#f8f8f6"
   />
 
-  <!-- CTA Banner -->
   <CTABanner
     heading="Ready to Find Your Voice?"
     body="Join over 1,000 singers and speakers who have transformed their lives with Diva Energy®."
@@ -138,7 +130,6 @@ const testimonials = [
     variant="charcoal"
   />
 
-  <!-- Recent blog posts -->
   <section class="section blog-preview">
     <div class="container">
       <div class="blog-preview-header">
@@ -146,27 +137,18 @@ const testimonials = [
         <a href="/blog" class="btn btn--outline btn--sm">View all posts</a>
       </div>
       <div class="blog-preview-grid">
-        {recentPosts.map(post => (
-          <BlogCard {...post} />
-        ))}
+        {recentPosts.map(post => <BlogCard {...post} />)}
       </div>
     </div>
   </section>
 </BaseLayout>
 
-<!-- typed.js for rotating hero text -->
 <script>
   import Typed from 'https://cdn.jsdelivr.net/npm/typed.js@2.1.0/dist/typed.esm.js';
   const el = document.querySelector('.typed-target');
   if (el) {
     new Typed(el as HTMLElement, {
-      strings: [
-        'find your voice.',
-        'step into your Diva Energy®.',
-        'sing with confidence.',
-        'transform your performance.',
-        'believe in yourself.',
-      ],
+      strings: ['find your voice.', 'step into your Diva Energy®.', 'sing with confidence.', 'transform your performance.', 'believe in yourself.'],
       typeSpeed: 55,
       backSpeed: 30,
       backDelay: 2200,
@@ -176,11 +158,7 @@ const testimonials = [
 </script>
 
 <style>
-  /* Typed text in hero */
-  .hero-typed-wrapper {
-    margin-bottom: var(--space-4);
-  }
-
+  .hero-typed-wrapper { margin-bottom: var(--space-4); }
   .hero-typed-lead {
     font-family: var(--font-editorial);
     font-size: var(--text-2xl);
@@ -188,33 +166,23 @@ const testimonials = [
     color: var(--color-white);
     margin-bottom: 0;
   }
-
-  /* As Featured In */
-  .featured-in {
-    background-color: var(--color-charcoal);
-    text-align: center;
-  }
-
+  .featured-in { background-color: var(--color-charcoal); text-align: center; }
   .featured-in-label {
     font-family: var(--font-body);
     font-size: var(--text-xs);
     font-weight: var(--font-weight-bold);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255,255,255,0.5);
     margin-bottom: var(--space-2);
   }
-
   .featured-in-outlets {
     font-family: var(--font-editorial);
     font-style: italic;
     font-size: var(--text-xl);
     color: var(--color-gold);
     margin-bottom: 0;
-    letter-spacing: 0.04em;
   }
-
-  /* Blog preview */
   .blog-preview-header {
     display: flex;
     align-items: center;
@@ -222,19 +190,11 @@ const testimonials = [
     margin-bottom: var(--space-8);
     gap: var(--space-4);
   }
-
   .blog-preview-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-6);
   }
-
-  @media (max-width: 900px) {
-    .blog-preview-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  @media (max-width: 580px) {
-    .blog-preview-grid { grid-template-columns: 1fr; }
-    .blog-preview-header { flex-direction: column; align-items: flex-start; }
-  }
+  @media (max-width: 900px) { .blog-preview-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 580px) { .blog-preview-grid { grid-template-columns: 1fr; } }
 </style>

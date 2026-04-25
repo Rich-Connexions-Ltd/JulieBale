@@ -1,0 +1,207 @@
+---
+interface FeatureItem {
+  icon?: string;
+  image?: string;
+  imageAlt?: string;
+  heading: string;
+  body: string;
+  href?: string;
+  cta?: string;
+  ctaVariant?: string;
+}
+
+interface Props {
+  heading?: string;
+  subheading?: string;
+  eyebrow?: string;
+  items: FeatureItem[];
+  columns?: 2 | 3 | 4;
+  bgColor?: string;
+  cardStyle?: 'plain' | 'raised' | 'bordered';
+  centered?: boolean;
+}
+
+const {
+  heading,
+  subheading,
+  eyebrow,
+  items,
+  columns = 3,
+  bgColor,
+  cardStyle = 'raised',
+  centered = false,
+} = Astro.props;
+---
+
+<section
+  class:list={['feature-grid', 'section', { 'feature-grid--centered': centered }]}
+  style={bgColor ? `background-color: ${bgColor};` : ''}
+>
+  <div class="container">
+    {(eyebrow || heading || subheading) && (
+      <div class="feature-grid-header">
+        {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+        {heading && <h2>{heading}</h2>}
+        {subheading && <p class="feature-grid-subheading">{subheading}</p>}
+      </div>
+    )}
+
+    <ul
+      class:list={['feature-grid-list', `feature-grid-list--cols-${columns}`, `card--${cardStyle}`]}
+      role="list"
+    >
+      {items.map(({ icon, image, imageAlt = '', heading: itemHeading, body, href, cta, ctaVariant = 'btn--primary' }) => (
+        <li class="feature-item">
+          {image && (
+            <div class="feature-item-media">
+              <img
+                src={image}
+                alt={imageAlt}
+                width="400"
+                height="260"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          )}
+          {icon && !image && (
+            <div class="feature-item-icon" aria-hidden="true">
+              <i class={icon}></i>
+            </div>
+          )}
+          <div class="feature-item-body">
+            <h3 class="feature-item-heading">{itemHeading}</h3>
+            <p class="feature-item-text">{body}</p>
+            {href && cta && (
+              <a href={href} class={`btn btn--sm ${ctaVariant}`}>{cta}</a>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .feature-grid-header {
+    text-align: center;
+    max-width: 700px;
+    margin-inline: auto;
+    margin-bottom: var(--space-12);
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-teal-muted);
+    margin-bottom: var(--space-3);
+  }
+
+  .feature-grid-subheading {
+    font-size: var(--text-lg);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+    margin-top: var(--space-4);
+    margin-bottom: 0;
+  }
+
+  /* Grid */
+  .feature-grid-list {
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .feature-grid-list--cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .feature-grid-list--cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .feature-grid-list--cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  /* Card styles */
+  .feature-item {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .card--plain .feature-item { background: none; }
+
+  .card--raised .feature-item {
+    background-color: var(--color-white);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+  }
+
+  .card--raised .feature-item:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+  }
+
+  .card--bordered .feature-item {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+  }
+
+  /* Media */
+  .feature-item-media {
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+  }
+
+  .feature-item-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+  }
+
+  .card--raised .feature-item:hover .feature-item-media img {
+    transform: scale(1.04);
+  }
+
+  .feature-item-icon {
+    font-size: var(--text-3xl);
+    color: var(--color-gold);
+    padding: var(--space-5) var(--space-5) 0;
+  }
+
+  .feature-item-body {
+    padding: var(--space-5);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .card--plain .feature-item-body { padding: var(--space-4) 0; }
+
+  .feature-item-heading {
+    font-size: var(--text-xl);
+    margin-bottom: 0;
+  }
+
+  .feature-item-text {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+    margin-bottom: 0;
+    flex: 1;
+  }
+
+  /* Centred variant */
+  .feature-grid--centered .feature-item { text-align: center; }
+  .feature-grid--centered .feature-item-icon { text-align: center; }
+
+  @media (max-width: 900px) {
+    .feature-grid-list--cols-4 { grid-template-columns: repeat(2, 1fr); }
+    .feature-grid-list--cols-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 580px) {
+    .feature-grid-list--cols-2,
+    .feature-grid-list--cols-3,
+    .feature-grid-list--cols-4 { grid-template-columns: 1fr; }
+  }
+</style>

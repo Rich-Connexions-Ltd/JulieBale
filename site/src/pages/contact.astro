@@ -1,0 +1,136 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import FormEmbed from '../components/FormEmbed.astro';
+---
+
+<BaseLayout
+  title="Contact"
+  description="Get in touch with Julie Bale — voice specialist, clinical hypnotherapist, and founder of Diva Energy®."
+>
+  <Hero
+    height="banner"
+    bgColor="var(--color-charcoal)"
+    heading="Hello, let's have a chat!"
+    textColor="light"
+  />
+
+  <section class="section contact-section">
+    <div class="container contact-inner">
+      <div class="contact-copy">
+        <h2>How to Get in Touch</h2>
+        <p>
+          The best way to reach me is to fill in the contact form. I'll try to respond
+          within 2 business days — though you typically won't hear from me on the weekend
+          (we all need some time off!).
+        </p>
+        <p>
+          Whether you have a question about my programmes, want to know if singing is
+          right for you, or just fancy saying hello — I'd love to hear from you.
+        </p>
+
+        <div class="contact-social">
+          <p class="contact-social-label">Or find me on social media</p>
+          <ul class="contact-social-list">
+            <li>
+              <a href="https://www.facebook.com/julie.gray.9400" target="_blank" rel="noopener noreferrer" class="social-btn">
+                <i class="fab fa-facebook-f" aria-hidden="true"></i> Facebook
+              </a>
+            </li>
+            <li>
+              <a href="https://www.instagram.com/juliebalevoiceandmindtraining" target="_blank" rel="noopener noreferrer" class="social-btn">
+                <i class="fab fa-instagram" aria-hidden="true"></i> Instagram
+              </a>
+            </li>
+            <li>
+              <a href="https://www.linkedin.com/in/juliebale" target="_blank" rel="noopener noreferrer" class="social-btn">
+                <i class="fab fa-linkedin-in" aria-hidden="true"></i> LinkedIn
+              </a>
+            </li>
+            <li>
+              <a href="https://www.youtube.com/@JulieBale" target="_blank" rel="noopener noreferrer" class="social-btn">
+                <i class="fab fa-youtube" aria-hidden="true"></i> YouTube
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="contact-form-col">
+        <!-- Contact form uses Kajabi form ID 2148896538, which has a message field -->
+        <FormEmbed
+          formId="2148896538"
+          heading="Send me a message"
+          submitLabel="Send It"
+          hasMessage={true}
+          disclaimer="I respect your privacy. No spam, ever."
+          bgColor="#f8f8f6"
+        />
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .contact-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+    align-items: start;
+  }
+
+  .contact-copy h2 {
+    margin-bottom: var(--space-5);
+  }
+
+  .contact-copy p {
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+  }
+
+  .contact-social {
+    margin-top: var(--space-8);
+  }
+
+  .contact-social-label {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-teal-muted);
+    margin-bottom: var(--space-4);
+  }
+
+  .contact-social-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-charcoal);
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+  }
+
+  .social-btn:hover {
+    color: var(--color-gold);
+    border-color: var(--color-gold);
+    background-color: rgba(193, 155, 51, 0.06);
+  }
+
+  @media (max-width: 768px) {
+    .contact-inner {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+  }
+</style>
