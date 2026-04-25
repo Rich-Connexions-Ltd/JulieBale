@@ -1,0 +1,75 @@
+backend:
+  name: github
+  repo: Rich-Connexions-Ltd/JulieBale
+  branch: main
+  base_url: https://api.netlify.com
+  auth_endpoint: auth
+
+# Uncomment to enable editorial workflow (draft → review → publish)
+# publish_mode: editorial_workflow
+
+media_folder: "site/public/blog-images"
+public_folder: "/blog-images"
+
+collections:
+  - name: "blog"
+    label: "Blog Posts"
+    folder: "site/src/content/blog"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    editor:
+      preview: false
+    fields:
+      - label: "Title"
+        name: "title"
+        widget: "string"
+        hint: "The full title of the post."
+
+      - label: "Description"
+        name: "description"
+        widget: "string"
+        required: false
+        hint: "A short summary shown in search results and social sharing (1–2 sentences)."
+
+      - label: "Publish Date"
+        name: "publishDate"
+        widget: "datetime"
+        format: "YYYY-MM-DD"
+        date_format: "DD/MM/YYYY"
+        time_format: false
+        hint: "The date the post was or will be published."
+
+      - label: "Tags"
+        name: "tags"
+        widget: "select"
+        multiple: true
+        required: false
+        options:
+          - { label: "Singer", value: "singer" }
+          - { label: "Hypnosis", value: "hypnosis" }
+        hint: "Choose one or both topic tags."
+
+      - label: "Hero Image URL"
+        name: "heroImage"
+        widget: "string"
+        required: false
+        hint: "Full URL of the hero/featured image. Use the upload button to add a new image first."
+
+      - label: "Hero Image Alt Text"
+        name: "heroImageAlt"
+        widget: "string"
+        required: false
+        hint: "Describe the image for screen readers and SEO."
+
+      - label: "Draft"
+        name: "draft"
+        widget: "boolean"
+        default: false
+        hint: "Tick to save without publishing. Untick to make the post live."
+
+      - label: "Body"
+        name: "body"
+        widget: "markdown"
+        hint: "The main post content. Use Heading 2 for section headers within the post."

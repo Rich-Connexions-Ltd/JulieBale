@@ -1,0 +1,236 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogCard from '../../components/BlogCard.astro';
+import CTABanner from '../../components/CTABanner.astro';
+
+const allPosts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf());
+
+const allTags = [...new Set(allPosts.flatMap(p => p.data.tags))].sort();
+
+const postsJson = JSON.stringify(
+  allPosts.map(p => ({
+    id: p.id,
+    tags: p.data.tags,
+  }))
+);
+---
+
+<BaseLayout
+  title="Blog — Voice, Mindset & Performance | Julie Bale"
+  description="Julie Bale's blog — practical vocal tips, mindset coaching, performance psychology, and insights from 35 years of teaching singers and speakers."
+>
+  <section class="section blog-header">
+    <div class="container blog-header-inner">
+      <div class="blog-header-copy">
+        <p class="blog-eyebrow">From the Blog</p>
+        <h1>Voice, Mind &amp; Life</h1>
+        <p class="blog-intro">
+          Practical wisdom on singing, performance confidence, clinical hypnotherapy, and
+          finding the voice — and the life — you deserve.
+        </p>
+      </div>
+      <div class="blog-rss">
+        <a href="/blog/rss.xml" class="rss-link" aria-label="Subscribe via RSS">
+          <i class="fas fa-rss" aria-hidden="true"></i> Subscribe via RSS
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tag filter -->
+  <section class="section--sm blog-filter-section">
+    <div class="container">
+      <div class="blog-filter" role="group" aria-label="Filter posts by topic">
+        <button class="tag-btn tag-btn--active" data-tag="all">All Posts</button>
+        {allTags.map(tag => (
+          <button class="tag-btn" data-tag={tag}>
+            {tag.charAt(0).toUpperCase() + tag.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Post grid -->
+  <section class="section--sm blog-grid-section">
+    <div class="container">
+      <div class="blog-grid" id="blog-grid">
+        {allPosts.map(post => (
+          <div class="blog-grid-item" data-tags={post.data.tags.join(',')}>
+            <BlogCard
+              title={post.data.title}
+              slug={post.id}
+              date={post.data.publishDate.toISOString().split('T')[0]}
+              excerpt={post.data.description}
+              image={post.data.heroImage}
+              imageAlt={post.data.heroImageAlt}
+              tags={post.data.tags}
+            />
+          </div>
+        ))}
+      </div>
+      <p class="blog-empty" id="blog-empty" hidden>No posts found for this topic.</p>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Take the Next Step?"
+    body="Explore all the ways you can work with Julie — from a 60-minute taster to a transformational 12-month programme."
+    cta="Work With Me"
+    href="/workwithme"
+    variant="gold"
+  />
+</BaseLayout>
+
+<script define:vars={{ postsJson }}>
+  const posts = JSON.parse(postsJson);
+  const buttons = document.querySelectorAll('.tag-btn');
+  const items = document.querySelectorAll('.blog-grid-item');
+  const empty = document.getElementById('blog-empty');
+
+  function filterPosts(tag) {
+    let visible = 0;
+    items.forEach(item => {
+      const itemTags = item.dataset.tags ? item.dataset.tags.split(',') : [];
+      const show = tag === 'all' || itemTags.includes(tag);
+      item.hidden = !show;
+      if (show) visible++;
+    });
+    if (empty) empty.hidden = visible > 0;
+  }
+
+  function setActive(tag) {
+    buttons.forEach(btn => {
+      btn.classList.toggle('tag-btn--active', btn.dataset.tag === tag);
+    });
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tag = btn.dataset.tag;
+      setActive(tag);
+      filterPosts(tag);
+      const url = tag === 'all' ? '/blog' : `/blog?tag=${tag}`;
+      history.replaceState(null, '', url);
+    });
+  });
+
+  // Apply tag from URL on load
+  const params = new URLSearchParams(window.location.search);
+  const tagParam = params.get('tag');
+  if (tagParam && [...buttons].some(b => b.dataset.tag === tagParam)) {
+    setActive(tagParam);
+    filterPosts(tagParam);
+  }
+</script>
+
+<style>
+  .blog-header {
+    background-color: var(--color-charcoal);
+    color: var(--color-white);
+  }
+
+  .blog-header-inner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-8);
+  }
+
+  .blog-eyebrow {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .blog-header h1 {
+    color: var(--color-white);
+    margin-bottom: var(--space-4);
+  }
+
+  .blog-intro {
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.8);
+    line-height: var(--leading-loose);
+    max-width: 560px;
+    margin-bottom: 0;
+  }
+
+  .rss-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+    transition: color var(--transition-fast);
+  }
+
+  .rss-link:hover { color: var(--color-gold); }
+
+  .blog-filter-section { background-color: #f8f8f6; }
+
+  .blog-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+  }
+
+  .tag-btn {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.06em;
+    color: var(--color-charcoal);
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: var(--space-2) var(--space-5);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+  }
+
+  .tag-btn:hover,
+  .tag-btn--active {
+    color: var(--color-white);
+    background-color: var(--color-charcoal);
+    border-color: var(--color-charcoal);
+  }
+
+  .tag-btn--active {
+    background-color: var(--color-gold);
+    border-color: var(--color-gold);
+  }
+
+  .blog-grid-section { background-color: var(--color-white); }
+
+  .blog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  .blog-empty {
+    text-align: center;
+    color: var(--color-grey);
+    padding: var(--space-16) 0;
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .blog-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 640px) {
+    .blog-header-inner { flex-direction: column; align-items: flex-start; }
+    .blog-grid { grid-template-columns: 1fr; }
+  }
+</style>

@@ -47,6 +47,11 @@
       "route": "/forms/*",
       "redirect": "https://members.juliebale.com/forms/{*}",
       "statusCode": 301
+    },
+    {
+      "route": "/blog/Howtonailauditionswithhypnosis",
+      "redirect": "/blog/howtonailauditionswithhypnosis",
+      "statusCode": 301
     }
   ],
   "navigationFallback": {

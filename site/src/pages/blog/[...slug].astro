@@ -1,0 +1,315 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogCard from '../../components/BlogCard.astro';
+import CTABanner from '../../components/CTABanner.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map(post => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const { title, description, publishDate, tags, heroImage, heroImageAlt } = post.data;
+
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+const related = allPosts
+  .filter(p => p.id !== post.id && p.data.tags.some(t => tags.includes(t)))
+  .sort((a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf())
+  .slice(0, 3);
+
+const formattedDate = publishDate.toLocaleDateString('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<BaseLayout
+  title={`${title} | Julie Bale`}
+  description={description}
+  ogImage={heroImage}
+>
+  <!-- Hero -->
+  {heroImage ? (
+    <div class="post-hero" style={`--hero-img: url('${heroImage}');`}>
+      <div class="post-hero-overlay" aria-hidden="true"></div>
+      <div class="container post-hero-content">
+        <div class="post-meta">
+          <time datetime={publishDate.toISOString()} class="post-date">{formattedDate}</time>
+          {tags.map(tag => (
+            <a href={`/blog?tag=${tag}`} class="post-tag">{tag}</a>
+          ))}
+        </div>
+        <h1 class="post-title">{title}</h1>
+      </div>
+    </div>
+  ) : (
+    <div class="post-hero post-hero--plain">
+      <div class="container post-hero-content">
+        <div class="post-meta">
+          <time datetime={publishDate.toISOString()} class="post-date">{formattedDate}</time>
+          {tags.map(tag => (
+            <a href={`/blog?tag=${tag}`} class="post-tag">{tag}</a>
+          ))}
+        </div>
+        <h1 class="post-title">{title}</h1>
+      </div>
+    </div>
+  )}
+
+  <!-- Body -->
+  <article class="section post-body">
+    <div class="container post-body-inner">
+      <div class="post-content prose">
+        <Content />
+      </div>
+      <aside class="post-sidebar">
+        <div class="sidebar-card">
+          <p class="sidebar-eyebrow">About Julie</p>
+          <p class="sidebar-bio">
+            Julie Bale is a professional soprano, voice teacher, clinical hypnotherapist,
+            and founder of the Diva Energy® programme. She has taught over 1,000 singers
+            and speakers over 35 years.
+          </p>
+          <a href="/about" class="btn btn--sm btn--outline">Learn More</a>
+        </div>
+        <div class="sidebar-card">
+          <p class="sidebar-eyebrow">Work With Julie</p>
+          <p class="sidebar-bio">
+            Explore Julie's programmes — from the 60-minute Diva Taster Experience to
+            the transformational 12-month From First Note to Final Curtain programme.
+          </p>
+          <a href="/workwithme" class="btn btn--sm btn--primary">See All Programmes</a>
+        </div>
+      </aside>
+    </div>
+  </article>
+
+  <!-- Related posts -->
+  {related.length > 0 && (
+    <section class="section--sm related-section">
+      <div class="container">
+        <h2 class="related-heading">You Might Also Like</h2>
+        <div class="related-grid">
+          {related.map(p => (
+            <BlogCard
+              title={p.data.title}
+              slug={p.id}
+              date={p.data.publishDate.toISOString().split('T')[0]}
+              excerpt={p.data.description}
+              image={p.data.heroImage}
+              imageAlt={p.data.heroImageAlt}
+              tags={p.data.tags}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- CTA -->
+  <CTABanner
+    heading="Ready to Transform Your Voice?"
+    body="Explore all the ways you can work with Julie — from a taster session to a full programme."
+    cta="Work With Me"
+    href="/workwithme"
+    variant="gold"
+  />
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .post-hero {
+    position: relative;
+    min-height: 400px;
+    display: flex;
+    align-items: flex-end;
+    background-image: var(--hero-img, none);
+    background-size: cover;
+    background-position: center;
+    padding-bottom: var(--space-10);
+  }
+
+  .post-hero--plain {
+    background-color: var(--color-charcoal);
+    min-height: 260px;
+    align-items: center;
+    padding-block: var(--space-12);
+  }
+
+  .post-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .post-hero--plain .post-hero-overlay {
+    display: none;
+  }
+
+  .post-hero-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+  }
+
+  .post-date {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.75);
+  }
+
+  .post-tag {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-white);
+    background-color: var(--color-gold);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-fast);
+  }
+
+  .post-tag:hover { background-color: var(--color-teal); }
+
+  .post-title {
+    color: var(--color-white);
+    font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
+    max-width: 800px;
+    line-height: var(--leading-tight);
+    margin-bottom: 0;
+  }
+
+  /* Body */
+  .post-body { background-color: var(--color-white); }
+
+  .post-body-inner {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: var(--space-12);
+    align-items: start;
+  }
+
+  /* Prose styles */
+  .prose {
+    font-size: var(--text-base);
+    line-height: var(--leading-loose);
+    color: var(--color-grey);
+  }
+
+  .prose h2 {
+    font-size: var(--text-2xl);
+    color: var(--color-charcoal);
+    margin-top: var(--space-10);
+    margin-bottom: var(--space-4);
+  }
+
+  .prose h3 {
+    font-size: var(--text-xl);
+    color: var(--color-charcoal);
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-3);
+  }
+
+  .prose p { margin-bottom: var(--space-5); }
+
+  .prose p:last-child { margin-bottom: 0; }
+
+  .prose strong { color: var(--color-charcoal); font-weight: var(--font-weight-bold); }
+
+  .prose em { font-style: italic; }
+
+  .prose ul, .prose ol {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-5);
+  }
+
+  .prose li { margin-bottom: var(--space-2); }
+
+  .prose a {
+    color: var(--color-teal-muted);
+    text-decoration: underline;
+  }
+
+  .prose a:hover { color: var(--color-gold); }
+
+  .prose blockquote {
+    border-left: 3px solid var(--color-gold);
+    padding-left: var(--space-6);
+    margin: var(--space-8) 0;
+    font-family: var(--font-editorial);
+    font-style: italic;
+    font-size: var(--text-xl);
+    color: var(--color-charcoal);
+    line-height: var(--leading-loose);
+  }
+
+  /* Sidebar */
+  .post-sidebar {
+    position: sticky;
+    top: calc(var(--space-20) + var(--space-6));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .sidebar-card {
+    background-color: #f8f8f6;
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+  }
+
+  .sidebar-eyebrow {
+    font-size: var(--text-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-3);
+  }
+
+  .sidebar-bio {
+    font-size: var(--text-sm);
+    color: var(--color-grey);
+    line-height: var(--leading-loose);
+    margin-bottom: var(--space-4);
+  }
+
+  /* Related */
+  .related-section { background-color: #f8f8f6; }
+
+  .related-heading {
+    margin-bottom: var(--space-8);
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  @media (max-width: 1024px) {
+    .post-body-inner { grid-template-columns: 1fr; }
+    .post-sidebar { position: static; flex-direction: row; flex-wrap: wrap; }
+    .sidebar-card { flex: 1; min-width: 240px; }
+  }
+
+  @media (max-width: 768px) {
+    .related-grid { grid-template-columns: 1fr; }
+    .post-sidebar { flex-direction: column; }
+  }
+</style>
