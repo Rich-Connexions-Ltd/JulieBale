@@ -37,7 +37,7 @@
 - The placeholder page at the Azure preview URL shows correct header, footer, fonts, and brand colours
 - Design tokens documented in a `DESIGN_SYSTEM.md` reference file
 
-**Status:** PENDING
+**Status:** COMPLETE
 
 ---
 
@@ -72,7 +72,7 @@
 - Kajabi form embeds submit without errors
 - No console errors; Lighthouse accessibility score ≥ 85
 
-**Status:** PENDING
+**Status:** COMPLETE
 
 ---
 
