@@ -11,6 +11,8 @@
   --colour-primary-soft: #5E7E78;
   --colour-gold:         #B08A4A;
   --colour-gold-soft:    #D1B580;
+  --colour-rust:         #B4562D;
+  --colour-rust-soft:    #C97A4E;
   --colour-cream:        #F7F1E7;
   --colour-ivory:        #FFFDF8;
   --colour-white:        #FFFFFF;
@@ -33,10 +35,11 @@
   --text-base:    1rem;
   --text-lg:      clamp(1.05rem, 1.5vw, 1.2rem);
   --text-xl:      clamp(1.25rem, 2vw, 1.55rem);
-  --heading-sm:   clamp(1.5rem, 3vw, 2rem);
-  --heading-md:   clamp(2rem, 4vw, 3.25rem);
-  --heading-lg:   clamp(2.75rem, 7vw, 5.75rem);
-  --heading-hero: clamp(3rem, 8.5vw, 7rem);
+  --heading-sm:      clamp(1.5rem, 3vw, 2rem);
+  --heading-md:      clamp(2rem, 4vw, 3.25rem);
+  --heading-lg:      clamp(2.75rem, 7vw, 5.75rem);
+  --heading-display: clamp(2.9rem, 8.5vw, 6.75rem);
+  --heading-hero:    clamp(3.25rem, 9.5vw, 7.75rem);
 
   /* --- Spacing rhythm ----------------------------------- */
   --space-1: 0.5rem;
@@ -128,8 +131,8 @@ img { max-width: 100%; display: block; }
 .container--wide    { width: min(100% - 2.5rem, var(--width-wide)); margin-inline: auto; }
 .container--reading { width: min(100% - 2.5rem, var(--width-reading)); margin-inline: auto; }
 
-.section { padding-block: clamp(var(--space-7), 10vw, var(--space-9)); }
-.section--tight { padding-block: clamp(var(--space-6), 7vw, var(--space-7)); }
+.section { padding-block: clamp(var(--space-8), 13vw, 10.5rem); }
+.section--tight { padding-block: clamp(var(--space-7), 9vw, var(--space-8)); }
 
 /* Callout grounds — used sparingly */
 .ground-cream   { background: var(--colour-cream); }
@@ -788,4 +791,252 @@ textarea:focus-visible { border-color: var(--colour-primary); }
   .frame:hover > img { transform: none; }
   .textlink, .card, .button, .nav__link::after { transition: none; }
   .button:hover, .button:active { transform: none; }
+}
+
+/* ============================================================
+   ============================================================
+   HOMEPAGE REDESIGN v2
+   Editorial · cinematic · spacious. Type, photography, scale
+   and space carry the hierarchy; fewer boxes, labels and CTAs.
+   ============================================================
+   ============================================================ */
+
+/* --- Small kicker (used very sparingly, no box/tick) -------- */
+.kicker {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--colour-gold);
+  margin: 0 0 var(--space-3);
+}
+
+/* --- Full-bleed image/colour bands (hero + flagship) -------- */
+.media-band {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  color: var(--colour-ivory);
+  background: linear-gradient(135deg, var(--colour-primary-dark), var(--colour-primary));
+}
+.media-band > img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.media-band__scrim { position: absolute; inset: 0; z-index: 1; }
+.media-band__inner { position: relative; z-index: 2; padding-block: clamp(var(--space-7), 10vw, var(--space-9)); }
+.media-band h1, .media-band h2 { color: var(--colour-ivory); }
+.media-band .kicker { color: var(--colour-gold-soft); }
+.media-band .button {
+  background: var(--colour-gold);
+  border-color: var(--colour-gold);
+  color: var(--colour-primary-dark);
+}
+.media-band .button:hover { background: var(--colour-gold-soft); border-color: var(--colour-gold-soft); }
+.media-band .textlink { color: var(--colour-gold-soft); border-color: var(--colour-gold); }
+
+/* Hero */
+.hero-stage { min-height: min(94vh, 58rem); }
+.hero-stage > img { object-position: 68% 22%; }
+.hero-stage .media-band__scrim {
+  background: linear-gradient(96deg,
+    rgba(20, 54, 54, 0.94) 0%,
+    rgba(20, 54, 54, 0.74) 32%,
+    rgba(20, 54, 54, 0.28) 62%,
+    rgba(20, 54, 54, 0.05) 88%);
+}
+.hero-stage h1 {
+  font-size: var(--heading-hero);
+  margin: 0 0 var(--space-5);
+  max-width: 15ch;
+}
+.hero-stage .lede {
+  font-size: var(--text-xl);
+  line-height: 1.5;
+  max-width: 32ch;
+  color: color-mix(in srgb, var(--colour-ivory) 90%, transparent);
+}
+.hero-stage .button { margin-top: var(--space-7); }
+
+@media (max-width: 48rem) {
+  .hero-stage { align-items: end; min-height: min(90vh, 44rem); }
+  .hero-stage > img { object-position: 60% 20%; }
+  .hero-stage .media-band__scrim {
+    background: linear-gradient(4deg,
+      rgba(20, 54, 54, 0.95) 6%,
+      rgba(20, 54, 54, 0.72) 44%,
+      rgba(20, 54, 54, 0.25) 78%);
+  }
+}
+
+/* Flagship — full-bleed editorial band (no product card) */
+.showcase { min-height: min(82vh, 46rem); }
+.showcase .media-band__scrim {
+  background: linear-gradient(90deg,
+    rgba(20, 54, 54, 0.9) 0%,
+    rgba(20, 54, 54, 0.6) 52%,
+    rgba(20, 54, 54, 0.25) 100%);
+}
+.showcase h2 {
+  font-size: var(--heading-display);
+  line-height: 0.98;
+  max-width: 14ch;
+}
+.showcase .showcase__sub {
+  margin: var(--space-4) 0 var(--space-3);
+  font-size: var(--text-lg);
+  color: color-mix(in srgb, var(--colour-ivory) 88%, transparent);
+}
+.showcase .showcase__facts {
+  font-size: var(--text-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--colour-gold-soft);
+}
+.showcase .textlink { margin-top: var(--space-6); }
+
+/* --- Quiet emotional section ------------------------------- */
+.quiet { text-align: center; }
+.quiet .statement--lead {
+  font-family: var(--font-display);
+  font-size: var(--heading-lg);
+  line-height: 1.08;
+  margin: 0 auto var(--space-5);
+  max-width: 16ch;
+}
+.quiet p {
+  font-size: var(--text-lg);
+  line-height: 1.7;
+  color: var(--colour-text-muted);
+  max-width: 46ch;
+  margin-inline: auto;
+}
+
+/* --- Big section headings (no eyebrow) --------------------- */
+.section-title {
+  font-size: var(--heading-md);
+  max-width: 20ch;
+  margin: 0 0 clamp(var(--space-6), 6vw, var(--space-8));
+}
+.section-title--centre { margin-inline: auto; text-align: center; }
+
+/* --- Testimonial as a magazine pause ----------------------- */
+.pullquote.pullquote--v2 {
+  border: 0;
+  padding: 0;
+  max-width: 48rem;
+  margin-inline: auto;
+  text-align: center;
+}
+.pullquote--v2::before {
+  content: "\201C";
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 9vw, 7rem);
+  line-height: 0.5;
+  color: var(--colour-gold);
+  opacity: 0.6;
+  margin-bottom: var(--space-4);
+}
+.pullquote--v2 blockquote {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 500;
+  font-size: clamp(1.6rem, 3.4vw, 2.7rem);
+  line-height: 1.28;
+  color: var(--colour-text);
+}
+.pullquote--v2 figcaption {
+  margin-top: var(--space-5);
+  font-size: var(--text-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--colour-text-muted);
+}
+
+/* --- Photographic panels (other ways to work) -------------- */
+.panels {
+  display: grid;
+  gap: clamp(var(--space-4), 3.5vw, var(--space-6));
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 52rem) { .panels { grid-template-columns: 1fr; } }
+.panel {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--colour-text);
+}
+.panel__media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 25% 20%, color-mix(in srgb, var(--colour-primary-soft) 32%, transparent), transparent 60%),
+    linear-gradient(150deg, var(--colour-primary) 0%, var(--colour-primary-dark) 100%);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+.panel__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1200ms cubic-bezier(0.22, 1, 0.36, 1); }
+.panel:hover .panel__media img { transform: scale(1.045); }
+.panel__ph {
+  position: relative;
+  font-size: var(--text-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  color: color-mix(in srgb, var(--colour-gold-soft) 90%, white);
+}
+.panel__title { font-size: var(--heading-sm); font-weight: 500; margin: var(--space-4) 0 var(--space-2); }
+.panel__line { color: var(--colour-text-muted); font-size: var(--text-sm); margin: 0 0 var(--space-3); flex-grow: 1; }
+.panel .explore {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--colour-accent);
+}
+.panel:hover .explore { color: var(--colour-rust); }
+
+/* --- LISTEN / WATCH editorial duo -------------------------- */
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(var(--space-5), 5vw, var(--space-7));
+}
+@media (max-width: 52rem) { .duo { grid-template-columns: 1fr; } }
+.duo__media {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 70% 20%, color-mix(in srgb, var(--colour-primary-soft) 30%, transparent), transparent 60%),
+    linear-gradient(150deg, var(--colour-primary) 0%, var(--colour-primary-dark) 100%);
+  display: grid; place-items: center; padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.duo__ph {
+  font-size: var(--text-xs); letter-spacing: 0.2em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--colour-gold-soft) 90%, white); text-align: center;
+}
+.duo__title { font-size: var(--heading-sm); font-weight: 500; margin: 0 0 var(--space-3); }
+
+/* --- Doorway (email sign-up as an invitation) -------------- */
+.doorway { text-align: center; }
+.doorway h2 { font-size: var(--heading-md); margin-bottom: var(--space-3); }
+.doorway p { color: var(--colour-text-muted); font-size: var(--text-lg); max-width: 40ch; margin: 0 auto var(--space-5); }
+.doorway .newsletter__form { justify-content: center; }
+
+/* --- Final CTA — the culmination --------------------------- */
+.cta-band--final .container--reading { max-width: 40rem; }
+.cta-band--final h2 { font-size: var(--heading-display); max-width: 18ch; margin-bottom: var(--space-7); }
+
+/* Reduced motion for v2 photo zoom */
+@media (prefers-reduced-motion: reduce) {
+  .panel__media img { transition: none; }
+  .panel:hover .panel__media img { transform: none; }
 }
