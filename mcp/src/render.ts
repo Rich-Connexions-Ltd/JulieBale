@@ -14,12 +14,54 @@ const esc = (s: unknown): string =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-// Convert plain text with blank-line paragraphs into <p> blocks.
-const paras = (body: string): string =>
-  String(body || "")
-    .split(/\n\s*\n/)
-    .map((p) => `<p>${esc(p.trim()).replace(/\n/g, "<br>")}</p>`)
-    .join("\n");
+// Inline Markdown: bold, italic, code, links (input is already HTML-escaped).
+function mdInline(t: string): string {
+  return t
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+}
+
+// Minimal, dependency-free Markdown -> HTML for body copy.
+// Escapes HTML first, then renders headings, lists, blockquotes, code and paragraphs.
+function md(body: string): string {
+  const lines = esc(String(body || "")).split(/\r?\n/);
+  const out: string[] = [];
+  let i = 0;
+  // NB: esc() has already turned '>' into '&gt;', so blockquotes match on '&gt;'.
+  const isBlockStart = (l: string) => /^(#{1,4}\s|&gt;\s?|```|\s*[-*]\s+|\s*\d+\.\s+)/.test(l);
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^\s*$/.test(line)) { i++; continue; }
+    if (/^```/.test(line)) {
+      i++; const code: string[] = [];
+      while (i < lines.length && !/^```/.test(lines[i])) { code.push(lines[i]); i++; }
+      i++; out.push(`<pre><code>${code.join("\n")}</code></pre>`); continue;
+    }
+    const h = line.match(/^(#{1,4})\s+(.*)$/);
+    if (h) { const lvl = Math.min(h[1].length + 1, 6); out.push(`<h${lvl}>${mdInline(h[2])}</h${lvl}>`); i++; continue; }
+    if (/^&gt;\s?/.test(line)) {
+      const q: string[] = [];
+      while (i < lines.length && /^&gt;\s?/.test(lines[i])) { q.push(lines[i].replace(/^&gt;\s?/, "")); i++; }
+      out.push(`<blockquote>${mdInline(q.join(" "))}</blockquote>`); continue;
+    }
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) { items.push(`<li>${mdInline(lines[i].replace(/^\s*[-*]\s+/, ""))}</li>`); i++; }
+      out.push(`<ul>${items.join("")}</ul>`); continue;
+    }
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) { items.push(`<li>${mdInline(lines[i].replace(/^\s*\d+\.\s+/, ""))}</li>`); i++; }
+      out.push(`<ol>${items.join("")}</ol>`); continue;
+    }
+    const para: string[] = [];
+    while (i < lines.length && !/^\s*$/.test(lines[i]) && !isBlockStart(lines[i])) { para.push(lines[i]); i++; }
+    out.push(`<p>${mdInline(para.join(" "))}</p>`);
+  }
+  return `<div class="prose">${out.join("\n")}</div>`;
+}
 
 // Resolve an image/media reference: absolute (http / leading slash) stays as-is;
 // a bare filename is a bundled design asset (/assets); an R2 key uses /media.
@@ -193,7 +235,7 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
     <div class="feature__body reveal">
       ${b.eyebrow ? `<p class="eyebrow">${esc(b.eyebrow)}</p>` : ""}
       <h2>${esc(b.heading)}</h2>
-      ${b.body ? paras(b.body) : ""}
+      ${b.body ? md(b.body) : ""}
       ${textlink(b.cta)}
     </div>
   </div></section>`;
@@ -238,7 +280,7 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
     case "richtext":
       return `<section class="section${ivory}"><div class="container--reading reveal">
     ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
-    ${b.body ? paras(b.body) : ""}
+    ${b.body ? md(b.body) : ""}
   </div></section>`;
 
     case "form":
@@ -305,7 +347,7 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
       <h3 class="lesson__title">${esc(l.title || `Lesson ${idx + 1}`)}</h3>
       ${l.video ? `<div class="video"><iframe src="https://iframe.videodelivery.net/${esc(l.video)}" loading="lazy" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen></iframe></div>` : ""}
       ${l.audio ? `<audio class="lesson__audio" controls src="${esc(mediaUrl(l.audio))}"></audio>` : ""}
-      ${l.body ? paras(l.body) : ""}
+      ${l.body ? md(l.body) : ""}
     </article>`
             )
             .join("")

@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding } from "./render";
 import { renderEditorPage, editorResource } from "./editor";
+import { renderUploadPage } from "./admin";
 
 // Base URL used to build MCP-UI editor links. Update at custom-domain cutover.
 const SITE_BASE = "https://juliebale-mcp.singing-bridge.workers.dev";
@@ -180,7 +181,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "update_content",
-      "PREFERRED WAY TO EDIT. Merge one or more fields into an existing document, keeping every field you do not mention. WHEN: almost all edits, such as changing a page's copy, an event's description or date, or a price. `data` is a JSON string of ONLY the fields to change (for example, just the description field). Safe: omitted fields are untouched and the previous state is kept for undo. DO NOT paste the whole document here unless you intend to.",
+      "PREFERRED WAY TO EDIT. Merge one or more fields into an existing document, keeping every field you do not mention. WHEN: almost all edits, such as changing a page's copy, an event's description or date, or a price. `data` is a JSON string of ONLY the fields to change (for example, just the description field). Safe: omitted fields are untouched and the previous state is kept for undo. DO NOT paste the whole document here unless you intend to. Descriptive text fields (body, description, details, excerpt) support Markdown, so write them in Markdown (headings, bold, lists, links).",
       { collection: z.string(), id: z.string(), data: z.string() },
       async ({ collection, id, data }) => {
         let patch: Record<string, unknown>;
@@ -287,6 +288,12 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
 
   const parts = pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean);
   const method = request.method.toUpperCase();
+
+  // List media in R2: GET /api/media
+  if (parts[0] === "media" && parts.length === 1 && method === "GET") {
+    const list = await env.MEDIA.list({ limit: 1000 });
+    return json({ objects: list.objects.map((o) => ({ key: o.key, size: o.size, uploaded: o.uploaded })) });
+  }
 
   // Media (audio/images) in R2: /api/media/{key...}
   if (parts[0] === "media" && parts.length >= 2) {
@@ -420,7 +427,7 @@ function openApiSchema(origin: string) {
     components: {
       schemas: {
         ContentDocument: { type: "object", description: "A content document. Any JSON fields are allowed.", properties: { title: { type: "string", description: "Optional title" } }, additionalProperties: true },
-        ContentBody: { type: "object", required: ["data"], properties: { data: { type: "string", description: "The content as a JSON string. For writeContent, the COMPLETE document. For updateContent, ONLY the fields to change. Put every field you want inside this one string, e.g. a JSON object with a description field. This is a string, not an object." } } },
+        ContentBody: { type: "object", required: ["data"], properties: { data: { type: "string", description: "The content as a JSON string. For writeContent, the COMPLETE document. For updateContent, ONLY the fields to change. Put every field you want inside this one string, e.g. a JSON object with a description field. This is a string, not an object. Descriptive text fields (body, description, details, excerpt) support Markdown, so use Markdown for headings, bold, lists and links." } } },
         IdList: { type: "object", properties: { collection: { type: "string" }, ids: { type: "array", items: { type: "string" } } } },
         WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, merged: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" }, created: { type: "boolean" }, existed: { type: "boolean" } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] } } },
@@ -545,6 +552,8 @@ export default {
     if (pathname === "/robots.txt")
       return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
     if (pathname.startsWith("/ui/edit/")) return handleEditor(env, pathname);
+    if (pathname === "/admin/upload")
+      return new Response(renderUploadPage(), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
     if (pathname.startsWith("/media/")) return handleMediaGet(env, pathname);
 
     return handleSite(env, pathname);

@@ -1168,3 +1168,19 @@ a.cal__event:hover { background: var(--colour-primary-dark); }
 .video { position: relative; aspect-ratio: 16 / 9; margin-bottom: var(--space-4); background: var(--colour-primary-dark); overflow: hidden; }
 .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .lesson__audio { width: 100%; margin-bottom: var(--space-4); }
+
+/* ============================================================
+   Markdown body content (.prose)
+   ============================================================ */
+.prose > * { margin: 0 0 1rem; }
+.prose > *:last-child { margin-bottom: 0; }
+.prose h2, .prose h3, .prose h4 { font-family: var(--font-display); font-weight: 500; line-height: 1.15; margin: 1.6rem 0 0.6rem; }
+.prose h2 { font-size: var(--heading-sm); }
+.prose h3 { font-size: var(--text-xl); }
+.prose ul, .prose ol { margin: 0 0 1rem 1.3rem; padding: 0; }
+.prose li { margin-bottom: 0.4rem; }
+.prose blockquote { margin: 1.4rem 0; padding-left: 1.2rem; border-left: 2px solid var(--colour-gold); font-family: var(--font-display); font-style: italic; font-size: var(--text-lg); color: var(--colour-text); }
+.prose code { background: #efe9df; padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.9em; }
+.prose pre { background: var(--colour-primary-dark); color: var(--colour-ivory); padding: 1rem; overflow-x: auto; border-radius: 4px; font-size: 0.85rem; }
+.prose pre code { background: transparent; padding: 0; color: inherit; }
+.prose a { color: var(--colour-accent); }

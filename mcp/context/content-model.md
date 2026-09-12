@@ -48,6 +48,13 @@ request** (see below) describing it.
 
 `image` is a filename served from /assets (e.g. "about-julie.jpeg").
 
+## Markdown
+Descriptive text fields render **Markdown**: a page/post `body`, an event
+`description` and `details`, a post `excerpt`, a course/lesson `description` and
+`body`. Write these in Markdown, headings (`##`), **bold**, *italic*, lists,
+`> quotes`, and `[links](/path)`. Short label fields (titles, `sub`, `line`,
+`facts`, button labels) are plain text.
+
 ## Editing safely
 - **To change a field, use update (merge), not replace.** `updateContent` /
   `update_content` merges the fields you send and keeps everything else. Only use
