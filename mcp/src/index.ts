@@ -236,6 +236,28 @@ export class ContentMCP extends McpAgent<Env> {
 
 /* ------------------------------ REST adapter ------------------------------ */
 
+// Accept a { data: "<json string>" } wrapper (how a ChatGPT Action reliably
+// sends arbitrary content) OR a raw JSON object body (direct API use).
+async function parseBody(request: Request): Promise<{ jsonString: string; object: any } | { error: string }> {
+  const text = await request.text();
+  let parsed: any;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { error: "request body must be valid JSON" };
+  }
+  if (parsed && typeof parsed === "object" && typeof parsed.data === "string") {
+    let inner: any;
+    try {
+      inner = JSON.parse(parsed.data);
+    } catch {
+      return { error: "`data` must be a JSON string containing the document (or fields to change)" };
+    }
+    return { jsonString: parsed.data, object: inner };
+  }
+  return { jsonString: text, object: parsed };
+}
+
 async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
   if (env.API_KEY) {
     const auth = request.headers.get("authorization") || "";
@@ -282,23 +304,15 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
       return new Response(v, { headers: { "content-type": "application/json" } });
     }
     if (method === "PUT" || method === "POST") {
-      const body = await request.text();
-      try {
-        JSON.parse(body);
-      } catch {
-        return json({ error: "request body must be valid JSON" }, 400);
-      }
-      const { created } = await writeDoc(env, collection, id, body);
+      const parsed = await parseBody(request);
+      if ("error" in parsed) return json({ error: parsed.error }, 400);
+      const { created } = await writeDoc(env, collection, id, parsed.jsonString);
       return json({ ok: true, saved: `${collection}/${id}`, created });
     }
     if (method === "PATCH") {
-      let patch: Record<string, unknown>;
-      try {
-        patch = (await request.json()) as Record<string, unknown>;
-      } catch {
-        return json({ error: "request body must be valid JSON" }, 400);
-      }
-      const { existed } = await mergeDoc(env, collection, id, patch);
+      const parsed = await parseBody(request);
+      if ("error" in parsed) return json({ error: parsed.error }, 400);
+      const { existed } = await mergeDoc(env, collection, id, parsed.object as Record<string, unknown>);
       return json({ ok: true, merged: `${collection}/${id}`, existed });
     }
     if (method === "DELETE") {
@@ -317,6 +331,7 @@ function openApiSchema(origin: string) {
   const collectionParam = { name: "collection", in: "path", required: true, description: "Collection name, e.g. 'pages'", schema: { type: "string" } };
   const idParam = { name: "id", in: "path", required: true, description: "Document id / slug, e.g. 'home'", schema: { type: "string" } };
   const docContent = { "application/json": { schema: { $ref: "#/components/schemas/ContentDocument" } } };
+  const bodyContent = { "application/json": { schema: { $ref: "#/components/schemas/ContentBody" } } };
 
   return {
     openapi: "3.1.0",
@@ -332,8 +347,8 @@ function openApiSchema(origin: string) {
       },
       "/api/{collection}/{id}": {
         get: { operationId: "readContent", summary: "Read one document", description: "ALWAYS read a document before changing it, and read the context collection (ids voice, brand, offers, content-model) before writing copy. Returns the full JSON.", parameters: [collectionParam, idParam], responses: { "200": { description: "The document", content: docContent }, "404": { description: "Not found" } } },
-        put: { operationId: "writeContent", summary: "Replace a whole document.", description: "REPLACES the entire document with the JSON you send; any field you omit is DELETED. Use only to create a new document or deliberately rewrite one in full (send EVERY field). To change or add a field on an existing document, use updateContent instead, never this.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Saved", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
-        patch: { operationId: "updateContent", summary: "Merge fields into a document (preferred for editing).", description: "PREFERRED for edits. Merges only the fields you send and keeps everything else, so nothing is lost. Send a JSON body of just the fields to change. Use for almost all edits: copy, an event description or date, a price.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Updated", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        put: { operationId: "writeContent", summary: "Replace a whole document.", description: "REPLACES the entire document with the JSON you send; any field you omit is DELETED. Use only to create a new document or deliberately rewrite one in full (send EVERY field). To change or add a field on an existing document, use updateContent instead, never this.", parameters: [collectionParam, idParam], requestBody: { required: true, content: bodyContent }, responses: { "200": { description: "Saved", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        patch: { operationId: "updateContent", summary: "Merge fields into a document (preferred for editing).", description: "PREFERRED for edits. Merges only the fields you send and keeps everything else, so nothing is lost. Send a JSON body of just the fields to change. Use for almost all edits: copy, an event description or date, a price.", parameters: [collectionParam, idParam], requestBody: { required: true, content: bodyContent }, responses: { "200": { description: "Updated", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
         delete: { operationId: "deleteContent", summary: "Delete a document.", description: "Permanently removes a document (undoable). Only when it should genuinely no longer exist; confirm first for pages/client-facing content. To clear a field, use updateContent, not delete.", parameters: [collectionParam, idParam], responses: { "200": { description: "Deleted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
       },
       "/api/undo/{collection}/{id}": {
@@ -352,6 +367,7 @@ function openApiSchema(origin: string) {
     components: {
       schemas: {
         ContentDocument: { type: "object", description: "A content document. Any JSON fields are allowed.", properties: { title: { type: "string", description: "Optional title" } }, additionalProperties: true },
+        ContentBody: { type: "object", required: ["data"], properties: { data: { type: "string", description: "The content as a JSON string. For writeContent, the COMPLETE document. For updateContent, ONLY the fields to change. Put every field you want inside this one string, e.g. a JSON object with a description field. This is a string, not an object." } } },
         IdList: { type: "object", properties: { collection: { type: "string" }, ids: { type: "array", items: { type: "string" } } } },
         WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, merged: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" }, created: { type: "boolean" }, existed: { type: "boolean" } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] } } },
