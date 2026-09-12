@@ -1,0 +1,304 @@
+[
+  {
+    "collection": "site",
+    "id": "config",
+    "data": {
+      "brand": { "name": "Julie Bale", "tagline": "Vocal Transformation Specialist & Mentor" },
+      "nav": [
+        { "label": "Home", "href": "/" },
+        { "label": "About", "href": "/about" },
+        { "label": "Work With Me", "href": "/work-with-me" },
+        { "label": "Podcast", "href": "/podcast" },
+        { "label": "Performances", "href": "/performances" }
+      ],
+      "cta": { "label": "Start Here", "href": "/start" },
+      "footer": {
+        "tagline": "Singing, mentorship and performance for adults who'd love to sing.",
+        "columns": [
+          { "heading": "Explore", "links": [
+            { "label": "About", "href": "/about" },
+            { "label": "Work With Me", "href": "/work-with-me" },
+            { "label": "Podcast", "href": "/podcast" },
+            { "label": "Performances", "href": "/performances" },
+            { "label": "Everything", "href": "/everything" }
+          ]},
+          { "heading": "Keep in touch", "links": [
+            { "label": "Contact", "href": "/start" },
+            { "label": "Instagram", "href": "https://www.instagram.com/juliebalevoiceandmindtraining" },
+            { "label": "Facebook", "href": "https://www.facebook.com/juliebale.music.hypnotherapy" },
+            { "label": "LinkedIn", "href": "https://www.linkedin.com/in/juliebale" }
+          ]},
+          { "heading": "Divas", "links": [
+            { "label": "The Diva Hub", "href": "/divahub" },
+            { "label": "Client login", "href": "https://members.juliebale.com" }
+          ]}
+        ],
+        "legal": [
+          { "label": "Privacy", "href": "/privacy" },
+          { "label": "Cookies", "href": "/cookies" },
+          { "label": "Terms", "href": "/terms" }
+        ],
+        "copyright": "© 2026 Julie Bale. Diva Energy® is a registered trademark."
+      }
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "home",
+    "data": {
+      "title": "Julie Bale — It's never too late to sing",
+      "placement": "menu", "nav_label": "Home", "order": 1, "noindex": false,
+      "seo": { "description": "It's never too late to sing. Singing, mentorship and performance with dramatic soprano and Vocal Transformation Specialist Julie Bale." },
+      "sections": [
+        { "type": "hero", "kicker": "Julie Bale", "heading": "It's never too late to sing.", "intro": "Discover the voice, confidence and performer that have been waiting to be heard.", "image": "julie-portrait.jpeg", "cta": { "label": "Start your singing story", "href": "/start" } },
+        { "type": "statement", "eyebrow": "It starts with one note", "statement": "Perhaps you've always wanted to sing.", "sub": "Perhaps you used to, and life got in the way. Perhaps you sing in a choir but would never dream of standing up alone. Perhaps somebody told you, years ago, that you couldn't. Or perhaps you simply wonder whether it's too late. It isn't." },
+        { "type": "showcase", "heading": "From First Note to Final Curtain", "sub": "The six-month private mentorship.", "facts": "Six months · 10 places · £499 a month", "image": "", "cta": { "label": "Discover the programme", "href": "/mentorship" } },
+        { "type": "pullquote", "quote": "Julie unlocked something deep within me and lifted my whole world to a new level. Now each morning feels like a song I can sing with confidence.", "cite": "Eve Stanway · Diva Energy singer" },
+        { "type": "panels", "heading": "Other ways to sing with me", "items": [
+          { "title": "The VIP Diva Day", "line": "A whole day devoted to your voice, with a professional accompanist.", "href": "/vip-diva-day", "image": "vip-diva-day.jpeg" },
+          { "title": "Diva Days & Open Days", "line": "Come and sing. No need to arrive confident, just willing to join in.", "href": "/events", "image": "diva-days.jpeg" },
+          { "title": "Retreats", "line": "Singing somewhere beautiful, with time to enjoy being there.", "href": "/events", "image": "retreats.jpeg" }
+        ]},
+        { "type": "feature", "reverse": true, "eyebrow": "About Julie", "heading": "I'm a singer first.", "body": "I'm Julie Bale, a dramatic soprano and Vocal Transformation Specialist. I've spent my life singing, performing and helping other people discover what their own voice can do. I still perform. I still love it.", "image": "about-julie.jpeg", "cta": { "label": "More about Julie", "href": "/about" } },
+        { "type": "duo", "heading": "Hear me, and hear me sing.", "items": [
+          { "kicker": "Listen", "title": "What's Your Singing Story?", "href": "/podcast", "image": "podcast-cover.jpeg" },
+          { "kicker": "Watch", "title": "Julie Bale, Soprano", "href": "/performances", "image": "soprano.jpeg" }
+        ]},
+        { "type": "cta", "heading": "What if you stopped wondering whether you could sing?", "cta": { "label": "Start your singing story", "href": "/start" } },
+        { "type": "doorway", "heading": "Not ready to sing with me yet?", "body": "Start here. I'm putting together a free first experience to help you find your voice. Join the Diva Energy emails and I'll send it your way.", "note": "I respect your privacy. No spam, ever." }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "about",
+    "data": {
+      "title": "About Julie Bale",
+      "placement": "menu", "nav_label": "About", "order": 2, "noindex": false,
+      "seo": { "description": "Meet Julie Bale, dramatic soprano and Vocal Transformation Specialist, with more than 35 years singing, performing and teaching." },
+      "sections": [
+        { "type": "feature", "eyebrow": "About Julie", "heading": "Singing has been part of my life for as long as I can remember.", "body": "I'm Julie Bale. I'm a dramatic soprano, Vocal Transformation Specialist and Mentor, and I've spent more than 35 years singing, performing, teaching and being fascinated by what happens when somebody finds their voice. And I still absolutely love it.", "image": "about-julie.jpeg" },
+        { "type": "richtext", "heading": "I'm a singer first", "body": "I trained as a classical singer and have continued studying and developing my own voice throughout my career. I have a degree in Music and German, a PGCE and a Diploma in Singing from the Royal College of Music. I've performed as a dramatic soprano, conducted choirs, taught singers and worked with performers at all sorts of levels. And I still perform." },
+        { "type": "richtext", "heading": "Why Diva Energy?", "body": "For me, Diva Energy is about allowing yourself to step forward. To take your voice seriously. To enjoy being seen and heard. To stop apologising for wanting something. And sometimes just to put on a fabulous dress and sing. I'm very much in favour of that too." },
+        { "type": "cta", "heading": "You don't need to call yourself a singer. Not yet, anyway.", "cta": { "label": "Come and talk to me", "href": "/start" } }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "work-with-me",
+    "data": {
+      "title": "Work With Me",
+      "placement": "menu", "nav_label": "Work With Me", "order": 3, "noindex": false,
+      "seo": { "description": "Several ways to work on your voice with Julie Bale, from a single VIP day to the six-month mentorship." },
+      "sections": [
+        { "type": "statement", "statement": "So, you'd love to sing. Where do you start?", "sub": "Maybe you've never had a lesson. Maybe you used to sing. Maybe you already sing and want more from your voice. There are several ways to work with me depending on what you want and how much time you'd like to give it. You don't need to choose perfectly. Tell me where you are and I'll help." },
+        { "type": "panels", "heading": "Ways to work with me", "items": [
+          { "title": "From First Note to Final Curtain", "line": "The six-month private mentorship. £499 a month.", "href": "/mentorship", "image": "" },
+          { "title": "The VIP Diva Day", "line": "One luxurious day devoted to your voice. £1,297.", "href": "/vip-diva-day", "image": "vip-diva-day.jpeg" },
+          { "title": "Diva Days, workshops & retreats", "line": "Come and sing, no need to arrive confident.", "href": "/events", "image": "diva-days.jpeg" }
+        ]},
+        { "type": "cta", "heading": "Tell me where you are now and what you'd secretly love to do. We'll start there.", "cta": { "label": "Come and have a chat with me", "href": "/start" } }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "mentorship",
+    "data": {
+      "title": "From First Note to Final Curtain",
+      "placement": "hidden", "nav_label": "The Programme", "order": 10, "noindex": false,
+      "seo": { "description": "From First Note to Final Curtain: a six-month private vocal mentorship with Julie Bale." },
+      "sections": [
+        { "type": "showcase", "heading": "From First Note to Final Curtain", "sub": "A six-month private vocal mentorship with Julie Bale.", "facts": "Six months · 10 places · £499 a month", "image": "", "cta": { "label": "Talk to Julie about joining", "href": "/start" } },
+        { "type": "statement", "statement": "What if this is the year you finally sing?", "sub": "You don't need to arrive feeling like a singer. That's what we're going to discover together. No audition. No need to bring an impressive song. We simply start with the voice you have now." },
+        { "type": "richtext", "heading": "What's included", "body": "Private 1:1 vocal mentoring. Professional accompanist work. Diva Days. Performance opportunities. A Final Curtain performance. Online resources. The Diva community." },
+        { "type": "pullquote", "quote": "One of my favourite changes is hearing 'Can I actually sing?' become 'What shall I sing next?'", "cite": "Julie Bale" },
+        { "type": "cta", "heading": "You just need to sing the first note.", "cta": { "label": "Start your singing story", "href": "/start" } }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "vip-diva-day",
+    "data": {
+      "title": "The VIP Diva Day",
+      "placement": "hidden", "nav_label": "VIP Diva Day", "order": 11, "noindex": false,
+      "seo": { "description": "A whole day devoted to your voice, with a professional accompanist. The VIP Diva Day with Julie Bale." },
+      "sections": [
+        { "type": "statement", "statement": "Imagine having a whole day devoted to your voice.", "sub": "No rushing. No squeezing everything into an hour. A VIP Diva Day gives us the luxury of time to work on your voice, technique, repertoire and whatever you most want to explore, including a professional accompanist. Lunch is included." },
+        { "type": "richtext", "heading": "Afterwards", "body": "You'll leave with a clear 90-day plan based on what we discover, plus 30 days of WhatsApp support." },
+        { "type": "showcase", "heading": "The VIP Diva Day", "sub": "One luxurious day to revel in your voice.", "facts": "From £1,297 · limited days each year", "image": "vip-diva-day.jpeg", "cta": { "label": "Enquire about a VIP Diva Day", "href": "/start" } }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "events",
+    "data": {
+      "title": "Events & Retreats",
+      "placement": "hidden", "nav_label": "Events & Retreats", "order": 12, "noindex": false,
+      "seo": { "description": "Diva Days, singing workshops, open days, showcases and retreats with Julie Bale." },
+      "sections": [
+        { "type": "statement", "statement": "Come and sing with me.", "sub": "Not everything I do requires a six-month commitment. Throughout the year I run Diva Days, singing workshops, open days, showcases, retreats and special events." },
+        { "type": "listing", "collection": "events", "heading": "What's coming up", "empty": "New dates are being planned. Check back soon, or get in touch to be told first." },
+        { "type": "feature", "eyebrow": "Retreats", "heading": "Loch Lomond", "body": "Sing. Stay. Switch off. A small singing retreat beside Loch Lomond, with music, individual work, group sessions, performance, good food and time together. And because it's Scotland, there may be a ceilidh. Actually, there probably will be.", "image": "retreats.jpeg", "cta": { "label": "See what's coming up", "href": "/start" } }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "podcast",
+    "data": {
+      "title": "What's Your Singing Story?",
+      "placement": "menu", "nav_label": "Podcast", "order": 4, "noindex": false,
+      "seo": { "description": "What's Your Singing Story? A podcast with Julie Bale about the part music and singing play in our lives." },
+      "sections": [
+        { "type": "feature", "eyebrow": "The podcast", "heading": "What's Your Singing Story?", "body": "Every voice carries a story. I talk to interesting people from all sorts of worlds about the part music and singing have played in their lives. You don't need to be famous, or even think you can sing. You just need an interesting story.", "image": "podcast-cover.jpeg", "cta": { "label": "Listen to the latest episode", "href": "#" } },
+        { "type": "listing", "collection": "episodes", "heading": "Episodes", "empty": "Episodes will appear here." },
+        { "type": "cta", "heading": "Fancy being a guest?", "cta": { "label": "Tell me your story", "href": "/start" } }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "performances",
+    "data": {
+      "title": "Julie Bale, Soprano",
+      "placement": "menu", "nav_label": "Performances", "order": 5, "noindex": false,
+      "seo": { "description": "Julie Bale, dramatic soprano: performances, concerts, recordings and the Hope Sings Eternal project." },
+      "sections": [
+        { "type": "feature", "eyebrow": "On stage", "heading": "I sing.", "body": "Before I teach singing or help someone else find their voice, there's something you should know about me. I'm a dramatic soprano, and performing has been part of my life for as long as I can remember. Opera, oratorio, sacred music, big arias, beautiful melodies, and yes, music where the soprano gets to make quite a lot of noise.", "image": "soprano.jpeg" },
+        { "type": "richtext", "heading": "Hope Sings Eternal", "body": "A recording and performance project bringing together music, performance and the belief that voices are meant to be heard." },
+        { "type": "cta", "heading": "For concerts, collaborations or recordings, tell me what you have in mind.", "cta": { "label": "Performance enquiry", "href": "/start" } }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "everything",
+    "data": {
+      "title": "Everything",
+      "placement": "footer", "nav_label": "Everything", "order": 20, "noindex": false,
+      "seo": { "description": "Everything Julie Bale, all in one place: programmes, concerts, the podcast, and how to keep in touch." },
+      "sections": [
+        { "type": "statement", "statement": "Everything Julie Bale, all in one place.", "sub": "Looking for a singing programme? A concert? The podcast? You're in the right place." },
+        { "type": "richtext", "heading": "Sing With Me", "body": "From First Note to Final Curtain. VIP Diva Day. Singing Workshops & Open Days. Retreats." },
+        { "type": "richtext", "heading": "Come and Hear Us", "body": "Concerts & Performances. Hope Sings Eternal. Julie Bale, Soprano." },
+        { "type": "richtext", "heading": "Listen, Read & Watch", "body": "What's Your Singing Story? podcast. The Diva Diaries. YouTube." },
+        { "type": "richtext", "heading": "Already working with me?", "body": "Head to the Diva Hub or the client login." }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "start",
+    "data": {
+      "title": "Start Your Singing Story",
+      "placement": "hidden", "nav_label": "Start Here", "order": 30, "noindex": false,
+      "seo": { "description": "Tell Julie about your singing. No audition, no pressure. Start your singing story." },
+      "sections": [
+        { "type": "statement", "statement": "Hello. Tell me about you.", "sub": "If you've found your way here because you'd love to sing, I'd genuinely like to hear your story. You don't need to know which programme you need. Tell me where you are now and what you'd secretly love to be able to do." },
+        { "type": "form", "heading": "Start your singing story", "fields": ["Name", "Email", "Phone number (optional)", "Where are you based?", "Tell me a little about your singing", "What would you love to be able to do?", "Interest", "Anything else you'd like me to know?"], "submit": "Start your singing story" },
+        { "type": "richtext", "heading": "What happens next?", "body": "I'll read your message. Actually me, not a mysterious team of people pretending to be me. If it sounds as though one of my programmes or events could be right for you, we'll have a conversation. There's no audition and no pressure to prove anything." }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "divahub",
+    "data": {
+      "title": "The Diva Hub",
+      "placement": "footer", "nav_label": "The Diva Hub", "order": 40, "noindex": true,
+      "seo": { "description": "The Diva Hub: courses, dates, updates and resources for Diva Energy members." },
+      "sections": [
+        { "type": "statement", "statement": "Everything you need, all in one place.", "sub": "Hello, Diva. This is the practical home for the Diva Programme: courses, dates, monthly updates, music, files and useful links." },
+        { "type": "accordion", "items": [
+          { "title": "Courses", "collection": "courses", "empty": "Your courses will appear here." },
+          { "title": "Events", "collection": "events", "empty": "Upcoming events will appear here." },
+          { "title": "Dates", "collection": "dates", "view": "list", "empty": "Key dates will appear here." }
+        ]},
+        { "type": "richtext", "heading": "Need to book something?", "body": "A Julie session, an accompanist session or a Diva Day. Get in touch and we'll sort it." }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "privacy",
+    "data": {
+      "title": "Privacy Policy",
+      "placement": "footer", "nav_label": "Privacy", "order": 90, "noindex": false, "boilerplate": true,
+      "seo": { "description": "Privacy policy for juliebale.com." },
+      "sections": [
+        { "type": "richtext", "heading": "Privacy Policy", "body": "This is placeholder boilerplate to be reviewed by Julie Bale and a suitably qualified adviser before launch. Last updated: [DATE].\n\nWho we are. This website is operated by Julie Bale (\"we\", \"us\"). Our contact address is [ADDRESS] and you can reach us at [EMAIL].\n\nWhat we collect. When you complete an enquiry or sign-up form we collect the information you provide, such as your name, email address and anything you tell us about your singing. We also collect basic technical data (such as anonymised analytics) to understand how the site is used.\n\nHow we use it. We use your information to respond to your enquiry, to provide the services you ask for, and, where you have opted in, to send you occasional emails about singing and events. We do not sell your data.\n\nLawful basis. We process your data on the basis of your consent and, where relevant, our legitimate interest in running the business and responding to enquiries.\n\nSharing. We use trusted third parties to run the site and our email (for example our hosting and email providers). They process data on our behalf under appropriate agreements.\n\nYour rights. Under UK GDPR you have the right to access, correct, delete or restrict the use of your personal data, and to withdraw consent at any time. To exercise any of these, contact us at [EMAIL].\n\nRetention. We keep your data only as long as needed for the purposes above, or as required by law.\n\nChanges. We may update this policy from time to time; the latest version will always be on this page." }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "terms",
+    "data": {
+      "title": "Terms & Conditions",
+      "placement": "footer", "nav_label": "Terms", "order": 91, "noindex": false, "boilerplate": true,
+      "seo": { "description": "Terms and conditions for juliebale.com." },
+      "sections": [
+        { "type": "richtext", "heading": "Terms & Conditions", "body": "This is placeholder boilerplate to be reviewed by Julie Bale and a suitably qualified adviser before launch. Last updated: [DATE].\n\nThese terms govern your use of juliebale.com and any services booked through it. By using the site or booking a service you agree to these terms.\n\nServices. Details, prices and availability of programmes, days and events are described on the relevant pages and may change. A booking is confirmed once we have agreed it with you and any required payment or deposit has been made.\n\nPayments and cancellations. Payment terms, deposits and cancellation or refund arrangements are set out at the time of booking. Please ask if anything is unclear before you book.\n\nContent. All content on this site, including text, images and branding (including Diva Energy® and Diva Framework®), belongs to Julie Bale or is used with permission, and may not be reproduced without consent.\n\nLiability. We take care to provide our services well, but to the extent permitted by law we are not liable for indirect or consequential loss. Nothing in these terms limits liability that cannot be limited by law.\n\nGoverning law. These terms are governed by the law of Scotland/England & Wales [confirm], and disputes are subject to the courts of that jurisdiction.\n\nContact. Questions about these terms can be sent to [EMAIL]." }
+      ]
+    }
+  },
+
+  {
+    "collection": "pages",
+    "id": "cookies",
+    "data": {
+      "title": "Cookie Policy",
+      "placement": "footer", "nav_label": "Cookies", "order": 92, "noindex": false, "boilerplate": true,
+      "seo": { "description": "Cookie policy for juliebale.com." },
+      "sections": [
+        { "type": "richtext", "heading": "Cookie Policy", "body": "This is placeholder boilerplate to be reviewed before launch. Last updated: [DATE].\n\nWhat cookies are. Cookies are small files stored on your device that help a website work and help us understand how it is used.\n\nWhat we use. We use essential cookies needed for the site to function, and, with your consent, analytics cookies that help us improve the site. We do not use advertising cookies.\n\nYour choices. You can accept or decline non-essential cookies using our cookie banner, and you can change your browser settings to refuse cookies at any time. Declining non-essential cookies will not stop the site working.\n\nMore information. For questions about our use of cookies, contact us at [EMAIL]." }
+      ]
+    }
+  },
+
+  {
+    "collection": "posts",
+    "id": "was-i-told-i-couldnt-sing",
+    "data": { "title": "I was told I couldn't sing. But was that actually true?", "date": "2026-09-04", "excerpt": "So many people carry a single sentence for decades. Let's look at it honestly.", "body": "Placeholder post body. Julie will write this.", "hero": "", "tags": ["confidence", "singing"], "status": "published" }
+  },
+  {
+    "collection": "posts",
+    "id": "the-next-chapter",
+    "data": { "title": "The next chapter for Diva Energy", "date": "2026-08-21", "excerpt": "Where Diva Energy is heading, and why.", "body": "Placeholder post body. Julie will write this.", "hero": "", "tags": ["diva-energy"], "status": "published" }
+  },
+
+  {
+    "collection": "events",
+    "id": "loch-lomond-retreat-2027",
+    "data": { "title": "Loch Lomond Singing Retreat", "starts_at": "2027-02-19", "ends_at": "2027-02-21", "location": "Loch Lomond, Scotland", "description": "Sing, stay and switch off beside the loch. Music, individual and group work, performance, good food and time together.", "images": ["retreats.jpeg"], "links": [], "details": "Running order and joining details to be added.", "availability": "open", "status": "published" }
+  },
+
+  {
+    "collection": "courses",
+    "id": "example-course",
+    "data": { "title": "Example Course", "description": "A placeholder course so the framework can render course pages. Replace with a real course.", "lessons": [ { "title": "Lesson 1", "body": "Placeholder lesson.", "media": null } ], "status": "draft" }
+  },
+
+  {
+    "collection": "dates",
+    "id": "gala-2027",
+    "data": { "title": "Chronicles of Hope gala concert", "date": "2027-06-12", "note": "The Final Curtain gala.", "link": "/mentorship" }
+  }
+]
