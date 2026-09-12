@@ -59,6 +59,20 @@ request** (see below) describing it.
   navigation) should be confirmed with the person first.
 - Every change is versioned. To reverse the last change to a document, use undo.
 
+## Courses, lessons and media
+- A course document has `title`, `description` and `lessons` (an array). Each
+  lesson is `{ title, body, video?, audio? }`.
+- `video` is a Cloudflare Stream video id (uploaded video). `audio` is an R2
+  media key (e.g. "courses/lesson1.mp3"). These render as a player automatically.
+- You cannot upload a media file through chat. Media is uploaded separately (an
+  upload page / the media endpoints), which returns a Stream id or an R2 key; you
+  then set that id/key on the lesson's `video` / `audio` field.
+
+## Interactive editors (Claude)
+For events, dates, blog posts and courses there are `edit_*` tools that open a
+form widget to edit fields by hand. These render in hosts that support
+interactive MCP UI (Claude). Saving from the widget performs an update (merge).
+
 ## Raising a feature request
 When asked for something the blocks above cannot do (a new kind of section, a new
 layout, a new content type, a bug), call `createFeatureRequest` /

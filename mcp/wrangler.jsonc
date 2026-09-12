@@ -11,6 +11,10 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "juliebale", "database_id": "d81886bc-6c19-4019-b355-84bff64e8f60" }
   ],
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "juliebale-media" }
+  ],
   "assets": { "directory": "./public" },
+  "vars": { "CF_ACCOUNT_ID": "992ef301adbac0561940a8d3884d9e03" },
   "observability": { "enabled": true }
 }

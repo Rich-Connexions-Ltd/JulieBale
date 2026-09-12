@@ -2,6 +2,10 @@ import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding } from "./render";
+import { renderEditorPage, editorResource } from "./editor";
+
+// Base URL used to build MCP-UI editor links. Update at custom-domain cutover.
+const SITE_BASE = "https://juliebale-mcp.singing-bridge.workers.dev";
 
 /**
  * Julie Bale — content backbone.
@@ -19,8 +23,11 @@ import { renderPage, render404, pageFromDoc, renderLanding } from "./render";
 
 interface Env {
   DB: D1Database;
+  MEDIA: R2Bucket;
   MCP_OBJECT: DurableObjectNamespace;
   API_KEY?: string;
+  STREAM_TOKEN?: string;
+  CF_ACCOUNT_ID?: string;
 }
 
 const now = () => new Date().toISOString();
@@ -231,6 +238,20 @@ export class ContentMCP extends McpAgent<Env> {
         return { content: [{ type: "text", text: rows.length ? JSON.stringify(rows, null, 2) : "(no requests)" }] };
       }
     );
+
+    // Interactive editors (MCP-UI). Rendered as a form widget in hosts that
+    // support interactive UI (e.g. Claude). Saving posts an update_content call.
+    const editor = (collection: string, label: string) =>
+      this.server.tool(
+        `edit_${label}`,
+        `Open an interactive editor (a form widget) to visually edit a ${label} by hand instead of dictating each change. WHEN: the person wants to see and edit the ${label}'s fields directly. Saving from the widget updates the ${label} (a merge, so nothing else is lost). Requires a host that supports interactive MCP UI, such as Claude; in a plain text client it will just show a link. Pass the ${label} id (use list_content on '${collection}' if unsure).`,
+        { id: z.string() },
+        async ({ id }) => ({ content: [editorResource(SITE_BASE, collection, id)] })
+      );
+    editor("events", "event");
+    editor("dates", "date");
+    editor("posts", "post");
+    editor("courses", "course");
   }
 }
 
@@ -266,6 +287,38 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
 
   const parts = pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean);
   const method = request.method.toUpperCase();
+
+  // Media (audio/images) in R2: /api/media/{key...}
+  if (parts[0] === "media" && parts.length >= 2) {
+    const key = parts.slice(1).map(decodeURIComponent).join("/");
+    if (method === "PUT" || method === "POST") {
+      await env.MEDIA.put(key, request.body, {
+        httpMetadata: { contentType: request.headers.get("content-type") || "application/octet-stream" },
+      });
+      return json({ ok: true, key, url: `/media/${key}` });
+    }
+    if (method === "DELETE") {
+      await env.MEDIA.delete(key);
+      return json({ ok: true, deleted: key });
+    }
+    return json({ error: "method not allowed" }, 405);
+  }
+
+  // Video: request a one-time Cloudflare Stream upload URL. /api/video/direct-upload
+  if (parts[0] === "video" && parts[1] === "direct-upload") {
+    if (method !== "POST") return json({ error: "method not allowed" }, 405);
+    if (!env.STREAM_TOKEN || !env.CF_ACCOUNT_ID)
+      return json({ error: "Cloudflare Stream is not configured. Set the STREAM_TOKEN and CF_ACCOUNT_ID secrets." }, 501);
+    const meta = (await request.json().catch(() => ({}))) as any;
+    const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/stream/direct_upload`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.STREAM_TOKEN}`, "content-type": "application/json" },
+      body: JSON.stringify({ maxDurationSeconds: meta.maxDurationSeconds || 3600, requireSignedURLs: false, meta: meta.meta || {} }),
+    });
+    const j = (await res.json()) as any;
+    if (!j.success) return json({ error: "stream error", detail: j.errors }, 502);
+    return json({ ok: true, uploadURL: j.result.uploadURL, uid: j.result.uid });
+  }
 
   // Feature requests: /api/feature-requests
   if (parts[0] === "feature-requests" && parts.length === 1) {
@@ -384,6 +437,29 @@ function openApiSchema(origin: string) {
 const htmlResponse = (body: string, status = 200) =>
   new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8" } });
 
+async function handleMediaGet(env: Env, pathname: string): Promise<Response> {
+  const key = decodeURIComponent(pathname.replace(/^\/media\/?/, ""));
+  if (!key) return new Response("Not found", { status: 404 });
+  const obj = await env.MEDIA.get(key);
+  if (!obj) return new Response("Not found", { status: 404 });
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  headers.set("etag", obj.httpEtag);
+  headers.set("cache-control", "public, max-age=31536000, immutable");
+  return new Response(obj.body, { headers });
+}
+
+async function handleEditor(env: Env, pathname: string): Promise<Response> {
+  const parts = pathname.replace(/^\/ui\/edit\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
+  if (parts.length < 2) return new Response("Not found", { status: 404 });
+  const [collection, id] = parts;
+  const raw = await readDoc(env, collection, id);
+  const doc = raw ? JSON.parse(raw) : {};
+  return new Response(renderEditorPage(collection, id, doc), {
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+  });
+}
+
 async function handleSite(env: Env, pathname: string): Promise<Response> {
   const siteRaw = await readDoc(env, "site", "config");
   const site = siteRaw ? JSON.parse(siteRaw) : {};
@@ -468,6 +544,8 @@ export default {
     if (pathname === "/sse" || pathname === "/sse/message") return ContentMCP.serveSSE("/sse").fetch(request, env, ctx);
     if (pathname === "/robots.txt")
       return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
+    if (pathname.startsWith("/ui/edit/")) return handleEditor(env, pathname);
+    if (pathname.startsWith("/media/")) return handleMediaGet(env, pathname);
 
     return handleSite(env, pathname);
   },
