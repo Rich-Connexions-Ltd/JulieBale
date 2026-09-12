@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "juliebale-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "MCP_OBJECT", "class_name": "ContentMCP" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ContentMCP"] }],
+  "kv_namespaces": [
+    { "binding": "CONTENT", "id": "REPLACE_WITH_KV_ID" }
+  ],
+  "observability": { "enabled": true }
+}
