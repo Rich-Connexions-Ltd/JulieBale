@@ -160,13 +160,31 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
 /* ----------------------------- OpenAPI --------------------------------- */
 
 function openApiSchema(origin: string) {
+  const collectionParam = {
+    name: "collection",
+    in: "path",
+    required: true,
+    description: "Collection name, e.g. 'pages'",
+    schema: { type: "string" },
+  };
+  const idParam = {
+    name: "id",
+    in: "path",
+    required: true,
+    description: "Document id / slug, e.g. 'home'",
+    schema: { type: "string" },
+  };
+  const docContent = {
+    "application/json": { schema: { $ref: "#/components/schemas/ContentDocument" } },
+  };
+
   return {
     openapi: "3.1.0",
     info: {
       title: "Julie Bale content API",
       description:
         "Read and write Julie Bale's website content (pages, posts, events, courses, dates). Documents are JSON stored by collection and id.",
-      version: "0.2.0",
+      version: "0.2.1",
     },
     servers: [{ url: origin }],
     paths: {
@@ -174,57 +192,82 @@ function openApiSchema(origin: string) {
         get: {
           operationId: "listContent",
           summary: "List document ids in a collection",
-          parameters: [
-            {
-              name: "collection",
-              in: "path",
-              required: true,
-              schema: { type: "string" },
-              description: "Collection name, e.g. 'pages'",
+          parameters: [collectionParam],
+          responses: {
+            "200": {
+              description: "The ids in the collection",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/IdList" } },
+              },
             },
-          ],
-          responses: { "200": { description: "The ids in the collection" } },
+          },
         },
       },
       "/api/{collection}/{id}": {
         get: {
           operationId: "readContent",
           summary: "Read one document",
-          parameters: [
-            { name: "collection", in: "path", required: true, schema: { type: "string" } },
-            { name: "id", in: "path", required: true, schema: { type: "string" } },
-          ],
-          responses: { "200": { description: "The document JSON" }, "404": { description: "Not found" } },
+          parameters: [collectionParam, idParam],
+          responses: {
+            "200": { description: "The document", content: docContent },
+            "404": { description: "Not found" },
+          },
         },
         put: {
           operationId: "writeContent",
           summary: "Create or replace a document",
-          parameters: [
-            { name: "collection", in: "path", required: true, schema: { type: "string" } },
-            { name: "id", in: "path", required: true, schema: { type: "string" } },
-          ],
-          requestBody: {
-            required: true,
-            content: {
-              "application/json": {
-                schema: { type: "object", description: "The document to store" },
+          parameters: [collectionParam, idParam],
+          requestBody: { required: true, content: docContent },
+          responses: {
+            "200": {
+              description: "Saved",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } },
               },
             },
           },
-          responses: { "200": { description: "Saved" } },
         },
         delete: {
           operationId: "deleteContent",
           summary: "Delete a document",
-          parameters: [
-            { name: "collection", in: "path", required: true, schema: { type: "string" } },
-            { name: "id", in: "path", required: true, schema: { type: "string" } },
-          ],
-          responses: { "200": { description: "Deleted" } },
+          parameters: [collectionParam, idParam],
+          responses: {
+            "200": {
+              description: "Deleted",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } },
+              },
+            },
+          },
         },
       },
     },
     components: {
+      schemas: {
+        ContentDocument: {
+          type: "object",
+          description: "A content document. Any JSON fields are allowed.",
+          properties: {
+            title: { type: "string", description: "Optional title" },
+          },
+          additionalProperties: true,
+        },
+        IdList: {
+          type: "object",
+          properties: {
+            collection: { type: "string" },
+            ids: { type: "array", items: { type: "string" } },
+          },
+        },
+        WriteResult: {
+          type: "object",
+          properties: {
+            ok: { type: "boolean" },
+            saved: { type: "string" },
+            deleted: { type: "string" },
+          },
+        },
+      },
       securitySchemes: {
         bearerAuth: { type: "http", scheme: "bearer" },
       },
@@ -239,6 +282,32 @@ export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
     const { pathname } = url;
+
+    // Debug capture: record the last real API request (ignore root/openapi/debug reads)
+    const skipCapture =
+      pathname === "/" ||
+      pathname === "/openapi.json" ||
+      pathname.startsWith("/api/sys/") ||
+      pathname === "/mcp" ||
+      pathname.startsWith("/sse");
+    if (!skipCapture) {
+      const authHeader = request.headers.get("authorization");
+      ctx.waitUntil(
+        env.CONTENT.put(
+          "sys:lastrequest",
+          JSON.stringify({
+            t: new Date().toISOString(),
+            method: request.method,
+            path: pathname,
+            search: url.search,
+            hasAuthHeader: !!authHeader,
+            authMatches: env.API_KEY ? authHeader === `Bearer ${env.API_KEY}` : null,
+            userAgent: request.headers.get("user-agent"),
+            contentType: request.headers.get("content-type"),
+          })
+        ).catch(() => {})
+      );
+    }
 
     if (pathname === "/openapi.json") return json(openApiSchema(url.origin));
     if (pathname.startsWith("/api")) return handleApi(request, env, pathname);
