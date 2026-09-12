@@ -1,6 +1,7 @@
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { renderPage, render404 } from "./render";
 
 /**
  * Julie Bale — content backbone.
@@ -328,6 +329,31 @@ function openApiSchema(origin: string) {
 
 /* -------------------------------- Router ---------------------------------- */
 
+const htmlResponse = (body: string, status = 200) =>
+  new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8" } });
+
+async function handleSite(env: Env, pathname: string): Promise<Response> {
+  const siteRaw = await readDoc(env, "site", "config");
+  const site = siteRaw ? JSON.parse(siteRaw) : {};
+
+  // Raw landing pages served verbatim from the `landing` collection, at /l/{slug}
+  if (pathname.startsWith("/l/")) {
+    const slug = decodeURIComponent(pathname.slice(3).replace(/\/+$/, ""));
+    const raw = await readDoc(env, "landing", slug);
+    if (raw) {
+      const doc = JSON.parse(raw);
+      if (typeof doc.html === "string") return htmlResponse(doc.html);
+    }
+    return htmlResponse(await render404(site), 404);
+  }
+
+  const slug = pathname === "/" ? "home" : decodeURIComponent(pathname.replace(/^\/+/, "").replace(/\/+$/, ""));
+  if (!slug || slug.includes("/")) return htmlResponse(await render404(site), 404);
+  const pageRaw = await readDoc(env, "pages", slug);
+  if (!pageRaw) return htmlResponse(await render404(site), 404);
+  return htmlResponse(await renderPage(env, JSON.parse(pageRaw), site));
+}
+
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -337,15 +363,9 @@ export default {
     if (pathname.startsWith("/api")) return handleApi(request, env, pathname);
     if (pathname === "/mcp") return ContentMCP.serve("/mcp").fetch(request, env, ctx);
     if (pathname === "/sse" || pathname === "/sse/message") return ContentMCP.serveSSE("/sse").fetch(request, env, ctx);
-    if (pathname === "/") {
-      return new Response(
-        "Julie Bale content backbone.\n" +
-          "REST:     /api/{collection}/{id} (GET/PUT/DELETE), /api/undo/{collection}/{id}, /api/feature-requests\n" +
-          "OpenAPI:  /openapi.json\n" +
-          "MCP:      /mcp, /sse\n",
-        { headers: { "content-type": "text/plain" } }
-      );
-    }
-    return new Response("Not found", { status: 404 });
+    if (pathname === "/robots.txt")
+      return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
+
+    return handleSite(env, pathname);
   },
 } satisfies ExportedHandler<Env>;

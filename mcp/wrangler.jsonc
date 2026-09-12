@@ -11,5 +11,6 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "juliebale", "database_id": "d81886bc-6c19-4019-b355-84bff64e8f60" }
   ],
+  "assets": { "directory": "./public" },
   "observability": { "enabled": true }
 }
