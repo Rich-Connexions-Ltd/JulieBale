@@ -59,6 +59,61 @@ async function readRows(env: Env, collection: string): Promise<Array<{ id: strin
   return rows.filter((r) => r.doc);
 }
 
+interface DateItem { when: Date; raw: string; title: string; href: string | null; location?: string; note?: string; kind: string; }
+
+// Unified upcoming feed: events (by starts_at) + standalone dates, sorted ascending.
+async function upcomingDates(env: Env): Promise<DateItem[]> {
+  const items: DateItem[] = [];
+  for (const { id, doc } of await readRows(env, "events")) {
+    if (doc.starts_at) items.push({ when: new Date(doc.starts_at), raw: doc.starts_at, title: doc.title, href: `/events/${encodeURIComponent(id)}`, location: doc.location, kind: "event" });
+  }
+  for (const { doc } of await readRows(env, "dates")) {
+    // Standalone dates are informational (not page links); only events link to their detail page.
+    if (doc.date) items.push({ when: new Date(doc.date), raw: doc.date, title: doc.title, href: null, note: doc.note, kind: "date" });
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return items.filter((i) => !isNaN(i.when.getTime()) && i.when >= today).sort((a, b) => a.when.getTime() - b.when.getTime());
+}
+
+function renderMonthGrid(y: number, m: number, items: DateItem[]): string {
+  const monthName = new Date(y, m, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const firstDow = (new Date(y, m, 1).getDay() + 6) % 7; // Monday = 0
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const byDay: Record<number, DateItem[]> = {};
+  for (const it of items) (byDay[it.when.getDate()] = byDay[it.when.getDate()] || []).push(it);
+  const cells: string[] = [];
+  for (let i = 0; i < firstDow; i++) cells.push(`<div class="cal__cell cal__cell--empty"></div>`);
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayItems = byDay[day] || [];
+    const marks = dayItems
+      .map((it) => (it.href ? `<a class="cal__event" href="${esc(it.href)}">${esc(it.title)}</a>` : `<span class="cal__event">${esc(it.title)}</span>`))
+      .join("");
+    cells.push(`<div class="cal__cell${dayItems.length ? " cal__cell--has" : ""}"><span class="cal__day">${day}</span>${marks}</div>`);
+  }
+  const dow = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => `<div class="cal__dow">${d}</div>`).join("");
+  return `<div class="cal"><h3 class="cal__title">${esc(monthName)}</h3><div class="cal__grid">${dow}${cells.join("")}</div></div>`;
+}
+
+function renderCalendar(items: DateItem[]): string {
+  const byMonth = new Map<string, { y: number; m: number; items: DateItem[] }>();
+  for (const it of items) {
+    const k = `${it.when.getFullYear()}-${it.when.getMonth()}`;
+    if (!byMonth.has(k)) byMonth.set(k, { y: it.when.getFullYear(), m: it.when.getMonth(), items: [] });
+    byMonth.get(k)!.items.push(it);
+  }
+  return [...byMonth.values()].sort((a, b) => a.y - b.y || a.m - b.m).map((mo) => renderMonthGrid(mo.y, mo.m, mo.items)).join("");
+}
+
+function renderAgenda(items: DateItem[]): string {
+  return `<ul class="listing">${items
+    .map(
+      (it) =>
+        `<li class="listing__item"><span class="listing__title">${it.href ? `<a href="${esc(it.href)}">${esc(it.title)}</a>` : esc(it.title)}</span><span class="listing__meta">${fmtDate(it.raw)}${it.location ? " · " + esc(it.location) : ""}</span>${it.note ? `<p>${esc(it.note)}</p>` : ""}</li>`
+    )
+    .join("")}</ul>`;
+}
+
 /* ------------------------------- Blocks -------------------------------- */
 
 async function renderBlock(env: Env, b: any, i: number): Promise<string> {
@@ -230,6 +285,28 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
         })
       );
       return `<section class="section"><div class="container--reading reveal">${groups.join("\n")}</div></section>`;
+    }
+
+    case "calendar": {
+      const items = await upcomingDates(env);
+      const heading = b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : "";
+      if (!items.length)
+        return `<section class="section${ivory}"><div class="container">${heading}<p class="muted">${esc(b.empty || "Nothing on the calendar yet.")}</p></div></section>`;
+      const uid = `dv${i}`;
+      const defaultCal = (b.view || "calendar") !== "list";
+      return `<section class="section${ivory}"><div class="container">
+    ${heading}
+    <div class="dateswitch">
+      <input class="r-cal" type="radio" name="${uid}" id="${uid}-cal"${defaultCal ? " checked" : ""}>
+      <input class="r-list" type="radio" name="${uid}" id="${uid}-list"${defaultCal ? "" : " checked"}>
+      <div class="dateswitch__tabs">
+        <label class="for-cal" for="${uid}-cal">Calendar</label>
+        <label class="for-list" for="${uid}-list">List</label>
+      </div>
+      <div class="dateswitch__cal">${renderCalendar(items)}</div>
+      <div class="dateswitch__list">${renderAgenda(items)}</div>
+    </div>
+  </div></section>`;
     }
 
     default:

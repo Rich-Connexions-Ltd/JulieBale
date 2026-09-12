@@ -147,7 +147,7 @@
       "seo": { "description": "Diva Days, singing workshops, open days, showcases and retreats with Julie Bale." },
       "sections": [
         { "type": "statement", "statement": "Come and sing with me.", "sub": "Not everything I do requires a six-month commitment. Throughout the year I run Diva Days, singing workshops, open days, showcases, retreats and special events." },
-        { "type": "listing", "collection": "events", "heading": "What's coming up", "empty": "New dates are being planned. Check back soon, or get in touch to be told first." },
+        { "type": "calendar", "heading": "What's on", "view": "calendar", "empty": "New dates are being planned. Check back soon, or get in touch to be told first." },
         { "type": "feature", "eyebrow": "Retreats", "heading": "Loch Lomond", "body": "Sing. Stay. Switch off. A small singing retreat beside Loch Lomond, with music, individual work, group sessions, performance, good food and time together. And because it's Scotland, there may be a ceilidh. Actually, there probably will be.", "image": "retreats.jpeg", "cta": { "label": "See what's coming up", "href": "/start" } }
       ]
     }
@@ -226,9 +226,9 @@
         { "type": "statement", "statement": "Everything you need, all in one place.", "sub": "Hello, Diva. This is the practical home for the Diva Programme: courses, dates, monthly updates, music, files and useful links." },
         { "type": "accordion", "items": [
           { "title": "Courses", "collection": "courses", "empty": "Your courses will appear here." },
-          { "title": "Events", "collection": "events", "empty": "Upcoming events will appear here." },
-          { "title": "Dates", "collection": "dates", "view": "list", "empty": "Key dates will appear here." }
+          { "title": "Events", "collection": "events", "empty": "Upcoming events will appear here." }
         ]},
+        { "type": "calendar", "heading": "Diva Dates", "view": "calendar", "empty": "Key dates will appear here." },
         { "type": "richtext", "heading": "Need to book something?", "body": "A Julie session, an accompanist session or a Diva Day. Get in touch and we'll sort it." }
       ]
     }

@@ -1116,3 +1116,45 @@ textarea:focus-visible { border-color: var(--colour-primary); }
 .stack-form .field span { font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.02em; }
 .stack-form input { width: 100%; }
 .stack-form .button { align-self: flex-start; }
+
+/* ============================================================
+   Calendar + list/calendar toggle (dates)
+   ============================================================ */
+.dateswitch > input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+.dateswitch__tabs { display: inline-flex; border: 1px solid var(--colour-border); margin-bottom: var(--space-5); }
+.dateswitch__tabs label {
+  padding: 0.55rem 1.3rem; cursor: pointer; font-size: var(--text-sm); font-weight: 600;
+  letter-spacing: 0.05em; color: var(--colour-text); transition: background-color 160ms ease, color 160ms ease;
+}
+.dateswitch__tabs label + label { border-left: 1px solid var(--colour-border); }
+.dateswitch__cal, .dateswitch__list { display: none; }
+.dateswitch > .r-cal:checked ~ .dateswitch__cal { display: block; }
+.dateswitch > .r-list:checked ~ .dateswitch__list { display: block; }
+.dateswitch > .r-cal:checked ~ .dateswitch__tabs .for-cal,
+.dateswitch > .r-list:checked ~ .dateswitch__tabs .for-list { background: var(--colour-primary); color: var(--colour-ivory); }
+.dateswitch > input[type="radio"]:focus-visible ~ .dateswitch__tabs label { outline: 3px solid var(--colour-primary); outline-offset: 2px; }
+
+.cal { margin-bottom: var(--space-6); }
+.cal__title { font-family: var(--font-display); font-size: var(--heading-sm); font-weight: 500; margin-bottom: var(--space-3); }
+.cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--colour-border); border-left: 1px solid var(--colour-border); }
+.cal__dow {
+  font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--colour-primary-soft);
+  padding: 0.5rem; border-right: 1px solid var(--colour-border); border-bottom: 1px solid var(--colour-border); background: var(--colour-cream); text-align: center;
+}
+.cal__cell {
+  min-height: 5.5rem; padding: 0.4rem; border-right: 1px solid var(--colour-border); border-bottom: 1px solid var(--colour-border);
+  display: flex; flex-direction: column; gap: 0.25rem;
+}
+.cal__cell--empty { background: color-mix(in srgb, var(--colour-cream) 55%, transparent); }
+.cal__cell--has { background: var(--colour-ivory); }
+.cal__day { font-size: var(--text-xs); color: var(--colour-text-muted); font-variant-numeric: tabular-nums; }
+.cal__event {
+  font-size: 0.72rem; line-height: 1.25; background: var(--colour-primary); color: var(--colour-ivory);
+  padding: 0.15rem 0.35rem; text-decoration: none; border-radius: 2px;
+}
+a.cal__event:hover { background: var(--colour-primary-dark); }
+@media (max-width: 44rem) {
+  .cal__cell { min-height: 3.6rem; padding: 0.25rem; }
+  .cal__event { font-size: 0.6rem; padding: 0.1rem 0.2rem; }
+  .cal__dow { padding: 0.35rem 0.15rem; font-size: 0.6rem; }
+}
