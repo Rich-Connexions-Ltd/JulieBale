@@ -115,6 +115,35 @@ async function revertDoc(env: Env, collection: string, id: string) {
   return { ok: true, restored: `${collection}/${id}` };
 }
 
+function slugify(s: string): string {
+  return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+}
+
+// Promote a calendar date into a full event (own page), then remove the date.
+async function convertDateToEvent(env: Env, dateId: string, eventId?: string) {
+  const raw = await readDoc(env, "dates", dateId);
+  if (!raw) return { ok: false, error: `no date at dates/${dateId}` };
+  const date = JSON.parse(raw);
+  let base = eventId || slugify(date.title || dateId) || dateId;
+  let finalId = base, n = 2;
+  while (await readDoc(env, "events", finalId)) { finalId = `${base}-${n}`; n++; }
+  const event = {
+    title: date.title || "Untitled event",
+    starts_at: date.date || "",
+    ends_at: "",
+    location: "",
+    description: date.note || "",
+    images: [] as string[],
+    links: date.link ? [{ label: "Details", href: date.link }] : [],
+    details: "",
+    availability: "open",
+    status: "published",
+  };
+  await writeDoc(env, "events", finalId, JSON.stringify(event));
+  await deleteDoc(env, "dates", dateId);
+  return { ok: true, event: `events/${finalId}`, url: `/events/${finalId}`, removedDate: `dates/${dateId}` };
+}
+
 /* --------------------------- Feature requests ----------------------------- */
 
 async function createFeatureRequest(
@@ -141,7 +170,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.5.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.6.0" });
 
   async init() {
     this.server.tool(
@@ -253,6 +282,20 @@ export class ContentMCP extends McpAgent<Env> {
     editor("dates", "date");
     editor("posts", "post");
     editor("courses", "course");
+
+    this.server.tool(
+      "convert_date_to_event",
+      "Promote a simple calendar date into a full event that has its own page (description, location, running order, availability, images). WHEN: a date in the 'dates' collection has grown into a proper event people should be able to open, not just a line in the calendar. It creates an event from the date's title and date, then removes the date (both are kept for undo). Pass the date id; optionally an event id/slug. After converting, edit the new event to add its description, location and details.",
+      { id: z.string(), eventId: z.string().optional() },
+      async ({ id, eventId }) => {
+        const r = await convertDateToEvent(this.env, id, eventId);
+        return {
+          content: [
+            { type: "text", text: r.ok ? `Converted dates/${id} into ${r.event}. Now edit that event to add its description, location and details.` : `Could not convert: ${r.error}` },
+          ],
+        };
+      }
+    );
   }
 }
 
@@ -348,6 +391,14 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
     return json(await revertDoc(env, parts[1], parts[2]));
   }
 
+  // Convert a date to an event: POST /api/dates/{id}/convert-to-event
+  if (parts[0] === "dates" && parts.length === 3 && parts[2] === "convert-to-event") {
+    if (method !== "POST") return json({ error: "method not allowed" }, 405);
+    const body = (await request.json().catch(() => ({}))) as any;
+    const r = await convertDateToEvent(env, decodeURIComponent(parts[1]), body && body.eventId);
+    return json(r, r.ok ? 200 : 400);
+  }
+
   // Content: /api/{collection}
   if (parts.length === 1) {
     const collection = parts[0];
@@ -398,7 +449,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document.",
-      version: "0.5.0",
+      version: "0.6.0",
     },
     servers: [{ url: origin }],
     paths: {
@@ -413,6 +464,9 @@ function openApiSchema(origin: string) {
       },
       "/api/undo/{collection}/{id}": {
         post: { operationId: "undoContent", summary: "Undo the last change to a document", description: "Reverts a document to its state before the last change. Call again to step further back. Use when asked to undo or put something back.", parameters: [collectionParam, idParam], responses: { "200": { description: "Reverted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+      },
+      "/api/dates/{id}/convert-to-event": {
+        post: { operationId: "convertDateToEvent", summary: "Convert a date into a full event.", description: "Promotes a calendar date into an event with its own page (description, location, details). Creates the event from the date's title and date, then removes the date (both undoable). After converting, edit the event to add its description, location and details.", parameters: [{ name: "id", in: "path", required: true, description: "The date id", schema: { type: "string" } }], responses: { "200": { description: "Converted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
       },
       "/api/feature-requests": {
         get: { operationId: "listFeatureRequests", summary: "List feature/element requests", description: "Check what has already been requested before logging a new one, or when asked what is outstanding.", parameters: [{ name: "status", in: "query", required: false, schema: { type: "string" } }], responses: { "200": { description: "Requests", content: { "application/json": { schema: { $ref: "#/components/schemas/FeatureRequestList" } } } } } },
@@ -429,7 +483,7 @@ function openApiSchema(origin: string) {
         ContentDocument: { type: "object", description: "A content document. Any JSON fields are allowed.", properties: { title: { type: "string", description: "Optional title" } }, additionalProperties: true },
         ContentBody: { type: "object", required: ["data"], properties: { data: { type: "string", description: "The content as a JSON string. For writeContent, the COMPLETE document. For updateContent, ONLY the fields to change. Put every field you want inside this one string, e.g. a JSON object with a description field. This is a string, not an object. Descriptive text fields (body, description, details, excerpt) support Markdown, so use Markdown for headings, bold, lists and links." } } },
         IdList: { type: "object", properties: { collection: { type: "string" }, ids: { type: "array", items: { type: "string" } } } },
-        WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, merged: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" }, created: { type: "boolean" }, existed: { type: "boolean" } } },
+        WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, merged: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" }, created: { type: "boolean" }, existed: { type: "boolean" }, event: { type: "string" }, url: { type: "string" }, removedDate: { type: "string" }, error: { type: "string" } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] } } },
         FeatureRequestList: { type: "object", properties: { requests: { type: "array", items: { $ref: "#/components/schemas/FeatureRequest" } } } },
       },
