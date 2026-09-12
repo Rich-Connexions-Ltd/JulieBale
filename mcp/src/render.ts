@@ -21,8 +21,13 @@ const paras = (body: string): string =>
     .map((p) => `<p>${esc(p.trim()).replace(/\n/g, "<br>")}</p>`)
     .join("\n");
 
+// Resolve an image/media reference: absolute (http / leading slash) stays as-is;
+// a bare filename is a bundled design asset (/assets); an R2 key uses /media.
+const assetUrl = (file: string): string => (!file ? "" : /^(https?:|\/)/.test(file) ? file : `/assets/${file}`);
+const mediaUrl = (key: string): string => (!key ? "" : /^(https?:|\/)/.test(key) ? key : `/media/${key}`);
+
 const img = (file: string, alt: string, cls = ""): string =>
-  file ? `<img src="/assets/${esc(file)}" alt="${esc(alt)}"${cls ? ` class="${cls}"` : ""}>` : "";
+  file ? `<img src="${esc(assetUrl(file))}" alt="${esc(alt)}"${cls ? ` class="${cls}"` : ""}>` : "";
 
 const button = (cta: any, cls = "button"): string =>
   cta && cta.label ? `<a class="${cls}" href="${esc(cta.href || "#")}">${esc(cta.label)}</a>` : "";
@@ -287,6 +292,28 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
       return `<section class="section"><div class="container--reading reveal">${groups.join("\n")}</div></section>`;
     }
 
+    case "lessons": {
+      const items = b.items || [];
+      const heading = b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : "";
+      return `<section class="section${ivory}"><div class="container--reading">
+    ${heading}
+    ${
+      items.length
+        ? items
+            .map(
+              (l: any, idx: number) => `<article class="lesson">
+      <h3 class="lesson__title">${esc(l.title || `Lesson ${idx + 1}`)}</h3>
+      ${l.video ? `<div class="video"><iframe src="https://iframe.videodelivery.net/${esc(l.video)}" loading="lazy" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen></iframe></div>` : ""}
+      ${l.audio ? `<audio class="lesson__audio" controls src="${esc(mediaUrl(l.audio))}"></audio>` : ""}
+      ${l.body ? paras(l.body) : ""}
+    </article>`
+            )
+            .join("")
+        : `<p class="muted">${esc(b.empty || "Lessons coming soon.")}</p>`
+    }
+  </div></section>`;
+    }
+
     case "calendar": {
       const items = await upcomingDates(env);
       const heading = b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : "";
@@ -429,7 +456,7 @@ export function pageFromDoc(collection: string, doc: any): any {
       seo: { description: doc.description || "" },
       sections: [
         { type: "statement", statement: doc.title, sub: doc.description || "" },
-        ...(doc.lessons || []).map((l: any) => ({ type: "richtext", heading: l.title, body: l.body || "" })),
+        { type: "lessons", items: doc.lessons || [] },
       ],
     };
   }

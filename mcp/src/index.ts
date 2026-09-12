@@ -411,6 +411,24 @@ async function handleSite(env: Env, pathname: string): Promise<Response> {
     return htmlResponse(await renderPage(env, pageFromDoc(coll, JSON.parse(raw)), site));
   }
 
+  // Courses index
+  if (segs.length === 1 && segs[0] === "courses") {
+    return htmlResponse(
+      await renderPage(
+        env,
+        {
+          title: "Courses",
+          seo: { description: "Learn with Julie Bale, in your own time." },
+          sections: [
+            { type: "statement", statement: "Courses", sub: "Learn with Julie, in your own time." },
+            { type: "listing", collection: "courses", empty: "Courses are on their way." },
+          ],
+        },
+        site
+      )
+    );
+  }
+
   // Blog index
   if (segs.length === 1 && segs[0] === "blog") {
     return htmlResponse(
