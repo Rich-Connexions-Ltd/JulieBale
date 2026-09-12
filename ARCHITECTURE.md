@@ -37,6 +37,14 @@ now, likely on a subdomain. Authentication on the new site is a later phase.
    Every change is versioned and reversible by chat.
 4. **British English throughout. No em dashes in site copy. Singing is always the
    primary subject.** (Julie's brand voice rules.)
+5. **Tool descriptions are documentation, not labels.** Every MCP tool and API
+   operation carries a verbose description: *when* to reach for it, *how* to use
+   it, and *what NOT to do* (naming the safer alternative). The model chooses and
+   uses tools from these words, so as the toolset grows this documentation surface
+   is the main lever on reliable behaviour. A blunt "create or replace" once let
+   the model strip an event; a description that says "REPLACES the whole document,
+   use updateContent to edit a field" prevents it. Keep every new tool to this
+   standard.
 
 ---
 

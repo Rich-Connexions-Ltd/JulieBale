@@ -138,7 +138,7 @@ export class ContentMCP extends McpAgent<Env> {
   async init() {
     this.server.tool(
       "list_content",
-      "List the document ids in a collection (e.g. 'pages', 'posts', 'events').",
+      "List the ids of documents in a collection. WHEN: use first to discover what already exists before creating or editing (e.g. list 'pages' for every page slug, 'events' for existing events). Does NOT return the documents themselves, follow up with read_content. Collections: pages, posts, events, courses, dates, landing, site, context.",
       { collection: z.string() },
       async ({ collection }) => {
         const ids = await listDocs(this.env, collection);
@@ -148,7 +148,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "read_content",
-      "Read one document by collection and id. Returns its stored JSON, or a not-found note.",
+      "Read one document and return its full JSON. WHEN: ALWAYS read a document before you change it, so you edit from its real current state and keep the fields you are not changing. Also read Julie's context first (collection 'context', ids: voice, brand, offers, content-model) before writing any copy. Returns a not-found note if it does not exist.",
       { collection: z.string(), id: z.string() },
       async ({ collection, id }) => {
         const v = await readDoc(this.env, collection, id);
@@ -158,7 +158,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "write_content",
-      "Create or replace a document. `data` must be a JSON string. The previous state is kept for undo.",
+      "REPLACE an entire document with exactly the JSON you send. WARNING: any field you leave out is DELETED. WHEN: only to create a brand-new document, or to deliberately rewrite one in full (then include EVERY field). DO NOT use this to change or add a single field on an existing document, it will wipe the rest, use update_content instead. Previous state is kept for undo, but prefer update_content.",
       { collection: z.string(), id: z.string(), data: z.string() },
       async ({ collection, id, data }) => {
         try {
@@ -173,7 +173,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "update_content",
-      "Merge fields into an existing document WITHOUT removing fields you don't send. Prefer this for editing (e.g. changing one field). `data` is a JSON string of just the fields to change.",
+      "PREFERRED WAY TO EDIT. Merge one or more fields into an existing document, keeping every field you do not mention. WHEN: almost all edits, such as changing a page's copy, an event's description or date, or a price. `data` is a JSON string of ONLY the fields to change (for example, just the description field). Safe: omitted fields are untouched and the previous state is kept for undo. DO NOT paste the whole document here unless you intend to.",
       { collection: z.string(), id: z.string(), data: z.string() },
       async ({ collection, id, data }) => {
         let patch: Record<string, unknown>;
@@ -189,7 +189,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "delete_content",
-      "Delete a document. The previous state is kept for undo.",
+      "Permanently remove a document (previous state kept, so it is undoable). WHEN: only when something should genuinely no longer exist, and confirm with Julie first for pages or anything client-facing. DO NOT use delete to clear a single field or empty a value, use update_content to set that field instead.",
       { collection: z.string(), id: z.string() },
       async ({ collection, id }) => {
         const ok = await deleteDoc(this.env, collection, id);
@@ -199,7 +199,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "undo_content",
-      "Revert a document to its previous version (undo the last change to it).",
+      "Revert a document to its state before the last change (step back one edit). WHEN: Julie says undo that or put it back, or a change went wrong. Each call steps back one more change, so call again to go further. Tell Julie what was restored.",
       { collection: z.string(), id: z.string() },
       async ({ collection, id }) => {
         const r = await revertDoc(this.env, collection, id);
@@ -209,7 +209,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "request_feature",
-      "Raise a request to the dev team for something the site can't do yet (a new feature, page element, layout, or content type). Use when Julie asks for something not yet supported.",
+      "Log a request to the developer team for something the website cannot do yet: a new kind of section/block, a new layout, a new content type, or a bug. WHEN: use this INSTEAD of improvising a workaround that breaks the design or content model, whenever Julie wants something the existing block types cannot express. Give a clear title, what it should do and look like (detail) and where on the site (context). Then tell Julie it is logged and offer the closest thing possible now. DO NOT use for ordinary content edits you can already make.",
       {
         title: z.string().describe("Short summary of what's wanted"),
         detail: z.string().optional().describe("What it should do / look like"),
@@ -224,7 +224,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "list_feature_requests",
-      "List feature/element requests and their status.",
+      "List logged feature/element requests and their status (open, planned, done, declined). WHEN: check what has already been requested before logging a new one, or when Julie asks what is outstanding. Optionally filter by status.",
       { status: z.enum(["open", "planned", "done", "declined"]).optional() },
       async ({ status }) => {
         const rows = await listFeatureRequests(this.env, status);
@@ -322,28 +322,28 @@ function openApiSchema(origin: string) {
     openapi: "3.1.0",
     info: {
       title: "Julie Bale content API",
-      description: "Read and write Julie Bale's website content, undo changes, and raise feature requests. Documents are JSON stored by collection and id.",
+      description: "Read and write Julie Bale's website content, undo changes, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document.",
       version: "0.4.0",
     },
     servers: [{ url: origin }],
     paths: {
       "/api/{collection}": {
-        get: { operationId: "listContent", summary: "List document ids in a collection", parameters: [collectionParam], responses: { "200": { description: "The ids", content: { "application/json": { schema: { $ref: "#/components/schemas/IdList" } } } } } },
+        get: { operationId: "listContent", summary: "List document ids in a collection", description: "Use first to discover what already exists before creating or editing. Returns the ids in a collection; read a specific one with readContent.", parameters: [collectionParam], responses: { "200": { description: "The ids", content: { "application/json": { schema: { $ref: "#/components/schemas/IdList" } } } } } },
       },
       "/api/{collection}/{id}": {
-        get: { operationId: "readContent", summary: "Read one document", parameters: [collectionParam, idParam], responses: { "200": { description: "The document", content: docContent }, "404": { description: "Not found" } } },
-        put: { operationId: "writeContent", summary: "Replace a whole document. Use only when rewriting the entire document; for editing fields use updateContent instead so nothing is lost.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Saved", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
-        patch: { operationId: "updateContent", summary: "Merge fields into a document WITHOUT removing fields you don't send. Prefer this for editing.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Updated", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
-        delete: { operationId: "deleteContent", summary: "Delete a document (previous state kept for undo)", parameters: [collectionParam, idParam], responses: { "200": { description: "Deleted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        get: { operationId: "readContent", summary: "Read one document", description: "ALWAYS read a document before changing it, and read the context collection (ids voice, brand, offers, content-model) before writing copy. Returns the full JSON.", parameters: [collectionParam, idParam], responses: { "200": { description: "The document", content: docContent }, "404": { description: "Not found" } } },
+        put: { operationId: "writeContent", summary: "Replace a whole document.", description: "REPLACES the entire document with the JSON you send; any field you omit is DELETED. Use only to create a new document or deliberately rewrite one in full (send EVERY field). To change or add a field on an existing document, use updateContent instead, never this.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Saved", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        patch: { operationId: "updateContent", summary: "Merge fields into a document (preferred for editing).", description: "PREFERRED for edits. Merges only the fields you send and keeps everything else, so nothing is lost. Send a JSON body of just the fields to change. Use for almost all edits: copy, an event description or date, a price.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Updated", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        delete: { operationId: "deleteContent", summary: "Delete a document.", description: "Permanently removes a document (undoable). Only when it should genuinely no longer exist; confirm first for pages/client-facing content. To clear a field, use updateContent, not delete.", parameters: [collectionParam, idParam], responses: { "200": { description: "Deleted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
       },
       "/api/undo/{collection}/{id}": {
-        post: { operationId: "undoContent", summary: "Revert a document to its previous version", parameters: [collectionParam, idParam], responses: { "200": { description: "Reverted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        post: { operationId: "undoContent", summary: "Undo the last change to a document", description: "Reverts a document to its state before the last change. Call again to step further back. Use when asked to undo or put something back.", parameters: [collectionParam, idParam], responses: { "200": { description: "Reverted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
       },
       "/api/feature-requests": {
-        get: { operationId: "listFeatureRequests", summary: "List feature/element requests", parameters: [{ name: "status", in: "query", required: false, schema: { type: "string" } }], responses: { "200": { description: "Requests", content: { "application/json": { schema: { $ref: "#/components/schemas/FeatureRequestList" } } } } } },
+        get: { operationId: "listFeatureRequests", summary: "List feature/element requests", description: "Check what has already been requested before logging a new one, or when asked what is outstanding.", parameters: [{ name: "status", in: "query", required: false, schema: { type: "string" } }], responses: { "200": { description: "Requests", content: { "application/json": { schema: { $ref: "#/components/schemas/FeatureRequestList" } } } } } },
         post: {
           operationId: "createFeatureRequest",
-          summary: "Raise a request for a new feature, page element, layout or content type the site can't do yet",
+          summary: "Raise a feature/element request.", description: "Log something the site cannot do yet (new block/section, layout, content type, or bug) INSTEAD of improvising a workaround that breaks the design. Include a clear title, what it should do (detail) and where (context).",
           requestBody: { required: true, content: { "application/json": { schema: { $ref: "#/components/schemas/FeatureRequest" } } } },
           responses: { "200": { description: "Logged", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } },
         },
