@@ -45,6 +45,11 @@ now, likely on a subdomain. Authentication on the new site is a later phase.
    the model strip an event; a description that says "REPLACES the whole document,
    use updateContent to edit a field" prevents it. Keep every new tool to this
    standard.
+6. **Bump the schema version on every schema change.** The OpenAPI `info.version`
+   (and the MCP server version, kept in step) must increase whenever the schema
+   changes at all, including description-only edits. Clients cache the imported
+   schema, so an unchanged version across changes makes re-imports ambiguous.
+   One change, one version bump.
 
 ---
 

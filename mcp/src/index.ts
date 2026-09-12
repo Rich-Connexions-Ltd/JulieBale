@@ -141,7 +141,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.4.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.5.0" });
 
   async init() {
     this.server.tool(
@@ -398,7 +398,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document.",
-      version: "0.4.0",
+      version: "0.5.0",
     },
     servers: [{ url: origin }],
     paths: {
