@@ -4,9 +4,36 @@ A minimal remote **MCP server on Cloudflare Workers** to validate the read/write
 round-trip before we build the real thing. Storage is **KV** (throwaway); the
 real build moves to **D1** (see [`../ARCHITECTURE.md`](../ARCHITECTURE.md)).
 
-> **TEST ONLY — no authentication yet.** Anyone with the URL can read and write.
-> Do not put real or sensitive content here. OAuth/token auth comes before any
-> production use.
+> **TEST surface.** The REST API is protected by a bearer API key (the `API_KEY`
+> Worker secret). The MCP endpoints are still authless (test only). Storage is
+> throwaway KV. Do not put real or sensitive content here yet.
+
+## Two front doors (same KV store)
+
+- **REST + OpenAPI** — for a **ChatGPT Custom GPT Action** (works on Plus).
+  - `GET /api/{collection}` — list ids
+  - `GET /api/{collection}/{id}` — read a document
+  - `PUT /api/{collection}/{id}` — create/replace (JSON body)
+  - `DELETE /api/{collection}/{id}` — delete
+  - `GET /openapi.json` — the schema to import into a Custom GPT (public)
+  - Auth: `Authorization: Bearer <API_KEY>` on all `/api/*`.
+- **MCP** (`/mcp`, `/sse`) — for MCP clients (Enterprise/Team ChatGPT, Claude,
+  RCNX tooling). Plus plans cannot add custom MCP connectors, which is why the
+  REST/Actions door exists.
+
+## Build the Custom GPT (Plus)
+
+1. ChatGPT → **Explore GPTs → Create → Configure → Actions → Create new action**.
+2. **Import from URL:** `https://juliebale-mcp.singing-bridge.workers.dev/openapi.json`
+3. **Authentication:** API Key · **Auth Type: Bearer** · paste the `API_KEY`.
+4. Save. Ask the GPT to write then read a document to confirm the round-trip.
+
+## Manage the API key
+
+```bash
+# rotate / set the REST bearer key
+printf '%s' "<new-key>" | npx wrangler secret put API_KEY
+```
 
 ## Tools
 
