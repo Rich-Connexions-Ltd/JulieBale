@@ -425,7 +425,10 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
 
-    if (pathname === "/openapi.json") return json(openApiSchema(url.origin));
+    if (pathname === "/openapi.json")
+      return new Response(JSON.stringify(openApiSchema(url.origin), null, 2), {
+        headers: { "content-type": "application/json", "cache-control": "no-store" },
+      });
     if (pathname.startsWith("/api")) return handleApi(request, env, pathname);
     if (pathname === "/mcp") return ContentMCP.serve("/mcp").fetch(request, env, ctx);
     if (pathname === "/sse" || pathname === "/sse/message") return ContentMCP.serveSSE("/sse").fetch(request, env, ctx);
