@@ -37,8 +37,16 @@ function linkFor(collection: string, id: string, doc: any): string | null {
   if (collection === "events") return `/events/${encodeURIComponent(id)}`;
   if (collection === "courses") return `/courses/${encodeURIComponent(id)}`;
   if (collection === "posts" || collection === "episodes") return `/blog/${encodeURIComponent(id)}`;
-  if (collection === "dates") return doc && doc.link ? doc.link : null;
+  if (collection === "dates") return null; // dates are calendar entries, not page links
   return null;
+}
+function fmtDate(s: string): string {
+  if (!s) return "";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return esc(s);
+  let out = d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  if (/T\d/.test(s)) out += ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return out;
 }
 function titleHtml(collection: string, id: string, doc: any): string {
   const href = linkFor(collection, id, doc);
@@ -194,7 +202,7 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
             .map(
               ({ id, doc: d }) =>
                 `<li class="listing__item"><span class="listing__title">${titleHtml(b.collection, id, d)}</span>${
-                  d.starts_at || d.date ? `<span class="listing__meta">${esc(d.starts_at || d.date)}${d.location ? " · " + esc(d.location) : ""}</span>` : ""
+                  d.starts_at || d.date ? `<span class="listing__meta">${fmtDate(d.starts_at || d.date)}${d.location ? " · " + esc(d.location) : ""}</span>` : ""
                 }${d.description || d.excerpt ? `<p>${esc(d.description || d.excerpt)}</p>` : ""}</li>`
             )
             .join("")}</ul>`
@@ -204,15 +212,21 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
     }
 
     case "accordion": {
+      const groupName = `accordion-${i}`;
       const groups = await Promise.all(
-        (b.items || []).map(async (grp: any) => {
+        (b.items || []).map(async (grp: any, gi: number) => {
           const rows = await readRows(env, grp.collection);
           const inner = rows.length
             ? `<ul class="listing">${rows
-                .map(({ id, doc: d }) => `<li class="listing__item"><span class="listing__title">${titleHtml(grp.collection, id, d)}</span>${d.date || d.starts_at ? `<span class="listing__meta">${esc(d.date || d.starts_at)}</span>` : ""}</li>`)
+                .map(
+                  ({ id, doc: d }) =>
+                    `<li class="listing__item"><span class="listing__title">${titleHtml(grp.collection, id, d)}</span>${
+                      d.date || d.starts_at ? `<span class="listing__meta">${fmtDate(d.date || d.starts_at)}${d.location ? " · " + esc(d.location) : ""}</span>` : ""
+                    }${d.note ? `<p>${esc(d.note)}</p>` : ""}</li>`
+                )
                 .join("")}</ul>`
             : `<p class="muted">${esc(grp.empty || "Nothing here yet.")}</p>`;
-          return `<details class="accordion__item" open><summary>${esc(grp.title)}</summary><div class="accordion__body">${inner}</div></details>`;
+          return `<details class="accordion__item" name="${groupName}"${gi === 0 ? " open" : ""}><summary>${esc(grp.title)}</summary><div class="accordion__body">${inner}</div></details>`;
         })
       );
       return `<section class="section"><div class="container--reading reveal">${groups.join("\n")}</div></section>`;
