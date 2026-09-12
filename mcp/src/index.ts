@@ -68,6 +68,15 @@ async function writeDoc(env: Env, collection: string, id: string, data: string, 
   return { created: prev === null };
 }
 
+// Merge fields into an existing document (never strips fields you don't send).
+async function mergeDoc(env: Env, collection: string, id: string, patch: Record<string, unknown>) {
+  const prevStr = await readDoc(env, collection, id);
+  const prev = prevStr ? JSON.parse(prevStr) : {};
+  const merged = { ...prev, ...patch };
+  await writeDoc(env, collection, id, JSON.stringify(merged));
+  return { existed: prevStr !== null };
+}
+
 async function deleteDoc(env: Env, collection: string, id: string): Promise<boolean> {
   const prev = await readDoc(env, collection, id);
   if (prev === null) return false;
@@ -124,7 +133,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.3.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.4.0" });
 
   async init() {
     this.server.tool(
@@ -159,6 +168,22 @@ export class ContentMCP extends McpAgent<Env> {
         }
         const { created } = await writeDoc(this.env, collection, id, data);
         return { content: [{ type: "text", text: `${created ? "Created" : "Updated"} ${collection}/${id}.` }] };
+      }
+    );
+
+    this.server.tool(
+      "update_content",
+      "Merge fields into an existing document WITHOUT removing fields you don't send. Prefer this for editing (e.g. changing one field). `data` is a JSON string of just the fields to change.",
+      { collection: z.string(), id: z.string(), data: z.string() },
+      async ({ collection, id, data }) => {
+        let patch: Record<string, unknown>;
+        try {
+          patch = JSON.parse(data);
+        } catch {
+          return { content: [{ type: "text", text: "Error: `data` must be valid JSON." }], isError: true };
+        }
+        const { existed } = await mergeDoc(this.env, collection, id, patch);
+        return { content: [{ type: "text", text: `${existed ? "Updated" : "Created"} ${collection}/${id} (merged ${Object.keys(patch).length} field(s)).` }] };
       }
     );
 
@@ -266,6 +291,16 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
       const { created } = await writeDoc(env, collection, id, body);
       return json({ ok: true, saved: `${collection}/${id}`, created });
     }
+    if (method === "PATCH") {
+      let patch: Record<string, unknown>;
+      try {
+        patch = (await request.json()) as Record<string, unknown>;
+      } catch {
+        return json({ error: "request body must be valid JSON" }, 400);
+      }
+      const { existed } = await mergeDoc(env, collection, id, patch);
+      return json({ ok: true, merged: `${collection}/${id}`, existed });
+    }
     if (method === "DELETE") {
       const ok = await deleteDoc(env, collection, id);
       return json({ ok, deleted: ok ? `${collection}/${id}` : null });
@@ -288,7 +323,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, and raise feature requests. Documents are JSON stored by collection and id.",
-      version: "0.3.0",
+      version: "0.4.0",
     },
     servers: [{ url: origin }],
     paths: {
@@ -297,7 +332,8 @@ function openApiSchema(origin: string) {
       },
       "/api/{collection}/{id}": {
         get: { operationId: "readContent", summary: "Read one document", parameters: [collectionParam, idParam], responses: { "200": { description: "The document", content: docContent }, "404": { description: "Not found" } } },
-        put: { operationId: "writeContent", summary: "Create or replace a document (previous state kept for undo)", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Saved", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        put: { operationId: "writeContent", summary: "Replace a whole document. Use only when rewriting the entire document; for editing fields use updateContent instead so nothing is lost.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Saved", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+        patch: { operationId: "updateContent", summary: "Merge fields into a document WITHOUT removing fields you don't send. Prefer this for editing.", parameters: [collectionParam, idParam], requestBody: { required: true, content: docContent }, responses: { "200": { description: "Updated", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
         delete: { operationId: "deleteContent", summary: "Delete a document (previous state kept for undo)", parameters: [collectionParam, idParam], responses: { "200": { description: "Deleted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
       },
       "/api/undo/{collection}/{id}": {
@@ -317,7 +353,7 @@ function openApiSchema(origin: string) {
       schemas: {
         ContentDocument: { type: "object", description: "A content document. Any JSON fields are allowed.", properties: { title: { type: "string", description: "Optional title" } }, additionalProperties: true },
         IdList: { type: "object", properties: { collection: { type: "string" }, ids: { type: "array", items: { type: "string" } } } },
-        WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" } } },
+        WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, merged: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" }, created: { type: "boolean" }, existed: { type: "boolean" } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] } } },
         FeatureRequestList: { type: "object", properties: { requests: { type: "array", items: { $ref: "#/components/schemas/FeatureRequest" } } } },
       },

@@ -30,8 +30,10 @@ full model, with every block's fields, is in context/content-model. Compose page
 only from these block types.
 
 ## Making changes
-- To edit a page: read it, change the JSON, write it back with writeContent
-  (collection `pages`, id the slug, data the full updated JSON).
+- **To change a field, use updateContent (merge), never writeContent.**
+  updateContent merges just the fields you send and keeps everything else, so you
+  cannot accidentally wipe the rest of a page or event. Only use writeContent when
+  deliberately replacing a whole document, and then send the COMPLETE document.
 - Small changes (fixing copy, updating an event's details, adding a date) you can
   save directly, then tell Julie what you changed.
 - Bigger or riskier changes (creating or deleting a page, changing a price,

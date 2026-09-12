@@ -49,6 +49,11 @@ request** (see below) describing it.
 `image` is a filename served from /assets (e.g. "about-julie.jpeg").
 
 ## Editing safely
+- **To change a field, use update (merge), not replace.** `updateContent` /
+  `update_content` merges the fields you send and keeps everything else. Only use
+  `writeContent` / `write_content` (replace) when you are deliberately rewriting a
+  whole document, and then send the COMPLETE document, not just the changed field.
+  (Replacing with a partial object wipes the missing fields.)
 - Small edits (copy, an event's details, dates) can be saved directly.
 - Bigger changes (creating or deleting a page, changing a price, changing
   navigation) should be confirmed with the person first.
