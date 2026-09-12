@@ -1,7 +1,7 @@
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { renderPage, render404 } from "./render";
+import { renderPage, render404, pageFromDoc, renderLanding } from "./render";
 
 /**
  * Julie Bale — content backbone.
@@ -336,19 +336,49 @@ async function handleSite(env: Env, pathname: string): Promise<Response> {
   const siteRaw = await readDoc(env, "site", "config");
   const site = siteRaw ? JSON.parse(siteRaw) : {};
 
-  // Raw landing pages served verbatim from the `landing` collection, at /l/{slug}
+  // Landing pages at /l/{slug} — raw HTML wrapped in the site header/footer.
   if (pathname.startsWith("/l/")) {
     const slug = decodeURIComponent(pathname.slice(3).replace(/\/+$/, ""));
     const raw = await readDoc(env, "landing", slug);
     if (raw) {
       const doc = JSON.parse(raw);
-      if (typeof doc.html === "string") return htmlResponse(doc.html);
+      if (typeof doc.html === "string") return htmlResponse(renderLanding(doc, site));
     }
     return htmlResponse(await render404(site), 404);
   }
 
-  const slug = pathname === "/" ? "home" : decodeURIComponent(pathname.replace(/^\/+/, "").replace(/\/+$/, ""));
-  if (!slug || slug.includes("/")) return htmlResponse(await render404(site), 404);
+  const clean = pathname.replace(/^\/+/, "").replace(/\/+$/, "");
+  const segs = clean ? clean.split("/") : [];
+
+  // Detail routes: /events/{id}, /courses/{id}, /blog/{id}
+  const detailMap: Record<string, string> = { events: "events", courses: "courses", blog: "posts" };
+  if (segs.length === 2 && detailMap[segs[0]]) {
+    const coll = detailMap[segs[0]];
+    const raw = await readDoc(env, coll, decodeURIComponent(segs[1]));
+    if (!raw) return htmlResponse(await render404(site), 404);
+    return htmlResponse(await renderPage(env, pageFromDoc(coll, JSON.parse(raw)), site));
+  }
+
+  // Blog index
+  if (segs.length === 1 && segs[0] === "blog") {
+    return htmlResponse(
+      await renderPage(
+        env,
+        {
+          title: "Finding Your Voice",
+          seo: { description: "Musings by Julie Bale." },
+          sections: [
+            { type: "statement", statement: "Finding Your Voice", sub: "Musings by Julie Bale." },
+            { type: "listing", collection: "posts", empty: "Posts coming soon." },
+          ],
+        },
+        site
+      )
+    );
+  }
+
+  const slug = clean === "" ? "home" : decodeURIComponent(clean);
+  if (slug.includes("/")) return htmlResponse(await render404(site), 404);
   const pageRaw = await readDoc(env, "pages", slug);
   if (!pageRaw) return htmlResponse(await render404(site), 404);
   return htmlResponse(await renderPage(env, JSON.parse(pageRaw), site));

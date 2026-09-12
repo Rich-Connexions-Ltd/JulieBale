@@ -32,6 +32,25 @@ const textlink = (cta: any): string =>
     ? `<a class="textlink" href="${esc(cta.href || "#")}">${esc(cta.label)} <span class="arrow" aria-hidden="true">&rsaquo;</span></a>`
     : "";
 
+// Where a collection document's detail page lives.
+function linkFor(collection: string, id: string, doc: any): string | null {
+  if (collection === "events") return `/events/${encodeURIComponent(id)}`;
+  if (collection === "courses") return `/courses/${encodeURIComponent(id)}`;
+  if (collection === "posts" || collection === "episodes") return `/blog/${encodeURIComponent(id)}`;
+  if (collection === "dates") return doc && doc.link ? doc.link : null;
+  return null;
+}
+function titleHtml(collection: string, id: string, doc: any): string {
+  const href = linkFor(collection, id, doc);
+  const t = esc(doc.title);
+  return href ? `<a href="${esc(href)}">${t}</a>` : t;
+}
+async function readRows(env: Env, collection: string): Promise<Array<{ id: string; doc: any }>> {
+  const ids = await listIds(env, collection);
+  const rows = await Promise.all(ids.map(async (id) => ({ id, doc: await readJson(env, collection, id) })));
+  return rows.filter((r) => r.doc);
+}
+
 /* ------------------------------- Blocks -------------------------------- */
 
 async function renderBlock(env: Env, b: any, i: number): Promise<string> {
@@ -166,19 +185,17 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
   </div></section>`;
 
     case "listing": {
-      const ids = await listIds(env, b.collection);
-      const rows = await Promise.all(ids.map((id) => readJson(env, b.collection, id)));
-      const items = rows.filter(Boolean);
+      const rows = await readRows(env, b.collection);
       return `<section class="section${ivory}"><div class="container">
     ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
     ${
-      items.length
-        ? `<ul class="listing">${items
+      rows.length
+        ? `<ul class="listing">${rows
             .map(
-              (d: any) =>
-                `<li class="listing__item"><span class="listing__title">${esc(d.title)}</span>${
+              ({ id, doc: d }) =>
+                `<li class="listing__item"><span class="listing__title">${titleHtml(b.collection, id, d)}</span>${
                   d.starts_at || d.date ? `<span class="listing__meta">${esc(d.starts_at || d.date)}${d.location ? " · " + esc(d.location) : ""}</span>` : ""
-                }${d.description ? `<p>${esc(d.description)}</p>` : ""}</li>`
+                }${d.description || d.excerpt ? `<p>${esc(d.description || d.excerpt)}</p>` : ""}</li>`
             )
             .join("")}</ul>`
         : `<p class="muted">${esc(b.empty || "Nothing here yet.")}</p>`
@@ -189,14 +206,13 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
     case "accordion": {
       const groups = await Promise.all(
         (b.items || []).map(async (grp: any) => {
-          const ids = await listIds(env, grp.collection);
-          const rows = (await Promise.all(ids.map((id) => readJson(env, grp.collection, id)))).filter(Boolean);
+          const rows = await readRows(env, grp.collection);
           const inner = rows.length
             ? `<ul class="listing">${rows
-                .map((d: any) => `<li class="listing__item"><span class="listing__title">${esc(d.title)}</span>${d.date || d.starts_at ? `<span class="listing__meta">${esc(d.date || d.starts_at)}</span>` : ""}</li>`)
+                .map(({ id, doc: d }) => `<li class="listing__item"><span class="listing__title">${titleHtml(grp.collection, id, d)}</span>${d.date || d.starts_at ? `<span class="listing__meta">${esc(d.date || d.starts_at)}</span>` : ""}</li>`)
                 .join("")}</ul>`
             : `<p class="muted">${esc(grp.empty || "Nothing here yet.")}</p>`;
-          return `<details class="accordion__item"><summary>${esc(grp.title)}</summary><div class="accordion__body">${inner}</div></details>`;
+          return `<details class="accordion__item" open><summary>${esc(grp.title)}</summary><div class="accordion__body">${inner}</div></details>`;
         })
       );
       return `<section class="section"><div class="container--reading reveal">${groups.join("\n")}</div></section>`;
@@ -294,6 +310,76 @@ export async function renderPage(env: Env, page: any, site: any): Promise<string
   <main id="main">
     ${sections.join("\n")}
   </main>
+  ${renderFooter(site)}
+  <script src="/app.js" defer></script>
+</body>
+</html>`;
+}
+
+// Build a page (block model) from a collection document, for detail routes.
+export function pageFromDoc(collection: string, doc: any): any {
+  if (collection === "events") {
+    const when = [doc.starts_at, doc.ends_at].filter(Boolean).join(" – ");
+    const meta = [when, doc.location].filter(Boolean).join(" · ");
+    return {
+      title: doc.title,
+      seo: { description: doc.description || "" },
+      sections: [
+        { type: "statement", statement: doc.title, sub: meta },
+        doc.description ? { type: "richtext", body: doc.description } : null,
+        doc.details ? { type: "richtext", heading: "Details", body: doc.details } : null,
+        { type: "cta", heading: "Interested? Come and sing with me.", cta: { label: "Get in touch", href: "/start" } },
+      ].filter(Boolean),
+    };
+  }
+  if (collection === "courses") {
+    return {
+      title: doc.title,
+      seo: { description: doc.description || "" },
+      sections: [
+        { type: "statement", statement: doc.title, sub: doc.description || "" },
+        ...(doc.lessons || []).map((l: any) => ({ type: "richtext", heading: l.title, body: l.body || "" })),
+      ],
+    };
+  }
+  if (collection === "posts") {
+    return {
+      title: doc.title,
+      seo: { description: doc.excerpt || "" },
+      sections: [
+        { type: "statement", statement: doc.title, sub: doc.date || "" },
+        doc.body ? { type: "richtext", body: doc.body } : null,
+      ].filter(Boolean),
+    };
+  }
+  return { title: doc.title || "", sections: [{ type: "richtext", heading: doc.title, body: "" }] };
+}
+
+// Serve a raw landing page inside the site header/footer, keeping its own <style>.
+export function renderLanding(doc: any, site: any): string {
+  const html = String(doc.html || "");
+  const style = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/i) || [])[1] || "";
+  const main =
+    (html.match(/<main[^>]*>([\s\S]*?)<\/main>/i) || [])[1] ||
+    (html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [])[1] ||
+    html;
+  const title = doc.title || (html.match(/<title>([^<]*)<\/title>/i) || [])[1] || "Julie Bale";
+  return `<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${esc(title)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Raleway:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+  <style>${style}</style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  ${renderHeader(site)}
+  <main id="main">${main}</main>
   ${renderFooter(site)}
   <script src="/app.js" defer></script>
 </body>
