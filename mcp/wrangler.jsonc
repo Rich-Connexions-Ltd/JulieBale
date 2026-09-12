@@ -9,7 +9,7 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ContentMCP"] }],
   "kv_namespaces": [
-    { "binding": "CONTENT", "id": "REPLACE_WITH_KV_ID" }
+    { "binding": "CONTENT", "id": "351a6c9144194a5981da3d177fa2d7b9" }
   ],
   "observability": { "enabled": true }
 }
