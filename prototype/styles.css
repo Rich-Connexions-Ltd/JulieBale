@@ -1012,7 +1012,7 @@ textarea:focus-visible { border-color: var(--colour-primary); }
 }
 .panel__media {
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background:
     radial-gradient(120% 120% at 25% 20%, color-mix(in srgb, var(--colour-primary-soft) 32%, transparent), transparent 60%),
