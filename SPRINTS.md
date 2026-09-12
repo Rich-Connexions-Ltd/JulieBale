@@ -13,6 +13,28 @@ Guiding sequence: **prove the design and the round-trip on the simplest content
 first (pages), then widen to events/dates, then the heavy pieces (courses +
 media), then auth.** Photography and design polish run alongside throughout.
 
+Build approach (agreed 2026-09-12): **build the framework for everything first,
+with boilerplate content** (including standard legal pages), get the structure
+and the create/edit tools running, then hand to Julie to populate via chat.
+
+## Progress log
+
+- **Editing round-trip PROVEN on Julie's Plus account** — Custom GPT + Action →
+  Cloudflare Worker → back. (MCP door also works for Enterprise/Claude.)
+- **D1 backbone live** (`juliebale`, region WEUR): generic document store +
+  **version history with undo** + **feature requests**. Same content API/URL, so
+  Julie's Custom GPT keeps working.
+- **Feature-request round-trip live** — chat can raise feature/element/content
+  requests (`request_feature` tool, `POST /api/feature-requests`) for the dev
+  side; the dev side lists and actions them. This is the loop that lets Julie
+  ask for things the site can't do yet.
+- Boilerplate pages seeded (home, about, work-with-me, privacy, terms, cookies).
+- **Still to do this phase:** server-render the site from D1 (Cloudflare, no
+  rebuild step); typed event/date tables + calendar; templates for every
+  section; real legal boilerplate; harden auth + rotate the test key; seed the
+  GPT with Julie's context pack; re-import the updated schema into Julie's GPT so
+  it gains `undo` + `request_feature`.
+
 ---
 
 ## Sprint 0 — Foundations & decisions

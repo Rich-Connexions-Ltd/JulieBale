@@ -8,8 +8,8 @@
     "bindings": [{ "name": "MCP_OBJECT", "class_name": "ContentMCP" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ContentMCP"] }],
-  "kv_namespaces": [
-    { "binding": "CONTENT", "id": "351a6c9144194a5981da3d177fa2d7b9" }
+  "d1_databases": [
+    { "binding": "DB", "database_name": "juliebale", "database_id": "d81886bc-6c19-4019-b355-84bff64e8f60" }
   ],
   "observability": { "enabled": true }
 }
