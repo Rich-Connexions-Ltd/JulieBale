@@ -601,8 +601,19 @@ export default {
         headers: { "content-type": "application/json", "cache-control": "no-store" },
       });
     if (pathname.startsWith("/api")) return handleApi(request, env, pathname);
-    if (pathname === "/mcp") return ContentMCP.serve("/mcp").fetch(request, env, ctx);
-    if (pathname === "/sse" || pathname === "/sse/message") return ContentMCP.serveSSE("/sse").fetch(request, env, ctx);
+    if (pathname === "/mcp" || pathname === "/sse" || pathname === "/sse/message") {
+      // Gate the MCP door with the same bearer key as the REST API.
+      if (env.API_KEY) {
+        const auth = request.headers.get("authorization") || "";
+        if (auth !== `Bearer ${env.API_KEY}`)
+          return new Response(JSON.stringify({ error: "unauthorized" }), {
+            status: 401,
+            headers: { "content-type": "application/json", "www-authenticate": "Bearer" },
+          });
+      }
+      if (pathname === "/mcp") return ContentMCP.serve("/mcp").fetch(request, env, ctx);
+      return ContentMCP.serveSSE("/sse").fetch(request, env, ctx);
+    }
     if (pathname === "/robots.txt")
       return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
     if (pathname.startsWith("/ui/edit/")) return handleEditor(env, pathname);
