@@ -316,8 +316,10 @@ Screen readers and page titles read the same words without the marks.
 | `ghost` | `true`: a huge outline echo of the heading behind the section (statement, showcase, feature, cta) |
 
 Decoration always sits behind the words and is hidden from screen readers.
-Fields are automatically kept faint enough that text stays readable (lighter on
-dark sections), so any colour can go on any section. Do not combine `edge` with
+Fields are automatically kept faint enough that text stays readable, so any
+colour can go on any section; on dark sections a `cream` or `ivory` field is
+kept very faint, so prefer `gold`, `teal` or `night` there. On light sections
+with decoration, small labels switch to teal for legibility. Do not combine `edge` with
 `transition: "overlap"` (both reshape the top boundary; the edge wins).
 
 ### Collage

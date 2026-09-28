@@ -1683,6 +1683,13 @@ html.js .carousel__controls { display: flex; justify-content: center; align-item
        >= 4.5:1 (see test/contrast.test.ts) ------------------------------ */
 .s-has-deco { --field-op: 0.1; --field-c: var(--colour-primary); --fx: 50%; }
 .s-has-deco:is(.s-theme-teal, .s-theme-night, .showcase, .ground-teal) { --field-op: 0.12; }
+/* light fields on dark grounds must stay faint: gold-soft accent text there
+   (eyebrows, facts, links) only has ~5:1 to begin with */
+.s-has-deco:is(.s-theme-teal, .s-theme-night, .showcase, .ground-teal).s-field-colour-gold { --field-op: 0.08; }
+.s-has-deco:is(.s-theme-teal, .s-theme-night, .showcase, .ground-teal):is(.s-field-colour-cream, .s-field-colour-ivory) { --field-op: 0.03; }
+/* on light decorated sections, small labels use primary (the default
+   primary-soft eyebrow / gold kicker are below 4.5:1 even without a field) */
+.s-has-deco:not(.s-theme-teal, .s-theme-night, .showcase, .ground-teal, .hero-stage) :is(.eyebrow, .kicker) { color: var(--colour-primary); }
 .s-has-deco.showcase:is(.s-theme-cream, .s-theme-ivory) { --field-op: 0.1; }
 .s-field-colour-teal  { --field-c: var(--colour-primary); }
 .s-field-colour-gold  { --field-c: var(--colour-gold); }
