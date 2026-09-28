@@ -82,3 +82,17 @@ Requests #23, #18 (supersedes #1), #19. Review mode: no council; tests + headles
 - `mcp/context/content-model.md` — assets and consent, testimonials, media
 - `mcp/seed/sprint13-assets.*` — existing photography as assets (people other than Julie: consent pending)
 - `mcp/test/assets.test.ts`, `seed.test.ts`, render and route tests
+
+## Sprint 14: Composition and Ornament (0.9.0) — 2026-09-28
+
+Requests #13 (+#17), #15, #14, #22, #20 (narrowed). Council review: plan approved R3; code review reached the round limit with one item accepted as Known Debt (pre-existing hover transitions' paint cost).
+
+**Files changed:**
+- `mcp/src/presentation.ts` — `edge`, `field`, `field_colour`, `field_position`, `ornament`, `ornament_position`, `collage`, `type_scale`, `ghost`, `hover`, `phone` (focus, crop); collage entry validation and warnings
+- `mcp/src/render.ts` — `headline()` / `plainHeadline()` heading markup (`|`, `*…*`); collage (consent-gated, one asset query); `renderDecorations()` aria-hidden decoration layer (static SVG only)
+- `mcp/src/variants.ts` — `media.images` per variant
+- `mcp/src/index.ts` — descriptions; OpenAPI 0.9.0 (`Section.images`, markup)
+- `mcp/public/styles.css` — decoration layer (no negative z-index), fields with contrast-capped opacity, ornaments, ghost, edges, collage, display type, phone crop/focus, hover; fixes: CTA kicker contrast, eyebrow contrast on decorated sections, `.frame img` will-change removed
+- `mcp/context/content-model.md`, `mcp/README.md` — vocabulary, markup, guidance, deferred list
+- `mcp/test/contrast.test.ts` (computed contrast for every field colour × ground × text colour), render/route/presentation/docs tests
+- `Documentation/archive/PLAN_Sprint14.md`, `Documentation/findings/FINDINGS_Sprint14.md`

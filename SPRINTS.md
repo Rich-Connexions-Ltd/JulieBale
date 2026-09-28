@@ -214,7 +214,7 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 - **Exit criteria:** consent status enforced where assets are featured; accessible controls; tests; deployed.
 
 ## Sprint 14 — Composition and ornament
-**Status:** In progress (council review)
+**Status:** Done (2026-09-28; council approved with one Known Debt item)
 
 - **Goal:** richer editorial composition once the content exists.
 - **Source:** #13 with #17 merged (organic backgrounds, decorative SVG), #15 (collage), #14 (display typography), #22 (hover), #20 narrowed.
