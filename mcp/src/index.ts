@@ -12,6 +12,9 @@ import {
 import { renderEditorPage, editorResource } from "./editor";
 import { renderUploadPage } from "./admin";
 
+// Collections with an MCP-UI editor (all public content).
+const EDITABLE_COLLECTIONS = ["events", "dates", "posts", "courses"];
+
 // Base URL used to build MCP-UI editor links. Update at custom-domain cutover.
 const SITE_BASE = "https://juliebale-mcp.singing-bridge.workers.dev";
 
@@ -807,6 +810,9 @@ async function handleEditor(env: Env, pathname: string): Promise<Response> {
   const parts = pathname.replace(/^\/ui\/edit\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
   if (parts.length < 2) return new Response("Not found", { status: 404 });
   const [collection, id] = parts;
+  // Only the public collections that have an editor; nothing else is ever read here
+  // (this route is unauthenticated so MCP-UI hosts can load it in an iframe).
+  if (!EDITABLE_COLLECTIONS.includes(collection)) return new Response("Not found", { status: 404 });
   const raw = await readDoc(env, collection, id);
   const doc = raw ? JSON.parse(raw) : {};
   return new Response(renderEditorPage(collection, id, doc), {

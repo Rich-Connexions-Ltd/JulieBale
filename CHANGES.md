@@ -96,3 +96,15 @@ Requests #13 (+#17), #15, #14, #22, #20 (narrowed). Council review: plan approve
 - `mcp/context/content-model.md`, `mcp/README.md` — vocabulary, markup, guidance, deferred list
 - `mcp/test/contrast.test.ts` (computed contrast for every field colour × ground × text colour), render/route/presentation/docs tests
 - `Documentation/archive/PLAN_Sprint14.md`, `Documentation/findings/FINDINGS_Sprint14.md`
+
+## Sprint 15: Landing Page Sanitiser — 2026-09-28
+
+Owner decision to sanitise `/l/{slug}` landing pages. Council review (security).
+
+**Files changed:**
+- `mcp/src/sanitize.ts` — new: allowlist HTML (js-xss), per-attribute URL policies (no http:, no external images/forms, no protocol-relative/backslash URLs), `l-` id namespacing, scoped CSS allowlist with no url(), generic capped removal notes
+- `mcp/src/render.ts` — `renderLanding` sanitises on every render; content wrapped in `.landing`
+- `mcp/src/index.ts` — landing write warnings; strict CSP on `/l/` (exact motion-guard hash + app.js); `/ui/edit/` only reads collections that have an editor
+- `mcp/context/content-model.md` — canonical "Landing pages" rules and alternatives; README summary
+- `mcp/test/sanitize.test.ts` — XSS/CSS corpus, real landing page regression, docs drift guard; route tests for CSP and editor
+- Fix: the existing landing page's CSS no longer restyles the site header/nav (now scoped)

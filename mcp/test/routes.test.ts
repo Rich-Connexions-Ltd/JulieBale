@@ -270,3 +270,16 @@ describe("landing pages (Sprint 15)", () => {
     expect(r.warnings).toEqual(["landing: removed <iframe> element."]);
   });
 });
+
+describe("editor route", () => {
+  it("never reads collections without an editor (e.g. variants with preview tokens)", async () => {
+    const env = newEnv();
+    await create(env);
+    const before = env.DB.queries.length;
+    const r = await call(env, anon("/ui/edit/variants/home-stage"));
+    expect(r.status).toBe(404);
+    expect(await r.text()).not.toMatch(/token|home-stage/);
+    expect(env.DB.queries.length).toBe(before); // refused before any database read
+    expect((await call(env, anon("/ui/edit/events/x"))).status).toBe(200);
+  });
+});
