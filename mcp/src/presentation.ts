@@ -89,6 +89,42 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
     overlap: { blocks: ["showcase", "feature"], values: { true: "Copy panel overlaps the image on wide screens." } },
     grid: { blocks: ["showcase", "feature"], values: { balanced: "Equal columns.", asymmetric: "Large image, narrower copy." } },
     size: { blocks: ["pullquote"], values: { standard: "Normal quote size.", oversized: "Very large editorial quote." } },
+    image_escape: {
+      blocks: ["showcase", "feature", "duo"],
+      values: {
+        side: "Image breaks out toward its outer page edge.",
+        up: "Image rises into the section above.",
+        down: "Image drops into the section below.",
+        both: "Image grows past its frame above and below.",
+        "side-up": "Out to the side and up into the section above.",
+        "side-down": "Out to the side and down into the section below.",
+      },
+    },
+    overshoot: {
+      blocks: ["showcase", "feature", "duo"],
+      values: { subtle: "Small escape.", medium: "Clear escape (the default).", bold: "Large escape." },
+    },
+    layer: {
+      blocks: ["showcase", "feature", "duo"],
+      values: { above: "Escaping image sits over neighbouring sections (the default).", below: "Neighbouring sections sit over the escaping image." },
+    },
+    shape: {
+      blocks: ["showcase", "feature", "duo"],
+      values: { arch: "Arched top.", circle: "Circular crop.", soft: "Softly rounded corners.", slant: "Slanted top and bottom edges." },
+    },
+    transition: {
+      values: {
+        overlap: "Section slides up over the end of the previous one.",
+        wipe: "Section is revealed by a top-to-bottom wipe.",
+        crossfade: "Section's background colour fades in.",
+        depth: "Section settles from slightly smaller as it scrolls in.",
+        hold: "Section holds in place for a moment while you keep scrolling (native scrolling, no hijack).",
+        carry: "Section's image is carried up into the previous section.",
+        divider: "A full-width gold line draws across the boundary.",
+        settle: "Scrolling gently settles at the start of this section when close to it (wide screens).",
+      },
+    },
+    intensity: { values: { gentle: "Lighter transition.", standard: "Normal transition.", strong: "Stronger transition." } },
   },
   design: {
     concept: {
@@ -246,6 +282,17 @@ export function presentationJsonSchema(group: "style" | "design") {
 
 /** One worked variant per concept, using the home page's section keys. */
 export const CONCEPT_EXAMPLES = {
+  gallery: {
+    design: { concept: "editorial" },
+    sections: [
+      { from: "hero-1", style: { hero: "portrait", treatment: "cream" } },
+      { from: "feature-1", style: { image_escape: "side-up", overshoot: "bold", shape: "arch", transition: "overlap" } },
+      { from: "pullquote-1", style: { theme: "night", size: "oversized", transition: "hold", intensity: "gentle" } },
+      { from: "showcase-1", style: { image_escape: "down", shape: "slant", transition: "wipe" } },
+      { from: "duo-1", style: { image_escape: "side", overshoot: "subtle", shape: "soft", transition: "divider" } },
+      { from: "cta-1", style: { theme: "teal", transition: "crossfade" } },
+    ],
+  },
   stage: {
     design: { concept: "stage" },
     sections: [

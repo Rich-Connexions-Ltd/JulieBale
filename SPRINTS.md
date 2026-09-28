@@ -177,6 +177,26 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 11 — Image overflow & weighted section transitions
+**Status:** Done (2026-09-28)
+
+- **Goal:** give the Gallery concept (and the other three) images that break out
+  of their frames and section-to-section transitions with real weight, without
+  scroll-jacking.
+- **Source:** feature requests #10 and #11 (2026-09-28). Review mode: no council
+  (owner's call); tests + browser check instead.
+- **Scope:**
+  - **#10:** image escape (side / up / down / both), overshoot presets, layer
+    order, clip shapes; clamped on narrow screens; no horizontal page scroll.
+  - **#11:** per-section arrival transitions (overlap, wipe, crossfade, depth,
+    hold, carry, divider, settle) with intensity presets, mobile reduction and
+    reduced-motion fallbacks. CSS-only: sticky, scroll-snap *proximity* and
+    scroll-driven animations; no scroll listeners.
+- **Exit criteria:** unstyled pages unchanged (goldens); all tests pass; previews
+  checked at desktop and mobile; deployed; content-model updated; #10 and #11 done.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship

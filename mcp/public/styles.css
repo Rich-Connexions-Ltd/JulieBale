@@ -131,8 +131,9 @@ img { max-width: 100%; display: block; }
 .container--wide    { width: min(100% - 2.5rem, var(--width-wide)); margin-inline: auto; }
 .container--reading { width: min(100% - 2.5rem, var(--width-reading)); margin-inline: auto; }
 
-.section { padding-block: clamp(var(--space-8), 13vw, 10.5rem); }
-.section--tight { padding-block: clamp(var(--space-7), 9vw, var(--space-8)); }
+/* --sec-pad lets image escapes (Sprint 11) reach past the section edge */
+.section { --sec-pad: clamp(var(--space-8), 13vw, 10.5rem); padding-block: var(--sec-pad); }
+.section--tight { --sec-pad: clamp(var(--space-7), 9vw, var(--space-8)); padding-block: var(--sec-pad); }
 
 /* Callout grounds — used sparingly */
 .ground-cream   { background: var(--colour-cream); }
@@ -1218,9 +1219,9 @@ a.cal__event:hover { background: var(--colour-primary-dark); }
 .s-width-full > [class*="container"] { width: 100%; max-width: none; padding-inline: clamp(1.25rem, 4vw, 4rem); }
 .showcase.s-width-contained .showcase__grid,
 .hero-stage.s-width-contained { width: min(100% - 2.5rem, var(--width-wide)); margin-inline: auto; }
-.s-spacing-compact  { padding-block: clamp(var(--space-6), 7vw, var(--space-7)); }
-.s-spacing-standard { padding-block: clamp(var(--space-8), 13vw, 10.5rem); }
-.s-spacing-generous { padding-block: clamp(var(--space-9), 17vw, 14rem); }
+.s-spacing-compact  { --sec-pad: clamp(var(--space-6), 7vw, var(--space-7)); padding-block: var(--sec-pad); }
+.s-spacing-standard { --sec-pad: clamp(var(--space-8), 13vw, 10.5rem); padding-block: var(--sec-pad); }
+.s-spacing-generous { --sec-pad: clamp(var(--space-9), 17vw, 14rem); padding-block: var(--sec-pad); }
 
 /* --- Gold rule and chapter marks ------------------------------ */
 .s-rule, .s-chapter { position: relative; }
@@ -1378,6 +1379,97 @@ html.js .s-sequence .reveal:not(.is-visible) > * { opacity: 0; transform: transl
   font-size: var(--text-xs); letter-spacing: 0.14em; text-transform: uppercase; padding: 0.45rem 1rem;
 }
 
+/* ============================================================
+   IMAGE OVERFLOW & SECTION TRANSITIONS (Sprint 11)
+   ============================================================ */
+
+/* Escaped images may pass the page edge; clip (not hidden) so there is
+   never a horizontal scrollbar and position: sticky keeps working. */
+main { overflow-x: clip; }
+
+/* --- Image escape (#10) --------------------------------------- */
+[class*="s-image-escape-"], .s-transition-carry { --os-x: 3rem; --os-y: 5rem; --os-scale: 1.12; position: relative; z-index: 3; }
+.s-overshoot-subtle { --os-x: 1.5rem; --os-y: 2.5rem; --os-scale: 1.06; }
+.s-overshoot-bold   { --os-x: 5rem;   --os-y: 8rem;   --os-scale: 1.2; }
+.showcase:is([class*="s-image-escape-"], .s-transition-carry) { overflow: visible; }
+:is([class*="s-image-escape-"], .s-transition-carry) :is(.feature__media, .showcase__media, .duo__media) { pointer-events: none; }
+/* vertical */
+:is(.s-image-escape-up, .s-image-escape-side-up, .s-transition-carry) :is(.feature__media, .showcase__media, .duo__media) { --esc-y: calc(-1 * var(--os-y)); }
+:is(.s-image-escape-down, .s-image-escape-side-down) :is(.feature__media, .showcase__media, .duo__media) { --esc-y: var(--os-y); }
+.s-image-escape-both :is(.feature__media, .showcase__media, .duo__media) { scale: var(--os-scale); }
+/* sideways, toward the image's outer edge */
+:is(.s-image-escape-side, .s-image-escape-side-up, .s-image-escape-side-down) :is(.feature__media, .showcase__media) { --esc-x: calc(-1 * var(--os-x)); }
+:is(.s-image-escape-side, .s-image-escape-side-up, .s-image-escape-side-down):is(.s-image-side-right) :is(.feature__media, .showcase__media),
+:is(.s-image-escape-side, .s-image-escape-side-up, .s-image-escape-side-down) .feature--reverse .feature__media { --esc-x: var(--os-x); }
+:is(.s-image-escape-side, .s-image-escape-side-up, .s-image-escape-side-down).s-image-side-left :is(.feature__media, .showcase__media) { --esc-x: calc(-1 * var(--os-x)); }
+:is(.s-image-escape-side, .s-image-escape-side-up, .s-image-escape-side-down) .duo__item:first-child .duo__media { --esc-x: calc(-1 * var(--os-x)); }
+:is(.s-image-escape-side, .s-image-escape-side-up, .s-image-escape-side-down) .duo__item:last-child .duo__media { --esc-x: var(--os-x); }
+:is([class*="s-image-escape-"], .s-transition-carry) :is(.feature__media, .showcase__media, .duo__media) { translate: var(--esc-x, 0) var(--esc-y, 0); }
+/* feature (wide screens): anchor the image to the section edge, then overshoot,
+   so it genuinely crosses into the neighbouring section */
+@media (min-width: 60rem) {
+  :is(.s-image-escape-up, .s-image-escape-side-up, .s-transition-carry) .feature__media { align-self: start; --esc-y: calc(-1 * (var(--sec-pad, 0rem) + var(--os-y))); }
+  :is(.s-image-escape-down, .s-image-escape-side-down) .feature__media { align-self: end; --esc-y: calc(var(--sec-pad, 0rem) + var(--os-y)); }
+  .s-image-escape-both .feature__media { scale: none; align-self: stretch; margin-block: calc(-1 * (var(--sec-pad, 0rem) + var(--os-y))); }
+  .s-image-escape-both .feature__media .frame { height: 100%; aspect-ratio: auto; }
+}
+/* narrow screens: no sideways escape, vertical capped */
+@media (max-width: 60rem) {
+  [class*="s-image-escape-"], .s-transition-carry { --os-x: 0rem; --os-y: min(var(--os-y), 1.5rem); --os-scale: 1.03; }
+  .s-overshoot-subtle, .s-overshoot-bold { --os-x: 0rem; --os-y: 1.5rem; --os-scale: 1.03; }
+}
+.s-layer-below { z-index: 0; }
+.s-layer-below + section, section:has(+ .s-layer-below) { position: relative; z-index: 4; }
+/* clip shapes */
+.s-shape-arch :is(.feature__media .frame, .showcase__media, .duo__media) { border-radius: 999px 999px 0 0; overflow: hidden; }
+.s-shape-circle :is(.feature__media .frame, .showcase__media, .duo__media) { clip-path: circle(48% at 50% 50%); aspect-ratio: 1 / 1; }
+.s-shape-soft :is(.feature__media .frame, .showcase__media, .duo__media) { border-radius: 1.5rem; overflow: hidden; }
+.s-shape-slant :is(.feature__media .frame, .showcase__media, .duo__media) { clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%); }
+
+/* --- Section transitions (#11) -------------------------------- */
+:root { --t-overlap: 3.5rem; --t-hold: 50vh; --t-depth: 0.96; --t-wipe: 1100ms; --header-clear: 9.5rem; }
+.s-intensity-gentle { --t-overlap: 2rem; --t-hold: 25vh; --t-depth: 0.985; --t-wipe: 800ms; }
+.s-intensity-strong { --t-overlap: 5rem; --t-hold: 80vh; --t-depth: 0.93; --t-wipe: 1500ms; }
+@media (max-width: 48rem) {
+  :root, .s-intensity-gentle, .s-intensity-strong { --t-overlap: 1.5rem; --t-hold: 20vh; --t-depth: 0.985; --t-wipe: 700ms; --header-clear: 5.5rem; }
+}
+/* overlap: slide up over the previous section; :where() keeps any theme/ground background */
+:where(.s-transition-overlap) { background-color: var(--colour-cream); }
+.s-transition-overlap {
+  position: relative; z-index: 2; margin-top: calc(-1 * var(--t-overlap));
+  border-radius: clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem) 0 0;
+  box-shadow: 0 -1px 0 var(--colour-line);
+}
+/* wipe and crossfade: final state without JS */
+.s-transition-wipe { transition: clip-path var(--t-wipe) var(--m-ease); }
+html.js .s-transition-wipe:not(.is-visible) { clip-path: inset(0 0 100% 0); }
+.s-transition-crossfade { transition: background-color var(--t-wipe) ease; }
+html.js .s-transition-crossfade:not(.is-visible) { background-color: transparent; }
+/* divider: full-width gold line draws across the boundary */
+.s-transition-divider { position: relative; }
+.s-transition-divider::after {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: var(--colour-gold); transform-origin: 0 50%; transition: transform var(--t-wipe) var(--m-ease);
+}
+html.js .s-transition-divider:not(.is-visible)::after { transform: scaleX(0); }
+/* depth and hold: native scrolling only */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .s-transition-depth > * { animation: jb-depth linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+    @keyframes jb-depth { from { scale: var(--t-depth); opacity: 0.55; } to { scale: 1; opacity: 1; } }
+  }
+  /* extra scroll distance inside the section's content box (sticky cannot use padding),
+     during which the content stays pinned */
+  .s-transition-hold { overflow: clip; }
+  .s-transition-hold::after { content: ""; display: block; height: var(--t-hold); }
+  .s-transition-hold > :not(.chapter-mark) { position: sticky; top: var(--header-clear); }
+}
+/* settle: proximity snap only, wide screens only; never forces a stop */
+@media (prefers-reduced-motion: no-preference) and (min-width: 48rem) {
+  html:has(.s-transition-settle) { scroll-snap-type: y proximity; scroll-padding-top: var(--header-clear); }
+  .s-transition-settle { scroll-snap-align: start; }
+}
+
 /* --- Reduced motion: every presentation motion at its end state - */
 @media (prefers-reduced-motion: reduce) {
   html.js .reveal, html.js .stagger > * { opacity: 1; transform: none; }
@@ -1387,5 +1479,8 @@ html.js .s-sequence .reveal:not(.is-visible) > * { opacity: 0; transform: transl
   html.js .s-rule:not(.is-visible)::before { transform: translateX(-50%); }
   html.js .s-chapter:not(.is-visible) .chapter-mark { opacity: 1; }
   [data-motion] > *, .s-motion-mask img, .s-sequence .reveal > *, .s-rule::before, .chapter-mark { transition: none; }
+  html.js .s-transition-wipe:not(.is-visible) { clip-path: none; }
+  html.js .s-transition-divider:not(.is-visible)::after { transform: none; }
+  .s-transition-wipe, .s-transition-crossfade, .s-transition-divider::after { transition: none; }
   .panel:focus-visible .panel__media img, .duo__item:focus-within .duo__media img, .button:focus-visible { transform: none; }
 }

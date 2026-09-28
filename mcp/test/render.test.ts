@@ -70,3 +70,15 @@ describe("presentation in markup", () => {
     expect(html).toContain('<meta name="robots" content="noindex">');
   });
 });
+
+describe("image overflow and transitions (Sprint 11)", () => {
+  it("renders escape, shape, layer and transition classes on the outer section only", async () => {
+    const html = await render(pageWith([
+      { type: "feature", heading: "F", image: "f.jpeg", style: { image_escape: "side-up", overshoot: "bold", layer: "below", shape: "arch", transition: "overlap", intensity: "strong" } },
+      { type: "statement", statement: "S", style: { transition: "hold", image_escape: "up" } },
+    ]));
+    expect(html).toContain('<section class="section s-image-escape-side-up s-overshoot-bold s-layer-below s-shape-arch s-transition-overlap s-intensity-strong">');
+    // image_escape is ignored on a block without an image
+    expect(html).toContain('<section class="section quiet ground-ivory s-transition-hold">');
+  });
+});

@@ -34,3 +34,15 @@ Implements feature requests #3–#8 (homepage design exploration).
 - `mcp/src/variants.ts` — `MAX_VARIANTS_PER_BASE` 3 → 6 (tool and OpenAPI descriptions derive from it)
 - `mcp/test/routes.test.ts` — limit test covers six and refuses a seventh
 - `mcp/context/content-model.md`, `mcp/README.md` — limit wording
+
+## Sprint 11: Image Overflow & Weighted Section Transitions — 2026-09-28
+
+Feature requests #10 and #11. Review mode: no council (owner's call); tests + browser check.
+
+**Files changed:**
+- `mcp/src/presentation.ts` — new style keys `image_escape`, `overshoot`, `layer`, `shape` (showcase/feature/duo) and `transition`, `intensity` (any block); Gallery worked example
+- `mcp/public/styles.css` — image escape (edge-anchored on wide screens, clamped on phones), clip shapes, layer order; transitions overlap/wipe/crossfade/depth/hold/carry/divider/settle with intensity presets, phone reduction and reduced-motion fallbacks; `main { overflow-x: clip }`; `--sec-pad` drives section padding
+- `mcp/public/app.js` — observes reveal-driven transitions
+- `mcp/context/content-model.md` — new options, guidance, Gallery example
+- `mcp/test/render.test.ts`, `mcp/test/docs.test.ts` — classes, CSS safety (no horizontal scroll, pointer-events, reduced-motion and motion-gated transitions)
+- `Documentation/archive/PLAN_Sprint11.md` — plan and implementation notes

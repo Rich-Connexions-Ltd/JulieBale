@@ -41,3 +41,25 @@ describe("styles.css keeps content visible without JavaScript", () => {
     expect(css).toMatch(/\.progress-line \{ display: none; \}/);
   });
 });
+
+describe("Sprint 11 CSS safety", () => {
+  const css = read("../public/styles.css");
+  it("never allows horizontal page scroll from escaped images", () => {
+    expect(css).toMatch(/main \{ overflow-x: clip; \}/);
+  });
+  it("keeps escaped images from blocking clicks", () => {
+    expect(css).toMatch(/pointer-events: none/);
+  });
+  it("has static fallbacks for every reveal-driven transition under reduced motion", () => {
+    const rm = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+    for (const t of ["wipe", "divider"]) expect(rm).toContain(`.s-transition-${t}`);
+  });
+  it("only runs hold, depth and settle when motion is allowed", () => {
+    for (const t of ["hold", "depth", "settle"]) {
+      const i = css.indexOf(`.s-transition-${t}`, css.indexOf("Section transitions (#11)"));
+      const before = css.slice(0, i);
+      expect(before.lastIndexOf("prefers-reduced-motion: no-preference")).toBeGreaterThan(before.lastIndexOf("}\n}"));
+    }
+  });
+});
+

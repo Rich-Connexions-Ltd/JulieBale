@@ -46,7 +46,7 @@
   // Tell the <head> guard that motion is running, so it keeps html.js.
   window.__jbMotion = true;
   // Sections with a chosen motion, gold rule or chapter mark reveal the same way.
-  var reveals = document.querySelectorAll(".reveal, .stagger, [data-motion], .s-rule, .s-chapter");
+  var reveals = document.querySelectorAll(".reveal, .stagger, [data-motion], .s-rule, .s-chapter, .s-transition-wipe, .s-transition-crossfade, .s-transition-divider");
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (reduce || !("IntersectionObserver" in window)) {

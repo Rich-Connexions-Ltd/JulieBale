@@ -90,6 +90,27 @@ Section `style`, particular blocks:
 | `overlap` | showcase, feature | `true`: copy overlaps the image (wide screens) |
 | `grid` | showcase, feature | `balanced`, `asymmetric` |
 | `size` | pullquote | `standard`, `oversized` |
+| `image_escape` | showcase, feature, duo | `side`, `up`, `down`, `both`, `side-up`, `side-down`: the image breaks out of its frame (sideways toward the page edge, and/or into the section above/below) |
+| `overshoot` | showcase, feature, duo | `subtle`, `medium` (default), `bold`: how far it escapes |
+| `layer` | showcase, feature, duo | `above` (default), `below`: over or under neighbouring sections |
+| `shape` | showcase, feature, duo | `arch`, `circle`, `soft`, `slant`: clip shape of the image |
+
+On narrow screens (phones) sideways escape is switched off and vertical escape
+is kept small, so nothing ever causes sideways scrolling. Escaping images never
+block links in neighbouring sections.
+
+Section transitions (any block): how a section **arrives** from the one before.
+| key | values |
+|---|---|
+| `transition` | `overlap` (slides up over the previous section), `wipe` (revealed top to bottom), `crossfade` (its background colour fades in), `depth` (settles from slightly smaller as it scrolls in), `hold` (holds in place for a moment while scrolling continues), `carry` (its image is carried up into the previous section), `divider` (full-width gold line draws across the boundary), `settle` (scrolling gently settles at its start when close, wide screens only) |
+| `intensity` | `gentle`, `standard`, `strong` |
+
+One transition per section; combine across neighbouring sections for a
+sequence of scenes. None of them take over scrolling: `hold` uses normal
+scrolling with the content pinned briefly, and `settle` only nudges when the
+visitor is already close. Phones get lighter versions, and visitors who prefer
+reduced motion see clean static boundaries. Use `hold` sparingly (one or two per
+page): it makes that section taller.
 
 Page `design`: `concept` = `stage` | `editorial` | `journey`; `progress` = `true`
 (slim reading-progress line).
@@ -132,6 +153,7 @@ refused until then.
 Worked examples (home page keys):
 - **Stage** — `design: {concept: "stage"}`; hero `{hero: "cinematic", align: "left", sequence: true}`; showcase `{theme: "night", grid: "asymmetric", motion: "mask"}`; statement `{theme: "teal", rule: true, spacing: "generous"}`; pullquote `{size: "oversized"}`.
 - **Editorial** — `design: {concept: "editorial"}`; hero `{hero: "portrait", treatment: "cream", measure: "narrow"}`; feature `{image_side: "left", crop: "portrait", overlap: true}`; pullquote `{theme: "ivory", size: "oversized", rule: true}`.
+- **Gallery** — `design: {concept: "editorial"}`; feature `{image_escape: "side-up", overshoot: "bold", shape: "arch", transition: "overlap"}`; pullquote `{theme: "night", size: "oversized", transition: "hold", intensity: "gentle"}`; showcase `{image_escape: "down", shape: "slant", transition: "wipe"}`; duo `{image_escape: "side", shape: "soft", transition: "divider"}`; cta `{theme: "teal", transition: "crossfade"}`.
 - **Journey** — `design: {concept: "journey", progress: true}`; hero `{hero: "split", treatment: "none"}`; then statement, feature, showcase and cta each with `{chapter: true}`, e.g. showcase `{chapter: true, theme: "teal", motion: "drift"}`.
 
 ## Markdown
