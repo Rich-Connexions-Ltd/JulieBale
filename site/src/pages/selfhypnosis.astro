@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import TextImage from '../components/TextImage.astro';
-import VideoEmbed from '../components/VideoEmbed.astro';
 import FeatureGrid from '../components/FeatureGrid.astro';
 import CTABanner from '../components/CTABanner.astro';
 import FormEmbed from '../components/FormEmbed.astro';
@@ -72,27 +71,6 @@ import FormEmbed from '../components/FormEmbed.astro';
     ]}
   />
 
-  <!-- Video intro -->
-  <section class="section section-video">
-    <div class="container video-inner">
-      <div class="video-copy">
-        <p class="video-eyebrow">A Message from Julie</p>
-        <h2>Why I Teach Self-Hypnosis to Every Singer I Work With</h2>
-        <p>
-          In this short video, I explain why the mind-voice connection is at the heart of
-          everything I do — and why self-hypnosis is the fastest path to genuine vocal confidence.
-        </p>
-      </div>
-      <div class="video-embed-col">
-        <VideoEmbed
-          type="youtube"
-          id="dQw4w9WgXcQ"
-          title="Julie Bale — Self-Hypnosis for Singers"
-        />
-      </div>
-    </div>
-  </section>
-
   <!-- Opt-in form -->
   <section id="optin" class="section section-optin" style="background-color: #f8f8f6;">
     <div class="container optin-inner">
@@ -125,27 +103,6 @@ import FormEmbed from '../components/FormEmbed.astro';
 </BaseLayout>
 
 <style>
-  .section-video { background-color: var(--color-white); }
-
-  .video-inner {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-12);
-    align-items: center;
-  }
-
-  .video-eyebrow {
-    font-size: var(--text-sm);
-    font-weight: var(--font-weight-bold);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--color-gold);
-    margin-bottom: var(--space-3);
-  }
-
-  .video-copy h2 { margin-bottom: var(--space-4); }
-  .video-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
-
   .optin-inner {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -166,7 +123,6 @@ import FormEmbed from '../components/FormEmbed.astro';
   .optin-copy p { color: var(--color-grey); line-height: var(--leading-loose); margin-bottom: 0; }
 
   @media (max-width: 768px) {
-    .video-inner,
     .optin-inner { grid-template-columns: 1fr; gap: var(--space-8); }
   }
 </style>

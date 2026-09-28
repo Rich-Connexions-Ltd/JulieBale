@@ -6,6 +6,7 @@ const navLinks = [
   { label: 'Diva Energy Live Events', href: '/divaenergylive' },
   { label: 'BRAVO for Speakers',      href: '/bravoforspeakers' },
   { label: 'Blog',                    href: '/blog' },
+  { label: 'Start Here',              href: '/divataster', cta: true },
 ];
 
 const socialLinks = [
@@ -32,11 +33,11 @@ const currentPath = Astro.url.pathname;
 
     <nav class="header-nav" id="main-nav" aria-label="Main navigation">
       <ul class="nav-list">
-        {navLinks.map(({ label, href }) => (
+        {navLinks.map(({ label, href, cta }) => (
           <li>
             <a
               href={href}
-              class:list={['nav-link', { 'nav-link--active': currentPath === href || currentPath.startsWith(href + '/') }]}
+              class:list={['nav-link', { 'nav-link--active': currentPath === href || currentPath.startsWith(href + '/'), 'nav-link--cta': cta }]}
             >
               {label}
             </a>
@@ -158,6 +159,20 @@ const currentPath = Astro.url.pathname;
     color: var(--color-gold);
   }
 
+  .nav-link--cta {
+    margin-left: var(--space-1);
+    background-color: var(--color-pink);
+    color: var(--color-white) !important;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-sm);
+  }
+
+  .nav-link--cta:hover {
+    background-color: #d44fa1;
+    color: var(--color-white) !important;
+    background-color: #d44fa1;
+  }
+
   .nav-link--login {
     margin-left: var(--space-2);
     background-color: var(--color-gold);
@@ -264,6 +279,12 @@ const currentPath = Astro.url.pathname;
     .nav-link {
       padding: var(--space-3) var(--space-4);
       font-size: var(--text-base);
+    }
+
+    .nav-link--cta {
+      margin-left: 0;
+      margin-top: var(--space-2);
+      text-align: center;
     }
 
     .nav-link--login {

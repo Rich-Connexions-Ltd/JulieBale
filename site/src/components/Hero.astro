@@ -8,10 +8,12 @@ interface Cta {
 
 interface Props {
   heading: string;
+  preHeading?: string;
   subheading?: string;
   eyebrow?: string;
   bgImage?: string;
   bgColor?: string;
+  bgPosition?: string;
   textColor?: 'light' | 'dark';
   overlay?: boolean;
   overlayOpacity?: number;
@@ -22,10 +24,12 @@ interface Props {
 
 const {
   heading,
+  preHeading,
   subheading,
   eyebrow,
   bgImage,
   bgColor = 'var(--color-charcoal)',
+  bgPosition = 'center',
   textColor = 'light',
   overlay = true,
   overlayOpacity = 0.45,
@@ -40,13 +44,14 @@ const hasSlot = Astro.slots.has('default');
 <section
   class:list={['hero', `hero--${height}`, `hero--${textColor}`, { 'hero--centered': centered }]}
   style={bgImage
-    ? `--hero-bg: url('${bgImage}'); --overlay-opacity: ${overlayOpacity};`
+    ? `--hero-bg: url('${bgImage}'); --overlay-opacity: ${overlayOpacity}; --hero-bg-position: ${bgPosition};`
     : `--hero-bg: none; --hero-bg-color: ${bgColor};`}
 >
   {bgImage && overlay && <div class="hero-overlay" aria-hidden="true"></div>}
 
   <div class="container hero-content">
     {eyebrow && <p class="hero-eyebrow">{eyebrow}</p>}
+    {preHeading && <p class="hero-pre-heading">{preHeading}</p>}
     <h1 class="hero-heading" set:html={heading} />
     {subheading && <p class="hero-subheading">{subheading}</p>}
     {hasSlot && <div class="hero-slot"><slot /></div>}
@@ -75,8 +80,16 @@ const hasSlot = Astro.slots.has('default');
     background-color: var(--hero-bg-color, var(--color-charcoal));
     background-image: var(--hero-bg, none);
     background-size: cover;
-    background-position: center;
+    background-position: var(--hero-bg-position, center);
     overflow: hidden;
+  }
+
+  .hero-pre-heading {
+    font-family: var(--font-accent-1);
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--color-white);
+    margin-bottom: var(--space-2);
+    line-height: 1.1;
   }
 
   /* Heights */

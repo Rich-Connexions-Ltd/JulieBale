@@ -1,5 +1,16 @@
 # Changes
 
+## Look-and-feel pass 2 — 2026-04-25
+
+**Files changed:**
+- `site/src/pages/about.astro` — hero overlay 0.45→0.1, hero height banner→large, story section bg `#f8f8f6`→`#1e3f4a` with white text
+- `site/src/pages/bravoforspeakers.astro` — hero changed from logo PNG bgImage to solid `#0b1c2d`; gold (`#c9a24d`) bg added to "Why Voice Changes Everything" and "The BRAVO Framework" TextImage sections
+- `site/src/pages/discoversinging.astro` — hero changed from portrait PNG to solid `#1e3f4a`; cream (`#f3e7d3`) bg added to intro TextImage section
+
+**Commit:** `700d4bd`
+
+---
+
 ## Sprint 5: Podcast Pages, SEO, Analytics & DNS Cutover — 2026-04-25
 
 **Files changed:**
