@@ -26,7 +26,7 @@ interface Option {
   values?: Meanings;
   /** Free-form but validated values (only `focus`). */
   pattern?: { shape: string; meaning: string };
-  /** A nested object with its own allowlist (only `phone`). */
+  /** A nested object with its own allowlist (only `phone`: overrides for phones, i.e. screens up to 48rem). */
   sub?: Record<string, Option>;
 }
 
