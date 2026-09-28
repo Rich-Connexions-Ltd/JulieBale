@@ -1,0 +1,115 @@
+{
+  "brand": {
+    "name": "Julie Bale",
+    "tagline": "Vocal Transformation Specialist & Mentor"
+  },
+  "nav": [
+    {
+      "label": "Home",
+      "href": "/"
+    },
+    {
+      "label": "About",
+      "href": "/about"
+    },
+    {
+      "label": "Work With Me",
+      "href": "/work-with-me"
+    },
+    {
+      "label": "Podcast",
+      "href": "/podcast"
+    },
+    {
+      "label": "Performances",
+      "href": "/performances"
+    }
+  ],
+  "cta": {
+    "label": "Start Here",
+    "href": "/start"
+  },
+  "footer": {
+    "tagline": "Singing, mentorship and performance for adults who'd love to sing.",
+    "columns": [
+      {
+        "heading": "Explore",
+        "links": [
+          {
+            "label": "About",
+            "href": "/about"
+          },
+          {
+            "label": "Finding Your Voice",
+            "href": "/blog"
+          },
+          {
+            "label": "Work With Me",
+            "href": "/work-with-me"
+          },
+          {
+            "label": "Podcast",
+            "href": "/podcast"
+          },
+          {
+            "label": "Performances",
+            "href": "/performances"
+          },
+          {
+            "label": "Everything",
+            "href": "/everything"
+          }
+        ]
+      },
+      {
+        "heading": "Keep in touch",
+        "links": [
+          {
+            "label": "Contact",
+            "href": "/start"
+          },
+          {
+            "label": "Instagram",
+            "href": "https://www.instagram.com/juliebalevoiceandmindtraining"
+          },
+          {
+            "label": "Facebook",
+            "href": "https://www.facebook.com/juliebale.music.hypnotherapy"
+          },
+          {
+            "label": "LinkedIn",
+            "href": "https://www.linkedin.com/in/juliebale"
+          }
+        ]
+      },
+      {
+        "heading": "Divas",
+        "links": [
+          {
+            "label": "The Diva Hub",
+            "href": "/divahub"
+          },
+          {
+            "label": "Client login",
+            "href": "https://members.juliebale.com"
+          }
+        ]
+      }
+    ],
+    "legal": [
+      {
+        "label": "Privacy",
+        "href": "/privacy"
+      },
+      {
+        "label": "Cookies",
+        "href": "/cookies"
+      },
+      {
+        "label": "Terms",
+        "href": "/terms"
+      }
+    ],
+    "copyright": "© 2026 Julie Bale. Diva Energy® is a registered trademark."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "title": "Every block",
+  "seo": { "description": "Fixture page containing each block type once." },
+  "sections": [
+    { "type": "hero", "kicker": "K", "heading": "Hero heading", "intro": "Intro", "image": "julie-portrait.jpeg", "cta": { "label": "Go", "href": "/go" } },
+    { "type": "statement", "eyebrow": "E", "statement": "A statement", "sub": "Sub" },
+    { "type": "showcase", "heading": "Showcase", "sub": "Sub", "facts": "Facts", "image": "x.jpeg", "cta": { "label": "More", "href": "/m" } },
+    { "type": "pullquote", "quote": "A quote", "cite": "Someone" },
+    { "type": "panels", "heading": "Panels", "items": [{ "title": "A", "line": "a", "href": "/a", "image": "a.jpeg" }, { "title": "B", "href": "/b" }] },
+    { "type": "feature", "eyebrow": "About", "heading": "Feature", "body": "**Bold** body", "image": "f.jpeg", "cta": { "label": "About", "href": "/about" } },
+    { "type": "feature", "reverse": true, "heading": "Feature reversed", "body": "Body" },
+    { "type": "duo", "heading": "Duo", "items": [{ "kicker": "Listen", "title": "Pod", "href": "/p", "image": "p.jpeg" }, { "kicker": "Watch", "title": "Vid", "href": "/v" }] },
+    { "type": "cta", "eyebrow": "E", "heading": "CTA", "note": "Note", "cta": { "label": "Start", "href": "/start" } },
+    { "type": "doorway", "heading": "Doorway", "body": "Body", "note": "Note" },
+    { "type": "richtext", "heading": "Rich", "body": "# H\n\n- one\n- two" },
+    { "type": "form", "heading": "Form", "fields": ["Name", "Email"], "submit": "Send" },
+    { "type": "listing", "heading": "Listing", "collection": "posts", "empty": "None" },
+    { "type": "accordion", "items": [{ "title": "Dates", "collection": "dates" }] },
+    { "type": "lessons", "heading": "Lessons", "items": [{ "title": "L1", "body": "Text" }] },
+    { "type": "calendar", "heading": "Calendar", "empty": "Nothing" }
+  ]
+}

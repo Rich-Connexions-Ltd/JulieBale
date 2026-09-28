@@ -1,0 +1,113 @@
+{
+  "title": "Julie Bale — It's never too late to sing",
+  "placement": "menu",
+  "nav_label": "Home",
+  "order": 1,
+  "noindex": false,
+  "seo": {
+    "description": "It's never too late to sing. Singing, mentorship and performance with dramatic soprano and Vocal Transformation Specialist Julie Bale."
+  },
+  "sections": [
+    {
+      "type": "hero",
+      "kicker": "Julie Bale",
+      "heading": "It's never too late to sing.",
+      "intro": "Discover the voice, confidence and performer that have been waiting to be heard.",
+      "image": "julie-portrait.jpeg",
+      "cta": {
+        "label": "Start your singing story",
+        "href": "/start"
+      }
+    },
+    {
+      "type": "statement",
+      "eyebrow": "It starts with one note",
+      "statement": "Perhaps you've always wanted to sing.",
+      "sub": "Perhaps you used to, and life got in the way. Perhaps you sing in a choir but would never dream of standing up alone. Perhaps somebody told you, years ago, that you couldn't. Or perhaps you simply wonder whether it's too late. It isn't."
+    },
+    {
+      "type": "showcase",
+      "heading": "From First Note to Final Curtain",
+      "sub": "The six-month private mentorship.",
+      "facts": "Six months · 10 places · £499 a month",
+      "image": "",
+      "cta": {
+        "label": "Discover the programme",
+        "href": "/mentorship"
+      }
+    },
+    {
+      "type": "pullquote",
+      "quote": "Julie unlocked something deep within me and lifted my whole world to a new level. Now each morning feels like a song I can sing with confidence.",
+      "cite": "Eve Stanway · Diva Energy singer"
+    },
+    {
+      "type": "panels",
+      "heading": "Other ways to sing with me",
+      "items": [
+        {
+          "title": "The VIP Diva Day",
+          "line": "A whole day devoted to your voice, with a professional accompanist.",
+          "href": "/vip-diva-day",
+          "image": "vip-diva-day.jpeg"
+        },
+        {
+          "title": "Diva Days & Open Days",
+          "line": "Come and sing. No need to arrive confident, just willing to join in.",
+          "href": "/events",
+          "image": "diva-days.jpeg"
+        },
+        {
+          "title": "Retreats",
+          "line": "Singing somewhere beautiful, with time to enjoy being there.",
+          "href": "/events",
+          "image": "retreats.jpeg"
+        }
+      ]
+    },
+    {
+      "type": "feature",
+      "reverse": true,
+      "eyebrow": "About Julie",
+      "heading": "I'm a singer first.",
+      "body": "I'm Julie Bale, a dramatic soprano and Vocal Transformation Specialist. I've spent my life singing, performing and helping other people discover what their own voice can do. I still perform. I still love it.",
+      "image": "about-julie.jpeg",
+      "cta": {
+        "label": "More about Julie",
+        "href": "/about"
+      }
+    },
+    {
+      "type": "duo",
+      "heading": "Hear me, and hear me sing.",
+      "items": [
+        {
+          "kicker": "Listen",
+          "title": "What's Your Singing Story?",
+          "href": "/podcast",
+          "image": "podcast-cover.jpeg"
+        },
+        {
+          "kicker": "Watch",
+          "title": "Julie Bale, Soprano",
+          "href": "/performances",
+          "image": "soprano.jpeg"
+        }
+      ]
+    },
+    {
+      "type": "cta",
+      "heading": "What if you stopped wondering whether you could sing?",
+      "cta": {
+        "label": "Start your singing story",
+        "href": "/start"
+      }
+    },
+    {
+      "type": "doorway",
+      "heading": "Not ready to sing with me yet?",
+      "body": "Start here. I'm putting together a free first experience to help you find your voice. Join the Diva Energy emails and I'll send it your way.",
+      "note": "I respect your privacy. No spam, ever."
+    }
+  ]
+}
