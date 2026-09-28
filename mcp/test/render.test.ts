@@ -240,3 +240,26 @@ describe("composition and ornament (Sprint 14)", () => {
     expect(resolveSection({ type: "feature", style: { phone: { crop: "wide", colour: "red" } } }).classes).toEqual([]);
   });
 });
+
+describe("renderDecorations combinations", () => {
+  it("renders exactly the layers that are set, always aria-hidden, nothing otherwise", async () => {
+    const { renderDecorations } = await import("../src/render");
+    const p = (deco: any) => ({ classes: [], hasTheme: false, motion: false, chapter: false, scene: false, deco });
+    expect(renderDecorations(p(undefined), "X")).toBe("");
+    expect(renderDecorations(p({ ghost: true }), "")).toBe(""); // ghost with no heading text: nothing
+    expect(renderDecorations(p({ ornament: "not-an-ornament" }), "X")).toBe("");
+    const cases: Array<[any, string[]]> = [
+      [{ field: "halo" }, ["s-deco__field"]],
+      [{ ornament: "arc" }, ["s-deco__ornament"]],
+      [{ ghost: true }, ["s-deco__ghost"]],
+      [{ field: "blob", ornament: "stave" }, ["s-deco__field", "s-deco__ornament"]],
+      [{ field: "wash", ornament: "contour", ghost: true }, ["s-deco__field", "s-deco__ornament", "s-deco__ghost"]],
+    ];
+    for (const [deco, layers] of cases) {
+      const html = renderDecorations(p(deco), "Sing <now>");
+      expect(html.startsWith('<div class="s-deco" aria-hidden="true">')).toBe(true);
+      expect([...html.matchAll(/class="(s-deco__\w+)"/g)].map((m) => m[1])).toEqual(layers);
+      expect(html).not.toContain("<now>");
+    }
+  });
+});
