@@ -1,7 +1,12 @@
 /**
  * Server-side renderer: turns a block-based page document (from D1) into HTML,
  * reusing the prototype's teal/gold/cream design system (public/styles.css).
+ *
+ * Presentation (`section.style`, `page.design`) is resolved by ./presentation
+ * into allowlisted classes applied to each block's outer <section>; a section
+ * with no `style` renders exactly as before.
  */
+import { resolveSection, resolveDesign, type ResolvedSection } from "./presentation";
 
 interface Env {
   DB: D1Database;
@@ -68,8 +73,10 @@ function md(body: string): string {
 const assetUrl = (file: string): string => (!file ? "" : /^(https?:|\/)/.test(file) ? file : `/assets/${file}`);
 const mediaUrl = (key: string): string => (!key ? "" : /^(https?:|\/)/.test(key) ? key : `/media/${key}`);
 
-const img = (file: string, alt: string, cls = ""): string =>
-  file ? `<img src="${esc(assetUrl(file))}" alt="${esc(alt)}"${cls ? ` class="${cls}"` : ""}>` : "";
+const img = (file: string, alt: string, cls = "", style = ""): string =>
+  file ? `<img src="${esc(assetUrl(file))}" alt="${esc(alt)}"${cls ? ` class="${cls}"` : ""}${style ? ` style="${esc(style)}"` : ""}>` : "";
+
+const caption = (text: unknown): string => (text ? `<figcaption class="caption">${esc(text)}</figcaption>` : "");
 
 const button = (cta: any, cls = "button"): string =>
   cta && cta.label ? `<a class="${cls}" href="${esc(cta.href || "#")}">${esc(cta.label)}</a>` : "";
@@ -163,14 +170,15 @@ function renderAgenda(items: DateItem[]): string {
 
 /* ------------------------------- Blocks -------------------------------- */
 
-async function renderBlock(env: Env, b: any, i: number): Promise<string> {
+async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Promise<string> {
   // alternate cream/ivory grounds for calm full-width content sections
-  const ivory = i % 2 === 1 ? " ground-ivory" : "";
+  // (an explicit style.theme replaces this; see decorate())
+  const ivory = i % 2 === 1 && !p.hasTheme ? " ground-ivory" : "";
 
   switch (b.type) {
     case "hero":
       return `<section class="hero-stage media-band">
-  ${img(b.image, b.heading || "Julie Bale")}
+  ${img(b.image, b.heading || "Julie Bale", "", p.imgStyle)}
   <div class="media-band__scrim"></div>
   <div class="media-band__inner"><div class="container--wide reveal">
     ${b.kicker ? `<p class="kicker">${esc(b.kicker)}</p>` : ""}
@@ -191,7 +199,7 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
       return `<section class="showcase"><div class="showcase__grid">
     <div class="showcase__media reveal">${
       b.image
-        ? img(b.image, b.heading || "")
+        ? img(b.image, b.heading || "") + caption(b.caption)
         : `<span class="showcase__ph">${esc(b.heading)}<span>Large performance / Diva photograph</span></span>`
     }</div>
     <div class="showcase__body reveal">
@@ -230,7 +238,7 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
     case "feature":
       return `<section class="section${ivory}"><div class="container feature__grid${b.reverse ? " feature--reverse" : ""}">
     <div class="feature__media reveal"><figure class="frame image--portrait">${
-      b.image ? img(b.image, b.heading || "") : `<figcaption class="frame__label">${esc(b.heading)}</figcaption>`
+      b.image ? img(b.image, b.heading || "") + caption(b.caption) : `<figcaption class="frame__label">${esc(b.heading)}</figcaption>`
     }</figure></div>
     <div class="feature__body reveal">
       ${b.eyebrow ? `<p class="eyebrow">${esc(b.eyebrow)}</p>` : ""}
@@ -247,7 +255,7 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
       ${(b.items || [])
         .map(
           (it: any) => `<article class="duo__item">
-        <span class="duo__media">${it.image ? img(it.image, it.title || "") : `<span class="duo__ph">${esc(it.title)}</span>`}</span>
+        <span class="duo__media">${it.image ? img(it.image, it.title || "") : `<span class="duo__ph">${esc(it.title)}</span>`}</span>${it.caption ? `\n        <p class="caption">${esc(it.caption)}</p>` : ""}
         ${it.kicker ? `<p class="kicker">${esc(it.kicker)}</p>` : ""}
         <h3 class="duo__title">${esc(it.title)}</h3>
         ${textlink({ label: it.cta_label || "Open", href: it.href })}
@@ -383,6 +391,25 @@ async function renderBlock(env: Env, b: any, i: number): Promise<string> {
   }
 }
 
+/**
+ * Apply resolved presentation to a rendered block: add classes (and
+ * `data-motion`) to the outer <section>, drop the block's default ground class
+ * when a theme is chosen, and insert a decorative chapter number. Returns the
+ * HTML untouched when the block has no presentation.
+ */
+function decorate(html: string, p: ResolvedSection, chapterNo: number): string {
+  if (!p.classes.length) return html;
+  const m = /^(\s*<section class=")([^"]*)(")/.exec(html);
+  if (!m) return html;
+  let base = m[2];
+  if (p.hasTheme) base = base.replace(/\s*\bground-(?:cream|ivory|teal)\b/g, "");
+  const attrs = p.motion ? ` data-motion` : "";
+  const mark = p.chapter ? `<span class="chapter-mark" aria-hidden="true">${String(chapterNo).padStart(2, "0")}</span>` : "";
+  const rest = html.slice(m[0].length);
+  const close = rest.indexOf(">");
+  return `${m[1]}${[base, ...p.classes].filter(Boolean).join(" ")}${m[3]}${rest.slice(0, close)}${attrs}>${mark}${rest.slice(close + 1)}`;
+}
+
 /* ------------------------------ Helpers -------------------------------- */
 
 async function listIds(env: Env, collection: string): Promise<string[]> {
@@ -447,10 +474,33 @@ function renderFooter(site: any): string {
 
 /* ------------------------------- Page ---------------------------------- */
 
-export async function renderPage(env: Env, page: any, site: any): Promise<string> {
-  const sections = await Promise.all((page.sections || []).map((b: any, i: number) => renderBlock(env, b, i)));
+// Motion is progressive enhancement: content is visible unless <html> has the
+// `js` class. This adds it synchronously, and removes it after 2.5 s unless
+// app.js has started (window.__jbMotion), so a slow or blocked app.js can
+// never leave content hidden.
+export const MOTION_GUARD =
+  `<script>(function(d){d.classList.add("js");setTimeout(function(){if(!window.__jbMotion)d.classList.remove("js")},2500)})(document.documentElement)</script>`;
+
+export interface RenderOptions {
+  /** Render as an unlisted preview: noindex plus a "not live" banner. */
+  preview?: { label: string };
+}
+
+export async function renderPage(env: Env, page: any, site: any, opts: RenderOptions = {}): Promise<string> {
+  let chapter = 0;
+  const sections = await Promise.all(
+    (page.sections || []).map((b: any, i: number) => {
+      const p = resolveSection(b);
+      const n = p.chapter ? ++chapter : 0;
+      return renderBlock(env, b, i, p).then((html) => decorate(html, p, n));
+    })
+  );
+  const design = resolveDesign(page.design);
   const desc = page?.seo?.description || site?.brand?.tagline || "";
-  const noindex = page.noindex ? `<meta name="robots" content="noindex">` : "";
+  const noindex = page.noindex || opts.preview ? `<meta name="robots" content="noindex">` : "";
+  const bodyClass = design.bodyClasses.length ? ` class="${design.bodyClasses.join(" ")}"` : "";
+  const progress = design.progress ? `<div class="progress-line" aria-hidden="true"></div>` : "";
+  const banner = opts.preview ? `<div class="preview-banner" role="note">Preview · ${esc(opts.preview.label)} · not live</div>` : "";
   return `<!doctype html>
 <html lang="en-GB">
 <head>
@@ -459,13 +509,14 @@ export async function renderPage(env: Env, page: any, site: any): Promise<string
   <title>${esc(page.title)}</title>
   <meta name="description" content="${esc(desc)}">
   ${noindex}
+  ${MOTION_GUARD}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Raleway:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/styles.css">
 </head>
-<body>
-  <a class="skip-link" href="#main">Skip to content</a>
+<body${bodyClass}>
+  ${banner}${progress}<a class="skip-link" href="#main">Skip to content</a>
   ${renderHeader(site)}
   <main id="main">
     ${sections.join("\n")}
@@ -533,6 +584,7 @@ export function renderLanding(doc: any, site: any): string {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Raleway:wght@400;500;600;700&display=swap">
+  ${MOTION_GUARD}
   <link rel="stylesheet" href="/styles.css">
   <style>${style}</style>
 </head>

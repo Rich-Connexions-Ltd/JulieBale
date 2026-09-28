@@ -4,9 +4,8 @@ A minimal remote **MCP server on Cloudflare Workers** to validate the read/write
 round-trip before we build the real thing. Storage is **KV** (throwaway); the
 real build moves to **D1** (see [`../ARCHITECTURE.md`](../ARCHITECTURE.md)).
 
-> **TEST surface.** The REST API is protected by a bearer API key (the `API_KEY`
-> Worker secret). The MCP endpoints are still authless (test only). Storage is
-> throwaway KV. Do not put real or sensitive content here yet.
+> The REST API and the MCP endpoints are protected by a bearer API key (the
+> `API_KEY` Worker secret). Storage is D1 (documents + version history).
 
 ## Two front doors (same KV store)
 
@@ -42,7 +41,49 @@ printf '%s' "<new-key>" | npx wrangler secret put API_KEY
 | `list_content` | `collection` | List document ids in a collection |
 | `read_content` | `collection`, `id` | Read one document (JSON) |
 | `write_content` | `collection`, `id`, `data` (JSON string) | Create/replace a document |
+| `update_content` | `collection`, `id`, `data` (JSON string) | Merge fields into a document (preferred) |
 | `delete_content` | `collection`, `id` | Delete a document |
+| `undo_content` | `collection`, `id` | Step a document back one change |
+| `presentation_options` | — | Allowed `style`/`design` values, with examples |
+| `create_page_variant` | `base`, `id`, `label`, `note?` | Unpublished variant of a page + private preview link |
+| `list_page_variants` | `base` | Variants, preview links, section keys, unresolved refs |
+| `publish_page_variant` | `id` | Write a variant into its live page (undoable) |
+
+Writes to `pages` and `variants` return presentation `warnings` for any
+`style`/`design` value outside the allowlist (the value is ignored).
+
+## Presentation and page variants (0.7.0)
+
+- **Presentation** — sections take an optional `style`, pages an optional
+  `design`. The vocabulary lives in `src/presentation.ts` (`PRESENTATION_OPTIONS`)
+  and is the single source for rendering, warnings, publish-time sanitising, the
+  OpenAPI enums and the `presentation_options` tool. Values become CSS classes
+  (`s-<key>-<value>`, `d-<key>-<value>`) styled in `public/styles.css`.
+  Documented for assistants in `context/content-model.md`.
+- **Section keys** — every write to `pages` gives sections a stable `key`
+  (`hero-1`, ...), never changing an existing one.
+- **Variants** (`variants` collection, `src/variants.ts`) reference a base page's
+  sections by key; copy always comes from the live page. Max 3 per page.
+- **Preview** — `GET /preview/{id}/{token}`. Unauthenticated so Julie can open
+  it in a browser, but guarded by a server-generated 144-bit token that clients
+  cannot set or change; responses (including 404s) are `noindex`, `no-store`,
+  `no-referrer`. `robots.txt` also disallows `/preview/` (advisory only). The
+  page shows only the variant's label and the already-public copy.
+- **Motion** — progressive enhancement: hidden start states apply only under
+  `html.js`, which an inline `<head>` guard removes after 2.5 s if `app.js` has
+  not started. Reduced motion is honoured throughout.
+
+## Tests
+
+```bash
+npm test            # Vitest: presentation, variants, renderer goldens, routes, docs
+npm run typecheck
+```
+
+D1 is simulated with Node's built-in SQLite using `schema.sql`. Golden files in
+`test/fixtures/*.golden.html` pin the output of pages with no presentation; only
+regenerate them (`CAPTURE_GOLDEN=1 npx vitest run test/capture-golden.test.ts`)
+for an intentional change to unstyled rendering.
 
 ## Deploy (one-time)
 

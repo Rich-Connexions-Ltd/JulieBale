@@ -2,6 +2,11 @@ import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding } from "./render";
+import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
+import {
+  ensureSectionKeys, prepareVariantWrite, variantToPage, publishedPage, newVariant, sectionSummaries,
+  tokensEqual, isValidId, previewPath, TOKEN_RE, MAX_VARIANTS_PER_BASE,
+} from "./variants";
 import { renderEditorPage, editorResource } from "./editor";
 import { renderUploadPage } from "./admin";
 
@@ -32,10 +37,11 @@ interface Env {
 }
 
 const now = () => new Date().toISOString();
+// API responses are never cached: they can carry unpublished variant data.
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data, null, 2), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
   });
 
 /* --------------------------- D1 content helpers --------------------------- */
@@ -64,8 +70,44 @@ async function snapshot(env: Env, collection: string, id: string, prev: string |
     .run();
 }
 
+/**
+ * Collection-specific invariants applied on EVERY write path (MCP, REST,
+ * variant tools, undo), so no caller can bypass them:
+ *   - pages:    every section gets a stable `key` (variants reference these).
+ *   - variants: the server-held preview `token` and the `base` are preserved.
+ */
+function applyWriteRules(collection: string, prev: string | null, data: string): string {
+  if (collection !== "pages" && collection !== "variants") return data;
+  let doc: any;
+  try {
+    doc = JSON.parse(data);
+  } catch {
+    return data;
+  }
+  if (collection === "pages") {
+    const r = ensureSectionKeys(doc);
+    return r.changed ? JSON.stringify(r.page) : data;
+  }
+  let prevDoc: any = null;
+  try {
+    prevDoc = prev ? JSON.parse(prev) : null;
+  } catch {}
+  return JSON.stringify(prepareVariantWrite(prevDoc, doc));
+}
+
+/** Presentation warnings for a page or variant document (empty otherwise). */
+function warningsFor(collection: string, data: string): string[] {
+  if (collection !== "pages" && collection !== "variants") return [];
+  try {
+    return presentationWarnings(JSON.parse(data));
+  } catch {
+    return [];
+  }
+}
+
 async function writeDoc(env: Env, collection: string, id: string, data: string, status = "published") {
   const prev = await readDoc(env, collection, id);
+  data = applyWriteRules(collection, prev, data);
   await snapshot(env, collection, id, prev, "write");
   await env.DB.prepare(
     "INSERT INTO documents (collection, id, data, status, updated_at) VALUES (?,?,?,?,?) " +
@@ -73,7 +115,7 @@ async function writeDoc(env: Env, collection: string, id: string, data: string, 
   )
     .bind(collection, id, data, status, now())
     .run();
-  return { created: prev === null };
+  return { created: prev === null, warnings: warningsFor(collection, data) };
 }
 
 // Merge fields into an existing document (never strips fields you don't send).
@@ -81,8 +123,8 @@ async function mergeDoc(env: Env, collection: string, id: string, patch: Record<
   const prevStr = await readDoc(env, collection, id);
   const prev = prevStr ? JSON.parse(prevStr) : {};
   const merged = { ...prev, ...patch };
-  await writeDoc(env, collection, id, JSON.stringify(merged));
-  return { existed: prevStr !== null };
+  const { warnings } = await writeDoc(env, collection, id, JSON.stringify(merged));
+  return { existed: prevStr !== null, warnings };
 }
 
 async function deleteDoc(env: Env, collection: string, id: string): Promise<boolean> {
@@ -106,11 +148,13 @@ async function revertDoc(env: Env, collection: string, id: string) {
     await env.DB.prepare("DELETE FROM documents WHERE collection=? AND id=?").bind(collection, id).run();
     return { ok: true, restored: `${collection}/${id} removed (previous state was none)` };
   }
+  // Restores obey the same invariants as writes (keys; variant token/base).
+  const restored = applyWriteRules(collection, cur, v.data);
   await env.DB.prepare(
     "INSERT INTO documents (collection, id, data, status, updated_at) VALUES (?,?,?,?,?) " +
       "ON CONFLICT(collection, id) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at"
   )
-    .bind(collection, id, v.data, "published", now())
+    .bind(collection, id, restored, "published", now())
     .run();
   return { ok: true, restored: `${collection}/${id}` };
 }
@@ -144,6 +188,91 @@ async function convertDateToEvent(env: Env, dateId: string, eventId?: string) {
   return { ok: true, event: `events/${finalId}`, url: `/events/${finalId}`, removedDate: `dates/${dateId}` };
 }
 
+/* ------------------------------ Page variants ----------------------------- */
+
+const parse = (raw: string | null): any => {
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+async function variantsFor(env: Env, base: string): Promise<Array<{ id: string; doc: any }>> {
+  // One bound query for the whole collection (it holds at most a handful of docs).
+  const { results } = await env.DB.prepare("SELECT id, data FROM documents WHERE collection=? ORDER BY id")
+    .bind("variants")
+    .all<{ id: string; data: string }>();
+  return results.map((r) => ({ id: r.id, doc: parse(r.data) })).filter((v) => v.doc && v.doc.base === base);
+}
+
+type Result = { ok: true; [k: string]: unknown } | { ok: false; error: string; [k: string]: unknown };
+
+/** Create an unpublished variant of pages/{base} referencing all its sections. */
+async function createVariant(env: Env, origin: string, a: { base: unknown; id: unknown; label: unknown; note?: unknown }): Promise<Result> {
+  if (!isValidId(a.base)) return { ok: false, error: "base must be a page id like 'home' (lowercase letters, digits, hyphens)" };
+  if (!isValidId(a.id)) return { ok: false, error: "id must be lowercase letters, digits and hyphens, starting with a letter (max 64), e.g. 'home-stage'" };
+  if (typeof a.label !== "string" || !a.label.trim() || a.label.length > 80) return { ok: false, error: "label is required (max 80 characters)" };
+  if (a.note !== undefined && (typeof a.note !== "string" || a.note.length > 500)) return { ok: false, error: "note must be text (max 500 characters)" };
+  const baseRaw = await readDoc(env, "pages", a.base);
+  if (!parse(baseRaw)) return { ok: false, error: `no page at pages/${a.base}` };
+  if (await readDoc(env, "variants", a.id)) return { ok: false, error: `variants/${a.id} already exists; edit it with update_content or choose another id` };
+  const existing = await variantsFor(env, a.base);
+  if (existing.length >= MAX_VARIANTS_PER_BASE)
+    return { ok: false, error: `pages/${a.base} already has ${existing.length} variants (${existing.map((v) => v.id).join(", ")}); the limit is ${MAX_VARIANTS_PER_BASE}. Delete one first.` };
+  // Persist stable section keys on the base page first. This write only adds
+  // `key` fields, which are never rendered, so the live page looks the same.
+  const keyed = ensureSectionKeys(parse(baseRaw));
+  if (keyed.changed) await writeDoc(env, "pages", a.base, JSON.stringify(keyed.page));
+  const variant = newVariant(keyed.page, { base: a.base, label: a.label.trim(), note: a.note as string | undefined });
+  await writeDoc(env, "variants", a.id, JSON.stringify(variant));
+  const saved = parse(await readDoc(env, "variants", a.id));
+  return { ok: true, variant: `variants/${a.id}`, previewUrl: origin + previewPath(a.id, saved.token), sections: sectionSummaries(keyed.page) };
+}
+
+async function listVariants(env: Env, origin: string, base: unknown): Promise<Result> {
+  if (!isValidId(base)) return { ok: false, error: "base must be a page id like 'home'" };
+  const basePage = parse(await readDoc(env, "pages", base));
+  if (!basePage) return { ok: false, error: `no page at pages/${base}` };
+  const variants = (await variantsFor(env, base)).map(({ id, doc }) => {
+    const { unresolved } = variantToPage(basePage, doc);
+    return {
+      id, label: doc.label, note: doc.note,
+      previewUrl: typeof doc.token === "string" ? origin + previewPath(id, doc.token) : null,
+      unresolved, warnings: presentationWarnings(doc),
+    };
+  });
+  return { ok: true, base, limit: MAX_VARIANTS_PER_BASE, variants, sections: sectionSummaries(basePage) };
+}
+
+/** Write a variant's order/style/design into its base page (undoable). */
+async function publishVariant(env: Env, id: unknown): Promise<Result> {
+  if (!isValidId(id)) return { ok: false, error: "id must be a variant id like 'home-stage'" };
+  const variant = parse(await readDoc(env, "variants", id));
+  if (!variant) return { ok: false, error: `no variant at variants/${id}` };
+  if (!isValidId(variant.base)) return { ok: false, error: `variants/${id} has no valid base page` };
+  const base = parse(await readDoc(env, "pages", variant.base));
+  if (!base) return { ok: false, error: `no page at pages/${variant.base}` };
+  const r = publishedPage(base, variant);
+  if (!r.ok)
+    return { ok: false, error: `not published: these references no longer match a section of pages/${variant.base}: ${r.unresolved.join(", ")}. Fix or remove them in variants/${id}.`, unresolved: r.unresolved };
+  await writeDoc(env, "pages", variant.base, JSON.stringify(r.page));
+  return { ok: true, published: `variants/${id} -> pages/${variant.base}`, dropped: r.dropped, stripped: r.stripped, undo: `undo_content pages/${variant.base}` };
+}
+
+const presentationOptions = () => ({
+  style: PRESENTATION_OPTIONS.style,
+  design: PRESENTATION_OPTIONS.design,
+  rules: [
+    "style and design are presentation only; they never change copy.",
+    "Values outside these lists are ignored and reported as warnings.",
+    "In a variant, a section's style REPLACES the base section's style (it is not merged).",
+    "Keep every section's `key` when editing pages; variants reference sections by key.",
+  ],
+  examples: CONCEPT_EXAMPLES,
+});
+
 /* --------------------------- Feature requests ----------------------------- */
 
 async function createFeatureRequest(
@@ -170,12 +299,12 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.6.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.7.0" });
 
   async init() {
     this.server.tool(
       "list_content",
-      "List the ids of documents in a collection. WHEN: use first to discover what already exists before creating or editing (e.g. list 'pages' for every page slug, 'events' for existing events). Does NOT return the documents themselves, follow up with read_content. Collections: pages, posts, events, courses, dates, landing, site, context.",
+      "List the ids of documents in a collection. WHEN: use first to discover what already exists before creating or editing (e.g. list 'pages' for every page slug, 'events' for existing events). Does NOT return the documents themselves, follow up with read_content. Collections: pages, posts, events, courses, dates, landing, variants, site, context.",
       { collection: z.string() },
       async ({ collection }) => {
         const ids = await listDocs(this.env, collection);
@@ -185,7 +314,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "read_content",
-      "Read one document and return its full JSON. WHEN: ALWAYS read a document before you change it, so you edit from its real current state and keep the fields you are not changing. Also read Julie's context first (collection 'context', ids: voice, brand, offers, content-model) before writing any copy. Returns a not-found note if it does not exist.",
+      "Read one document and return its full JSON. WHEN: ALWAYS read a document before you change it, so you edit from its real current state and keep the fields you are not changing. Also read Julie's context first (collection 'context', ids: voice, brand, offers, content-model) before writing any copy. Page sections carry a `key` (e.g. hero-1): keep it unchanged when you edit, because page variants refer to sections by key. Returns a not-found note if it does not exist.",
       { collection: z.string(), id: z.string() },
       async ({ collection, id }) => {
         const v = await readDoc(this.env, collection, id);
@@ -203,14 +332,14 @@ export class ContentMCP extends McpAgent<Env> {
         } catch {
           return { content: [{ type: "text", text: "Error: `data` must be valid JSON." }], isError: true };
         }
-        const { created } = await writeDoc(this.env, collection, id, data);
-        return { content: [{ type: "text", text: `${created ? "Created" : "Updated"} ${collection}/${id}.` }] };
+        const { created, warnings } = await writeDoc(this.env, collection, id, data);
+        return { content: [{ type: "text", text: `${created ? "Created" : "Updated"} ${collection}/${id}.${warningText(warnings)}` }] };
       }
     );
 
     this.server.tool(
       "update_content",
-      "PREFERRED WAY TO EDIT. Merge one or more fields into an existing document, keeping every field you do not mention. WHEN: almost all edits, such as changing a page's copy, an event's description or date, or a price. `data` is a JSON string of ONLY the fields to change (for example, just the description field). Safe: omitted fields are untouched and the previous state is kept for undo. DO NOT paste the whole document here unless you intend to. Descriptive text fields (body, description, details, excerpt) support Markdown, so write them in Markdown (headings, bold, lists, links).",
+      "PREFERRED WAY TO EDIT. Merge one or more fields into an existing document, keeping every field you do not mention. WHEN: almost all edits, such as changing a page's copy, an event's description or date, or a price. `data` is a JSON string of ONLY the fields to change (for example, just the description field). Safe: omitted fields are untouched and the previous state is kept for undo. DO NOT paste the whole document here unless you intend to. Descriptive text fields (body, description, details, excerpt) support Markdown, so write them in Markdown (headings, bold, lists, links). Layout and motion go in a section's `style` object and a page's `design` object, using ONLY values from presentation_options; anything else is ignored and reported back as a warning. When replacing a page's `sections` array, keep each section's `key`.",
       { collection: z.string(), id: z.string(), data: z.string() },
       async ({ collection, id, data }) => {
         let patch: Record<string, unknown>;
@@ -219,8 +348,8 @@ export class ContentMCP extends McpAgent<Env> {
         } catch {
           return { content: [{ type: "text", text: "Error: `data` must be valid JSON." }], isError: true };
         }
-        const { existed } = await mergeDoc(this.env, collection, id, patch);
-        return { content: [{ type: "text", text: `${existed ? "Updated" : "Created"} ${collection}/${id} (merged ${Object.keys(patch).length} field(s)).` }] };
+        const { existed, warnings } = await mergeDoc(this.env, collection, id, patch);
+        return { content: [{ type: "text", text: `${existed ? "Updated" : "Created"} ${collection}/${id} (merged ${Object.keys(patch).length} field(s)).${warningText(warnings)}` }] };
       }
     );
 
@@ -269,6 +398,48 @@ export class ContentMCP extends McpAgent<Env> {
       }
     );
 
+    this.server.tool(
+      "presentation_options",
+      "List every allowed layout, theme and motion option for a page section's `style` and a page's `design`, with what each does and a worked example for each homepage concept (stage, editorial, journey). WHEN: before setting any style or design value, so you never guess. Presentation never changes copy.",
+      {},
+      async () => ({ content: [{ type: "text", text: JSON.stringify(presentationOptions(), null, 2) }] })
+    );
+
+    this.server.tool(
+      "create_page_variant",
+      `Create an unpublished design variant of a page (e.g. a homepage concept) that Julie can preview without changing the live page. WHEN: exploring different looks for a page. The variant shares the live page's copy: it only stores which sections appear, in what order, and each section's style, plus a page design. Copy edits are still made on the live page. It starts as the page as-is (every section, in order, no style); then edit variants/{id} with update_content: reorder or remove entries in \`sections\` (each is { from: <section key>, style: {...} }; a variant section's style REPLACES the live section's style) and set \`design\`. Returns a private preview link to give Julie. Up to ${MAX_VARIANTS_PER_BASE} variants per page. DO NOT use for one-off copy changes.`,
+      {
+        base: z.string().describe("Page id to vary, e.g. 'home'"),
+        id: z.string().describe("New variant id, e.g. 'home-stage' (lowercase, digits, hyphens)"),
+        label: z.string().describe("Short name Julie will see, e.g. 'Stage'"),
+        note: z.string().optional().describe("What this concept is going for"),
+      },
+      async (args) => {
+        const r = await createVariant(this.env, SITE_BASE, args);
+        return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }], isError: !r.ok };
+      }
+    );
+
+    this.server.tool(
+      "list_page_variants",
+      "List a page's unpublished variants with their preview links, plus the live page's section keys (what each variant's `from` can refer to). Also reports, per variant, unresolved references (a `from` key that no longer matches a live section, usually because a section's key was dropped while editing the page) and presentation warnings. WHEN: to find a preview link again, before editing a variant, or before publishing.",
+      { base: z.string().describe("Page id, e.g. 'home'") },
+      async ({ base }) => {
+        const r = await listVariants(this.env, SITE_BASE, base);
+        return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }], isError: !r.ok };
+      }
+    );
+
+    this.server.tool(
+      "publish_page_variant",
+      "Make a variant live: writes its section order, styles and design into the live page. Sections the variant leaves out are REMOVED from the live page (they are listed in the result), and only allowed presentation values are kept (others are listed as stripped). Refused if any `from` reference no longer matches a live section. Undoable: undo_content on pages/{base} restores the previous live page. The variant itself is kept. WHEN: only after Julie has chosen this concept and confirmed she wants it live.",
+      { id: z.string().describe("Variant id, e.g. 'home-stage'") },
+      async ({ id }) => {
+        const r = await publishVariant(this.env, id);
+        return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }], isError: !r.ok };
+      }
+    );
+
     // Interactive editors (MCP-UI). Rendered as a form widget in hosts that
     // support interactive UI (e.g. Claude). Saving posts an update_content call.
     const editor = (collection: string, label: string) =>
@@ -299,6 +470,8 @@ export class ContentMCP extends McpAgent<Env> {
   }
 }
 
+const warningText = (w: string[]) => (w.length ? `\nPresentation warnings (these values were ignored):\n- ${w.join("\n- ")}` : "");
+
 /* ------------------------------ REST adapter ------------------------------ */
 
 // Accept a { data: "<json string>" } wrapper (how a ChatGPT Action reliably
@@ -322,6 +495,14 @@ async function parseBody(request: Request): Promise<{ jsonString: string; object
   }
   return { jsonString: text, object: parsed };
 }
+
+const safeDecode = (s: string): string | null => {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return null;
+  }
+};
 
 async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
   if (env.API_KEY) {
@@ -370,6 +551,35 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
     return json({ ok: true, uploadURL: j.result.uploadURL, uid: j.result.uid });
   }
 
+  // Presentation vocabulary: GET /api/presentation-options
+  if (parts[0] === "presentation-options" && parts.length === 1) {
+    if (method !== "GET") return json({ error: "method not allowed" }, 405);
+    return json(presentationOptions());
+  }
+
+  // Page variants: /api/pages/{base}/variants (GET list, POST create)
+  if (parts[0] === "pages" && parts.length === 3 && parts[2] === "variants") {
+    const origin = new URL(request.url).origin;
+    const base = safeDecode(parts[1]);
+    if (method === "GET") {
+      const r = await listVariants(env, origin, base);
+      return json(r, r.ok ? 200 : 400);
+    }
+    if (method === "POST") {
+      const body = (await request.json().catch(() => ({}))) as any;
+      const r = await createVariant(env, origin, { base, id: body?.id, label: body?.label, note: body?.note });
+      return json(r, r.ok ? 200 : 400);
+    }
+    return json({ error: "method not allowed" }, 405);
+  }
+
+  // Publish a variant: POST /api/variants/{id}/publish
+  if (parts[0] === "variants" && parts.length === 3 && parts[2] === "publish") {
+    if (method !== "POST") return json({ error: "method not allowed" }, 405);
+    const r = await publishVariant(env, safeDecode(parts[1]));
+    return json(r, r.ok ? 200 : 400);
+  }
+
   // Feature requests: /api/feature-requests
   if (parts[0] === "feature-requests" && parts.length === 1) {
     if (method === "GET") {
@@ -412,19 +622,19 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
     if (method === "GET") {
       const v = await readDoc(env, collection, id);
       if (v === null) return json({ error: "not found" }, 404);
-      return new Response(v, { headers: { "content-type": "application/json" } });
+      return new Response(v, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
     if (method === "PUT" || method === "POST") {
       const parsed = await parseBody(request);
       if ("error" in parsed) return json({ error: parsed.error }, 400);
-      const { created } = await writeDoc(env, collection, id, parsed.jsonString);
-      return json({ ok: true, saved: `${collection}/${id}`, created });
+      const { created, warnings } = await writeDoc(env, collection, id, parsed.jsonString);
+      return json({ ok: true, saved: `${collection}/${id}`, created, warnings });
     }
     if (method === "PATCH") {
       const parsed = await parseBody(request);
       if ("error" in parsed) return json({ error: parsed.error }, 400);
-      const { existed } = await mergeDoc(env, collection, id, parsed.object as Record<string, unknown>);
-      return json({ ok: true, merged: `${collection}/${id}`, existed });
+      const { existed, warnings } = await mergeDoc(env, collection, id, parsed.object as Record<string, unknown>);
+      return json({ ok: true, merged: `${collection}/${id}`, existed, warnings });
     }
     if (method === "DELETE") {
       const ok = await deleteDoc(env, collection, id);
@@ -442,14 +652,23 @@ function openApiSchema(origin: string) {
   const collectionParam = { name: "collection", in: "path", required: true, description: "Collection name, e.g. 'pages'", schema: { type: "string" } };
   const idParam = { name: "id", in: "path", required: true, description: "Document id / slug, e.g. 'home'", schema: { type: "string" } };
   const docContent = { "application/json": { schema: { $ref: "#/components/schemas/ContentDocument" } } };
-  const bodyContent = { "application/json": { schema: { $ref: "#/components/schemas/ContentBody" } } };
+  const bodyContent = {
+    "application/json": {
+      schema: { $ref: "#/components/schemas/ContentBody" },
+      examples: {
+        restyleSection: { summary: "Restyle a variant (updateContent on variants/home-stage)", value: { data: JSON.stringify({ design: { concept: "stage" }, sections: [{ from: "hero-1", style: { hero: "split", theme: "night" } }, { from: "statement-1", style: { theme: "teal", rule: true } }] }) } },
+        caption: { summary: "A page section with its key kept and a caption", value: { data: JSON.stringify({ sections: [{ key: "feature-1", type: "feature", heading: "I'm a singer first.", image: "about-julie.jpeg", caption: "On stage in 2024", style: { image_side: "left" } }] }) } },
+      },
+    },
+  };
+  const baseParam = { name: "base", in: "path", required: true, description: "Page id, e.g. 'home'", schema: { type: "string", pattern: "^[a-z][a-z0-9-]{0,63}$" } };
 
   return {
     openapi: "3.1.0",
     info: {
       title: "Julie Bale content API",
-      description: "Read and write Julie Bale's website content, undo changes, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document.",
-      version: "0.6.0",
+      description: "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
+      version: "0.7.0",
     },
     servers: [{ url: origin }],
     paths: {
@@ -468,6 +687,22 @@ function openApiSchema(origin: string) {
       "/api/dates/{id}/convert-to-event": {
         post: { operationId: "convertDateToEvent", summary: "Convert a date into a full event.", description: "Promotes a calendar date into an event with its own page (description, location, details). Creates the event from the date's title and date, then removes the date (both undoable). After converting, edit the event to add its description, location and details.", parameters: [{ name: "id", in: "path", required: true, description: "The date id", schema: { type: "string" } }], responses: { "200": { description: "Converted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
       },
+      "/api/presentation-options": {
+        get: { operationId: "presentationOptions", summary: "List allowed style/design values", description: "Every allowed layout, theme and motion value for a section's `style` and a page's `design`, with meanings and a worked example per homepage concept. Call before setting any style/design value; never guess.", responses: { "200": { description: "The vocabulary", content: { "application/json": { schema: { type: "object" } } } } } },
+      },
+      "/api/pages/{base}/variants": {
+        get: { operationId: "listPageVariants", summary: "List a page's unpublished variants", description: "Variants of a page with their private preview links, the live page's section keys (what a variant's `from` can refer to), and per-variant unresolved references and presentation warnings.", parameters: [baseParam], responses: { "200": { description: "Variants", content: { "application/json": { schema: { type: "object" } } } }, "400": { description: "Invalid or unknown base page" } } },
+        post: {
+          operationId: "createPageVariant", summary: "Create an unpublished variant of a page",
+          description: `Creates variants/{id}: the page as-is (every section, in order, no style), sharing the live page's copy. Then edit it with updateContent on collection 'variants': reorder/remove entries in \`sections\` ({ from: <section key>, style }) and set \`design\`. A variant section's style REPLACES the live section's style. Returns a private preview link for Julie. At most ${MAX_VARIANTS_PER_BASE} variants per page.`,
+          parameters: [baseParam],
+          requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["id", "label"], properties: { id: { type: "string", pattern: "^[a-z][a-z0-9-]{0,63}$", description: "New variant id" }, label: { type: "string", maxLength: 80 }, note: { type: "string", maxLength: 500 } } }, example: { id: "home-stage", label: "Stage", note: "Concert-programme feel" } } } },
+          responses: { "200": { description: "Created", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } }, "400": { description: "Invalid id, unknown base, duplicate id or variant limit reached" } },
+        },
+      },
+      "/api/variants/{id}/publish": {
+        post: { operationId: "publishPageVariant", summary: "Make a variant live", description: "Writes the variant's section order, styles and design into the live page. Sections the variant omits are REMOVED from the live page (listed in `dropped`); non-allowed values are not kept (listed in `stripped`). Refused while any reference is unresolved. Undo with undoContent on pages/{base}. Only after Julie has chosen and confirmed.", parameters: [{ name: "id", in: "path", required: true, description: "Variant id, e.g. 'home-stage'", schema: { type: "string", pattern: "^[a-z][a-z0-9-]{0,63}$" } }], responses: { "200": { description: "Published", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } }, "400": { description: "Unknown variant or unresolved references" } } },
+      },
       "/api/feature-requests": {
         get: { operationId: "listFeatureRequests", summary: "List feature/element requests", description: "Check what has already been requested before logging a new one, or when asked what is outstanding.", parameters: [{ name: "status", in: "query", required: false, schema: { type: "string" } }], responses: { "200": { description: "Requests", content: { "application/json": { schema: { $ref: "#/components/schemas/FeatureRequestList" } } } } } },
         post: {
@@ -483,7 +718,11 @@ function openApiSchema(origin: string) {
         ContentDocument: { type: "object", description: "A content document. Any JSON fields are allowed.", properties: { title: { type: "string", description: "Optional title" } }, additionalProperties: true },
         ContentBody: { type: "object", required: ["data"], properties: { data: { type: "string", description: "The content as a JSON string. For writeContent, the COMPLETE document. For updateContent, ONLY the fields to change. Put every field you want inside this one string, e.g. a JSON object with a description field. This is a string, not an object. Descriptive text fields (body, description, details, excerpt) support Markdown, so use Markdown for headings, bold, lists and links." } } },
         IdList: { type: "object", properties: { collection: { type: "string" }, ids: { type: "array", items: { type: "string" } } } },
-        WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, merged: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" }, created: { type: "boolean" }, existed: { type: "boolean" }, event: { type: "string" }, url: { type: "string" }, removedDate: { type: "string" }, error: { type: "string" } } },
+        WriteResult: { type: "object", properties: { ok: { type: "boolean" }, saved: { type: "string" }, merged: { type: "string" }, deleted: { type: "string" }, id: { type: "integer" }, restored: { type: "string" }, created: { type: "boolean" }, existed: { type: "boolean" }, event: { type: "string" }, url: { type: "string" }, removedDate: { type: "string" }, error: { type: "string" }, warnings: { type: "array", items: { type: "string" }, description: "Presentation values that are not allowed and were ignored" }, variant: { type: "string" }, previewUrl: { type: "string", description: "Private preview link to give Julie" }, published: { type: "string" }, unresolved: { type: "array", items: { type: "string" }, description: "Variant `from` keys that match no live section" }, dropped: { type: "array", items: { type: "string" }, description: "Section keys removed from the live page by publishing" }, stripped: { type: "array", items: { type: "string" }, description: "Values not kept when publishing" }, undo: { type: "string" } } },
+        Section: { type: "object", description: "One page section (block). `type` picks the block; other fields are its copy.", required: ["type"], properties: { type: { type: "string" }, key: { type: "string", pattern: "^[a-z][a-z0-9-]{0,39}$", description: "Stable section id assigned by the server (e.g. hero-1). KEEP IT UNCHANGED when editing; variants refer to sections by key." }, caption: { type: "string", description: "Optional image caption (showcase, feature; duo items take `caption` per item)." }, style: { $ref: "#/components/schemas/SectionStyle" } }, additionalProperties: true },
+        SectionStyle: { ...presentationJsonSchema("style"), description: "Presentation only. Values outside these enums are ignored and returned as warnings." },
+        PageDesign: { ...presentationJsonSchema("design"), description: "Page-level presentation (on a page or a variant)." },
+        Variant: { type: "object", description: "An unpublished variant (collection 'variants'). Copy comes from the live base page; only order and presentation live here. `token` and `base` are managed by the server.", properties: { base: { type: "string", readOnly: true }, label: { type: "string" }, note: { type: "string" }, token: { type: "string", readOnly: true }, design: { $ref: "#/components/schemas/PageDesign" }, sections: { type: "array", items: { type: "object", required: ["from"], properties: { from: { type: "string", description: "Section key on the live page" }, style: { $ref: "#/components/schemas/SectionStyle" } } } } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] } } },
         FeatureRequestList: { type: "object", properties: { requests: { type: "array", items: { $ref: "#/components/schemas/FeatureRequest" } } } },
       },
@@ -519,6 +758,36 @@ async function handleEditor(env: Env, pathname: string): Promise<Response> {
   return new Response(renderEditorPage(collection, id, doc), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
+}
+
+const PREVIEW_HEADERS = {
+  "content-type": "text/html; charset=utf-8",
+  "x-robots-tag": "noindex, nofollow",
+  "cache-control": "no-store",
+  "referrer-policy": "no-referrer",
+};
+
+/**
+ * GET /preview/{variantId}/{token}: an unpublished variant rendered through the
+ * normal page renderer. Unauthenticated (Julie opens it in a browser) but
+ * guarded by a 144-bit token; every response, including 404s, is noindex and
+ * uncached. Nothing about the variant beyond its label is exposed.
+ */
+async function handlePreview(env: Env, pathname: string): Promise<Response> {
+  const siteRaw = await readDoc(env, "site", "config");
+  const site = parse(siteRaw) || {};
+  const notFound = async () => new Response(await render404(site), { status: 404, headers: PREVIEW_HEADERS });
+  const segs = pathname.replace(/^\/preview\/?/, "").split("/");
+  if (segs.length !== 2) return notFound();
+  const [id, token] = segs.map(safeDecode);
+  if (!isValidId(id) || token === null || !TOKEN_RE.test(token)) return notFound();
+  const variant = parse(await readDoc(env, "variants", id));
+  if (!variant || !tokensEqual(token, variant.token) || !isValidId(variant.base)) return notFound();
+  const base = parse(await readDoc(env, "pages", variant.base));
+  if (!base) return notFound();
+  const { page } = variantToPage(base, variant);
+  const label = typeof variant.label === "string" ? variant.label.slice(0, 80) : id;
+  return new Response(await renderPage(env, page, site, { preview: { label } }), { headers: PREVIEW_HEADERS });
 }
 
 async function handleSite(env: Env, pathname: string): Promise<Response> {
@@ -614,8 +883,10 @@ export default {
       if (pathname === "/mcp") return ContentMCP.serve("/mcp").fetch(request, env, ctx);
       return ContentMCP.serveSSE("/sse").fetch(request, env, ctx);
     }
+    // Advisory only: previews are protected by their token and noindex headers.
     if (pathname === "/robots.txt")
-      return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
+      return new Response("User-agent: *\nDisallow: /preview/\nAllow: /\n", { headers: { "content-type": "text/plain" } });
+    if (pathname.startsWith("/preview/")) return handlePreview(env, pathname);
     if (pathname.startsWith("/ui/edit/")) return handleEditor(env, pathname);
     if (pathname === "/admin/upload")
       return new Response(renderUploadPage(), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });

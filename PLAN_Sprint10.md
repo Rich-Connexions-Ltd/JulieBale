@@ -450,3 +450,56 @@ widths, with reduced motion emulated and with JS disabled; publish then undo.
 | R1 | 2026-09-28 | Initial draft |
 | R2 | 2026-09-28 | Persisted stable section keys in the central pages write path (F3); `variantToPage()` normalisation, no second render path (F4); variant routes bearer + no-store and tests (F1); centralised token preservation on all write paths incl. undo (F2); 144-bit base64url token + constant-time compare (F9); publish sanitises and refuses unresolved (F10); no key text in preview output (F8); removed `mobile_first`, DOM order = visual order (F11); CSS budget + reuse (F12); explicit OpenAPI/MCP/content-model/README/CHANGES documentation and glossary (F5, F6, F13, F14, F15); robots.txt advisory (F16); hero `stage` renamed `cinematic`. F7 (scope) partly declined: all controls trace to explicit requests; see *Scope decision*. |
 | R3 | 2026-09-28 | CSS never waits for JS; visible-by-default progressive enhancement + verification (R2-1); id regex + URL encoding + tests (R2-2); bound-parameter rule + hostile SQL test (R2-3); OpenAPI section `key` and `caption` (R2-4); `PRESENTATION_OPTIONS` canonical, OpenAPI/tool generated, docs drift test (R2-5); full-bleed wording (R2-6); variant style replaces base style (R2-7); no token handling on delete (R2-8). |
+
+---
+
+## Implementation Notes
+
+### Deviations from Plan
+- **`:where(html.js)` instead of `html.js`** for the existing reveal hidden states.
+  Found during the browser smoke test: `html.js .reveal` has specificity (0,2,1),
+  which beats `.reveal.is-visible` (0,2,0), so content would never have appeared.
+  Every hidden start state is now either `:where(html.js) …` (no added
+  specificity) or excludes `:not(.is-visible)`; `docs.test.ts` enforces this
+  and was mutation-checked against the original bug.
+- **Preview banner stacking** (`position: relative; z-index: 100`): on mobile the
+  closed menu tucks up behind the header and otherwise covered the banner.
+- **Hero `treatment: none` on the cinematic layout** keeps a lighter overlay
+  (legibility) rather than none; documented in the option meaning.
+- **Test harness:** D1 is simulated with Node's built-in `node:sqlite` loaded
+  with the real `schema.sql` (not a hand-written fake), so SQL in tests is real.
+  `agents/mcp` is stubbed in `vitest.config.ts` because it cannot load in Node;
+  MCP tool bodies call the same functions the REST tests exercise.
+
+### Implementation Details
+- Presentation classes are applied by one function, `decorate()`, which edits
+  only the opening tag of a block's outer `<section>`; blocks without `style`
+  are returned untouched (golden tests prove byte-identity).
+- `applyWriteRules()` in `index.ts` is the single hook for section keys (pages)
+  and token/base preservation (variants); used by `writeDoc` (hence merge, REST,
+  create, publish) and by undo restores.
+- `list_page_variants` uses one bound query over the `variants` collection.
+
+### Test Results
+`npm test`: 94 passed, 1 skipped (the opt-in golden capture), ~0.35 s.
+`npm run typecheck`: clean.
+
+Manual smoke on `wrangler dev` with local D1 (seeded from production `home`):
+three variants created from the `presentation_options` examples with zero
+warnings; a 4th refused; previews checked at 1440 px and 390 px (no horizontal
+overflow); unauthenticated list → 401; page with scripts stripped → no hidden
+content; `app.js` blocked → guard removes `js`, content visible; publish →
+concept + chapters live; undo → live HTML byte-identical to before.
+
+### Files Changed
+| File | Summary |
+|------|---------|
+| `mcp/src/presentation.ts` | New: allowlist, resolve, warnings, sanitise, JSON schema, concept examples |
+| `mcp/src/variants.ts` | New: section keys, `variantToPage`, publish transform, tokens, write rule |
+| `mcp/src/render.ts` | `decorate()`, hero focus, captions, chapters, design classes, progress, preview banner, motion guard |
+| `mcp/src/index.ts` | Write rules + warnings, variant functions/tools/REST, preview route, robots, OpenAPI, 0.7.0 |
+| `mcp/public/styles.css` | `:where(html.js)` gating + presentation block (+213/−8 lines, budget 350) |
+| `mcp/public/app.js` | Observe presentation sections; `__jbMotion` |
+| `mcp/context/content-model.md` | Glossary, vocabulary tables, variant workflow, examples |
+| `mcp/README.md`, `mcp/package.json` | Tools, security model, tests; vitest; 0.7.0 |
+| `mcp/test/*` | Harness, goldens, 94 tests |
