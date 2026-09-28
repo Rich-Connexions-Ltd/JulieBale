@@ -167,3 +167,19 @@ describe("site", () => {
     expect(r.components.schemas.Section.properties.key.pattern).toBeTruthy();
   });
 });
+
+describe("OpenAPI passes the ChatGPT Actions validator rules", () => {
+  it("keeps descriptions within 300 characters and gives every object schema properties", async () => {
+    const spec = await body(await call(newEnv(), anon("/openapi.json")));
+    const problems: string[] = [];
+    for (const [path, ops] of Object.entries<any>(spec.paths))
+      for (const [method, op] of Object.entries<any>(ops)) {
+        if ((op.description || "").length > 300) problems.push(`${method} ${path}: description ${op.description.length}`);
+        for (const [code, res] of Object.entries<any>(op.responses || {})) {
+          const schema = res.content?.["application/json"]?.schema;
+          if (schema && schema.type === "object" && !schema.properties) problems.push(`${method} ${path} ${code}: object schema missing properties`);
+        }
+      }
+    expect(problems).toEqual([]);
+  });
+});

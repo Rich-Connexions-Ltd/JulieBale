@@ -21,3 +21,9 @@ Implements feature requests #3–#8 (homepage design exploration).
 **Deferred:** `mobile_first` stacking control (reading-order risk); testimonials carousel (request #1).
 
 **Commit:** `f94677d`
+
+## Sprint 10 fix: OpenAPI accepted by ChatGPT Actions — 2026-09-28
+
+**Files changed:**
+- `mcp/src/index.ts` — `createPageVariant` / `publishPageVariant` descriptions under 300 chars; `PresentationOptions` and `VariantList` response schemas with properties
+- `mcp/test/routes.test.ts` — test enforcing the Actions validator rules (description ≤ 300, object schemas have properties)
