@@ -1666,6 +1666,122 @@ html.js .carousel__controls { display: flex; justify-content: center; align-item
 /* testimonial video button sits inline in cards */
 .testimonial .media-play { position: relative; aspect-ratio: 16 / 9; height: auto; margin-top: var(--space-3); overflow: hidden; }
 
+/* ============================================================
+   COMPOSITION AND ORNAMENT (Sprint 14)
+   One layering model: a decorated section is a positioned stacking context;
+   its decoration layer (.s-deco, aria-hidden) sits at z-index 0 and never
+   leaves the section; content is raised to z-index 1 with a zero-specificity
+   rule, so pinned scenes (position: sticky) keep working. No negative z-index.
+   ============================================================ */
+
+.s-has-deco { position: relative; isolation: isolate; }
+.s-deco { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+:where(.s-has-deco > :not(.s-deco, .chapter-mark, .scene-spacer)) { position: relative; z-index: 1; }
+.s-has-deco.s-rule::before { z-index: 2; }
+
+/* --- Fields: brand colours only; opacity capped by ground so text keeps
+       >= 4.5:1 (see test/contrast.test.ts) ------------------------------ */
+.s-has-deco { --field-op: 0.1; --field-c: var(--colour-primary); --fx: 50%; }
+.s-has-deco:is(.s-theme-teal, .s-theme-night, .showcase, .ground-teal) { --field-op: 0.12; }
+.s-has-deco.showcase:is(.s-theme-cream, .s-theme-ivory) { --field-op: 0.1; }
+.s-field-colour-teal  { --field-c: var(--colour-primary); }
+.s-field-colour-gold  { --field-c: var(--colour-gold); }
+.s-field-colour-cream { --field-c: var(--colour-cream); }
+.s-field-colour-ivory { --field-c: var(--colour-ivory); }
+.s-field-colour-night { --field-c: var(--colour-ink); }
+.s-field-position-left  { --fx: 22%; }
+.s-field-position-right { --fx: 78%; }
+.s-deco__field { position: absolute; inset: 0; background: var(--field-c); opacity: var(--field-op); }
+.s-field-ellipse   .s-deco__field { mask: radial-gradient(ellipse 42% 40% at var(--fx) 50%, #000 97%, transparent 100%); }
+.s-field-halo      .s-deco__field { mask: radial-gradient(circle at var(--fx) 50%, transparent 0 16rem, #000 calc(16rem + 1px) 21rem, transparent calc(21rem + 1px)); }
+.s-field-spotlight .s-deco__field { mask: radial-gradient(circle at var(--fx) 40%, #000 0, transparent 48%); }
+.s-field-wash      .s-deco__field { mask: radial-gradient(55% 50% at 18% 28%, #000, transparent 72%), radial-gradient(50% 45% at 82% 72%, #000, transparent 72%); }
+.s-field-blob      .s-deco__field { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M43 -58C57 -49 70 -36 74 -20C79 -4 75 15 65 30C56 46 41 58 23 66C5 74 -16 78 -34 71C-52 64 -67 46 -73 26C-79 5 -76 -18 -64 -35C-52 -52 -31 -63 -11 -66C9 -70 29 -67 43 -58Z' transform='translate(100 100)'/%3E%3C/svg%3E") var(--fx) 50% / min(80%, 44rem) auto no-repeat; }
+
+/* --- Ornaments: static SVG, gold hairlines ------------------------ */
+.s-deco__ornament { position: absolute; top: clamp(1rem, 3vw, 2.5rem); right: clamp(1rem, 3vw, 2.5rem); width: clamp(8rem, 22vw, 18rem); aspect-ratio: 1; color: var(--colour-gold); opacity: 0.5; }
+.s-deco__ornament svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1; }
+.s-deco__ornament path { vector-effect: non-scaling-stroke; }
+.s-deco__ornament text { fill: currentColor; stroke: none; }
+.s-ornament-quote-mark .s-deco__ornament { opacity: 0.22; }
+.s-ornament-stave .s-deco__ornament { width: min(90%, 46rem); aspect-ratio: 400 / 120; }
+:is(.s-theme-teal, .s-theme-night, .showcase, .ground-teal) .s-deco__ornament { color: var(--colour-gold-soft); }
+.s-ornament-position-top-left     .s-deco__ornament { right: auto; left: clamp(1rem, 3vw, 2.5rem); }
+.s-ornament-position-bottom-left  .s-deco__ornament { top: auto; right: auto; bottom: clamp(1rem, 3vw, 2.5rem); left: clamp(1rem, 3vw, 2.5rem); }
+.s-ornament-position-bottom-right .s-deco__ornament { top: auto; bottom: clamp(1rem, 3vw, 2.5rem); }
+
+/* --- Ghost heading: decorative outline echo, clipped to the section -- */
+.s-deco__ghost {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%; white-space: nowrap;
+  font-family: var(--font-display); font-size: clamp(6rem, 22vw, 20rem); line-height: 0.85;
+  color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--colour-gold) 60%, transparent); opacity: 0.7;
+}
+
+/* --- Top edges (static masks; not on the first section) ------------ */
+@supports (mask-image: linear-gradient(#000, #000)) {
+  :where(.s-edge-wave, .s-edge-curve) { background-color: var(--colour-cream); }
+  .s-edge-wave, .s-edge-curve {
+    --edge-h: 4.5rem; position: relative; z-index: 2;
+    margin-top: calc(-1 * var(--edge-h)); padding-top: calc(var(--sec-pad, 0rem) + var(--edge-h));
+    border-radius: 0; box-shadow: none;
+    mask: var(--edge-svg) top / 100% var(--edge-h) no-repeat, linear-gradient(#000 0 0) bottom / 100% calc(100% - var(--edge-h) + 1px) no-repeat;
+  }
+  .s-edge-wave  { --edge-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V42C180 8 360 8 540 36S900 86 1080 56 1320 10 1440 30V100Z'/%3E%3C/svg%3E"); }
+  .s-edge-curve { --edge-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100V70Q720 -50 1440 70V100Z'/%3E%3C/svg%3E"); }
+  main > section:first-child:is(.s-edge-wave, .s-edge-curve) { margin-top: 0; padding-top: var(--sec-pad, 0rem); mask: none; }
+  @media (max-width: 48rem) { .s-edge-wave, .s-edge-curve { --edge-h: 2.5rem; } }
+}
+
+/* --- Collage ------------------------------------------------------ */
+.collage { position: relative; width: 100%; }
+.collage__item { margin: 0; overflow: hidden; background: var(--colour-cream); }
+.collage__item img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.showcase__media .collage img { position: static; }
+.statement .collage { margin-top: var(--space-6); }
+.collage--stack, .collage--scatter { aspect-ratio: 4 / 5; }
+:is(.collage--stack, .collage--scatter) .collage__item { position: absolute; aspect-ratio: 4 / 5; box-shadow: 0 18px 40px -28px rgba(20, 54, 54, 0.55); }
+.collage--stack .collage__item:nth-child(1) { top: 0; left: 0; width: 68%; }
+.collage--stack .collage__item:nth-child(2) { top: 24%; left: 34%; width: 60%; }
+.collage--stack .collage__item:nth-child(3) { top: 56%; left: 4%; width: 44%; }
+.collage--stack .collage__item:nth-child(4) { top: 60%; left: 58%; width: 38%; }
+.collage--scatter .collage__item { border: 0.45rem solid var(--colour-ivory); rotate: var(--r, 0deg); }
+.collage--scatter .collage__item:nth-child(1) { top: 2%; left: 2%; width: 58%; --r: -4deg; }
+.collage--scatter .collage__item:nth-child(2) { top: 10%; left: 42%; width: 52%; --r: 3deg; }
+.collage--scatter .collage__item:nth-child(3) { top: 52%; left: 8%; width: 46%; --r: -2deg; }
+.collage--scatter .collage__item:nth-child(4) { top: 55%; left: 50%; width: 44%; --r: 5deg; }
+.collage--mosaic { display: grid; grid-template-columns: 2fr 1fr; grid-auto-rows: clamp(8rem, 16vw, 14rem); gap: var(--space-2); }
+.collage--mosaic .collage__item:first-child { grid-row: span 2; }
+.collage--mosaic.collage--n2 { grid-template-columns: 1fr 1fr; }
+.collage--mosaic.collage--n2 .collage__item:first-child { grid-row: span 1; }
+.collage--mosaic.collage--n4 .collage__item:last-child { grid-column: 1 / -1; }
+@media (max-width: 48rem) {
+  .collage--stack, .collage--scatter { aspect-ratio: auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  /* :nth-child(n) matches the desktop presets' specificity so these win */
+  :is(.collage--stack, .collage--scatter) .collage__item:nth-child(n) { position: static; width: auto; }
+  .collage--scatter .collage__item { rotate: calc(var(--r, 0deg) * 0.4); }
+}
+
+/* --- Display typography ------------------------------------------- */
+.display-em { font-style: italic; font-weight: 400; }
+.s-type-scale-display :is(h1, h2, .statement--lead) { font-size: clamp(2.4rem, 8vw, 7rem); line-height: 0.98; letter-spacing: -0.01em; }
+.s-type-scale-monumental :is(h1, h2, .statement--lead) { font-size: clamp(2.6rem, 12vw, 11rem); line-height: 0.92; letter-spacing: -0.02em; }
+
+/* --- Phone overrides ---------------------------------------------- */
+@media (max-width: 48rem) {
+  .p-crop-portrait  :is(.feature__media .frame, .showcase__media, .media-frame__visual, .duo__media) { aspect-ratio: 4 / 5; }
+  .p-crop-landscape :is(.feature__media .frame, .showcase__media, .media-frame__visual, .duo__media) { aspect-ratio: 3 / 2; }
+  .p-crop-square    :is(.feature__media .frame, .showcase__media, .media-frame__visual, .duo__media) { aspect-ratio: 1 / 1; }
+  img[style*="--fp"] { object-position: var(--fp) !important; }
+}
+
+/* --- Hover (pointer devices; keyboard focus gets the same) --------- */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .s-hover-shift :is(.feature__media, .showcase__media, .panel__media, .duo__media, .collage__item) img { transition: scale 900ms var(--m-ease); }
+  .s-hover-shift :is(.feature__media, .showcase__media, .panel, .duo__item, .collage__item):is(:hover, :focus-within) img { scale: 1.04; }
+  .s-hover-draw .textlink { background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat; transition: background-size 500ms var(--m-ease); }
+  .s-hover-draw .textlink:is(:hover, :focus-visible) { background-size: 100% 1px; }
+}
+
 /* --- Reduced motion: every presentation motion at its end state - */
 @media (prefers-reduced-motion: reduce) {
   html.js .reveal, html.js .stagger > * { opacity: 1; transform: none; }

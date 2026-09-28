@@ -243,3 +243,27 @@ CSS ≤ +300 lines; no new JavaScript.
 | R1 | 2026-09-28 | Initial draft |
 | R2 | 2026-09-28 | Narrowed Sprint 14 vocabulary with explicit deferred list (F4, F8, F7 phone, F9 motion terms); one layering model, no negative z-index, zero-specificity content raise compatible with pinning (F6/RC7); strict collage filename allowlist + single batched asset query (F1/F2/RC2); strict phone.focus parsing (RC3); `renderDecorations` pure helper with static SVG only, plain escaped ghost text, shared `headline` parser (F5/F11/RC4); index.ts and README added with full documentation surface (F3/RC5); validation tied to every write path via `presentationWarnings`/`sanitizePresentation` in `writeDoc` (F10/RC6); British naming settled (F12); preview regression coverage of combined features (F13); CHANGES content specified (F14). Kept `edge` (wave/curve) as the core of #13. |
 | R3 | 2026-09-28 | Contrast guarantee made explicit and computed against muted text: field opacity caps 0.18 (light) / 0.08 (dark), all colour × ground pairs tested, preview includes cream/ivory on dark (R2-1); edge performance constraints: static masks, not on hero or first section, @supports fallback (R2-2); scope wording (R2-3); CSS budget +300 consistently (R2-4). |
+
+---
+
+## Implementation Notes
+
+### Deviations from Plan
+- **Field opacity caps lowered to 0.10 (light) / 0.12 (dark).** The approved plan
+  said 0.18 / 0.08 from a hand calculation; the new computed contrast test
+  (`test/contrast.test.ts`, reading the colour tokens from the stylesheet)
+  showed muted body text over a teal or night field at 0.18 is 3.94:1. Muted
+  ink on plain cream is only 5.61:1, so the light cap must be ≤ 0.11. At
+  0.10 / 0.12 the worst cases are 4.64:1 (light) and 5.61:1 (dark).
+- **Phone collage specificity:** the phone rule needed `:nth-child(n)` to
+  out-rank the desktop presets (found in the headless-Chrome check; now tested).
+
+### Verification
+- `npm test`: 176 passed; goldens unchanged; typecheck clean.
+- Headless Chrome on a local variant combining `edge`, fields (cream on night,
+  ivory on teal, gold blob on light), ornaments, ghost, a scatter collage with
+  `image_escape` and `transition: overlap`, a pinned scene, and hover:
+  no horizontal overflow at 1440 and 390px; pending asset dropped from the
+  collage; pinned content still `sticky`; content `z-index: 1` above the
+  decoration; edges overlap by 72px (40px on phones); reduced motion: no pin,
+  all text fully visible.

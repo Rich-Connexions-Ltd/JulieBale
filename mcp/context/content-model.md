@@ -37,9 +37,9 @@ kind of section that does not exist, do NOT invent markup: raise a **feature
 request** (see below) describing it.
 
 - **hero** — cinematic top. `{kicker, heading, intro, image, image_2?, cta:{label,href}}`
-- **statement** — a big quiet line. `{eyebrow?, statement, sub?}`
-- **showcase** — flagship band. `{heading, sub, facts, image?, image_2?, caption?, cta:{label,href}}`
-- **feature** — image + copy. `{eyebrow?, heading, body, image, image_2?, caption?, reverse?, cta?}`
+- **statement** — a big quiet line. `{eyebrow?, statement, sub?, images?}`
+- **showcase** — flagship band. `{heading, sub, facts, image?, image_2?, images?, caption?, cta:{label,href}}`
+- **feature** — image + copy. `{eyebrow?, heading, body, image, image_2?, images?, caption?, reverse?, cta?}`
 - **panels** — up to three cards. `{heading?, items:[{title,line,href,image}]}`
 - **duo** — two tiles side by side. `{heading?, items:[{kicker,title,href,image,caption?}]}`
 - **pullquote** — a testimonial. `{quote, cite}`
@@ -294,4 +294,55 @@ the visitor presses play. `loop: true` makes it a muted atmospheric loop that
 starts when on screen (never for visitors who prefer reduced motion; the player
 can always be paused). Add a `caption`, and a `transcript` for anything with
 speech or lyrics. Audio plays with standard controls and only loads on demand.
+
+## Composition and ornament (Sprint 14)
+
+### Heading markup
+In headings and statements (hero heading, statement, section headings,
+showcase/feature/cta headings) two marks are allowed, and nothing else:
+- `|` starts a new line: `"It's never too late | to sing."`
+- `*word*` sets words in display italic: `"It's never too late to *sing*."`
+Screen readers and page titles read the same words without the marks.
+
+### Backgrounds, ornaments and ghost headings (not on the hero)
+| key | values |
+|---|---|
+| `edge` | `wave`, `curve`: the section's top edge curves over the section above (not on the first section) |
+| `field` | `ellipse`, `halo`, `spotlight`, `blob`, `wash`: a large soft shape of colour behind the content |
+| `field_colour` | `teal` (default), `gold`, `cream`, `ivory`, `night` |
+| `field_position` | `left`, `centre` (default), `right` |
+| `ornament` | `arc`, `contour`, `quote-mark`, `stave`: fine gold line drawing behind the content |
+| `ornament_position` | `top-left`, `top-right` (default), `bottom-left`, `bottom-right` |
+| `ghost` | `true`: a huge outline echo of the heading behind the section (statement, showcase, feature, cta) |
+
+Decoration always sits behind the words and is hidden from screen readers.
+Fields are automatically kept faint enough that text stays readable (lighter on
+dark sections), so any colour can go on any section. Do not combine `edge` with
+`transition: "overlap"` (both reshape the top boundary; the edge wins).
+
+### Collage
+`images` on a feature, showcase or statement: 2–4 images, each `"asset:<id>"`
+(preferred; consent applies) or a plain filename like `"photo.jpeg"`. With
+`collage` = `stack` (overlapping cascade, the default), `scatter` (prints on a
+table) or `mosaic` (asymmetric grid). Unconsented or invalid images are left
+out; with fewer than two left, the section shows its single `image` instead. In
+a variant, `"media": {"images": ["asset:a", "asset:b", "asset:c"]}` gives one
+concept its own collage. Phones show a tidy two-column grid.
+
+### Display type and hover
+| key | blocks | values |
+|---|---|---|
+| `type_scale` | hero, statement, showcase, feature, cta | `display`, `monumental` (short headings only) |
+| `hover` | any | `shift` (photographs ease closer), `draw` (link underlines draw across); pointer devices only, and keyboard focus gets the same |
+
+### Phones
+The `phone` key in a section's `style` changes two things on phones only:
+`{"phone": {"focus": "50% 30%", "crop": "portrait"}}` (crop: `portrait`,
+`landscape`, `square`). Everything else adapts automatically.
+
+### Not available yet (deferred)
+Bottom edges and other edge shapes, shapes that spill into neighbouring
+sections, moving decoration, vertical labels, per-line text animation, ghost
+text running off the page, magnetic buttons, custom cursors and other phone
+overrides. Please do not log these again; they are recorded.
 

@@ -12,6 +12,10 @@ describe("content-model.md stays in step with the allowlist", () => {
       it(`documents ${group}.${key} and its values`, () => {
         expect(doc).toContain(`\`${key}\``);
         for (const v of Object.keys(opt.values || {})) expect(doc).toContain(`\`${v}\``);
+        for (const [sk, so] of Object.entries(opt.sub || {})) {
+          expect(doc).toContain(`"${sk}"`);
+          for (const v of Object.keys(so.values || {})) expect(doc).toContain(`\`${v}\``);
+        }
       });
     }
   }
@@ -85,3 +89,27 @@ describe("Sprint 12 CSS safety", () => {
     expect(scenes).not.toMatch(/scene-text-range: var\(--scene-phase\)/);
   });
 });
+
+describe("Sprint 14 CSS guards", () => {
+  const css = read("../public/styles.css");
+  const block = css.slice(css.indexOf("COMPOSITION AND ORNAMENT (Sprint 14)"), css.lastIndexOf("/* --- Reduced motion"));
+  it("never uses negative z-index for decoration", () => {
+    expect(block).not.toMatch(/z-index:\s*-/);
+  });
+  it("only outlines or rotates decoration, never real headings or body text", () => {
+    const rules = block.replace(/\/\*[\s\S]*?\*\//g, "").split("}");
+    for (const r of rules) {
+      if (!/text-stroke|rotate:\s*(?!0)|writing-mode/.test(r)) continue;
+      const sel = r.slice(0, r.indexOf("{"));
+      expect(sel).toMatch(/s-deco__ghost|collage/);
+    }
+  });
+  it("keeps edges static and off the first section", () => {
+    expect(block).toMatch(/main > section:first-child:is\(\.s-edge-wave, \.s-edge-curve\) \{ margin-top: 0;/);
+    expect(block.slice(block.indexOf("Top edges"), block.indexOf("--- Collage"))).not.toMatch(/animation|transition/);
+  });
+  it("phone collage rules out-rank the desktop nth-child presets (found in browser check)", () => {
+    expect(block).toMatch(/@media \(max-width: 48rem\) \{[\s\S]*:is\(\.collage--stack, \.collage--scatter\) \.collage__item:nth-child\(n\) \{ position: static; width: auto; \}/);
+  });
+});
+

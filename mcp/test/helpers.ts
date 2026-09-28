@@ -33,7 +33,8 @@ export function fakeDb(docs: Record<string, unknown> = {}) {
     const [collection, id] = key.split("/");
     ins.run(collection, id, typeof doc === "string" ? doc : JSON.stringify(doc));
   }
-  return { prepare: (sql: string) => new Stmt(db, sql), raw: db } as any;
+  const queries: string[] = [];
+  return { prepare: (sql: string) => (queries.push(sql), new Stmt(db, sql)), raw: db, queries } as any;
 }
 
 export function fakeEnv(docs: Record<string, unknown> = {}, extra: Record<string, unknown> = {}) {

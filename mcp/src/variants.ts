@@ -13,10 +13,17 @@ import { presentationWarnings, sanitizePresentation, VARIANT_MEDIA_FIELDS } from
 import { ASSET_REF_RE } from "./assets";
 
 /** A variant entry's media overrides, keeping only asset references for replaceable fields. */
-function mediaOverrides(media: unknown): Record<string, string> {
+function mediaOverrides(media: unknown): Record<string, unknown> {
   if (!media || typeof media !== "object" || Array.isArray(media)) return {};
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(media)) if (VARIANT_MEDIA_FIELDS.includes(k) && typeof v === "string" && ASSET_REF_RE.test(v)) out[k] = v;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(media)) {
+    if (VARIANT_MEDIA_FIELDS.includes(k) && typeof v === "string" && ASSET_REF_RE.test(v)) out[k] = v;
+    // a collage for this concept: 2-4 asset references (anything else is dropped)
+    if (k === "images" && Array.isArray(v)) {
+      const refs = v.filter((x) => typeof x === "string" && ASSET_REF_RE.test(x)).slice(0, 4);
+      if (refs.length >= 2) out.images = refs;
+    }
+  }
   return out;
 }
 

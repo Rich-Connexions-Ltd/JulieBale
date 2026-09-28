@@ -26,7 +26,13 @@ interface Option {
   values?: Meanings;
   /** Free-form but validated values (only `focus`). */
   pattern?: { shape: string; meaning: string };
+  /** A nested object with its own allowlist (only `phone`). */
+  sub?: Record<string, Option>;
 }
+
+// Every block except hero (which has its own imagery band): decoration targets.
+const NON_HERO = ["statement", "showcase", "pullquote", "panels", "feature", "duo", "cta", "doorway", "richtext", "form", "listing", "accordion", "lessons", "calendar", "testimonials", "media"];
+const FOCUS_OPTION: Option = { pattern: { shape: "<x>% <y>%", meaning: "Focal point on phones, e.g. \"50% 30%\" (whole numbers 0-100)." } };
 
 export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Record<string, Option> } = {
   style: {
@@ -148,6 +154,66 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
       blocks: ["media"],
       values: { landscape: "3:2 frame (the default).", portrait: "4:5 frame.", cinematic: "16:9 frame.", square: "1:1 frame." },
     },
+    edge: {
+      blocks: NON_HERO,
+      values: { wave: "Top edge is a gentle wave over the section above.", curve: "Top edge is a soft curve over the section above." },
+    },
+    field: {
+      blocks: NON_HERO,
+      values: {
+        ellipse: "A large soft ellipse of colour behind the content.",
+        halo: "A ring of colour, like a halo.",
+        spotlight: "A soft pool of light.",
+        blob: "An organic, cut-paper shape.",
+        wash: "Soft washes of colour.",
+      },
+    },
+    field_colour: {
+      blocks: NON_HERO,
+      values: { teal: "Brand teal.", gold: "Antique gold.", cream: "Cream.", ivory: "Ivory.", night: "Near-black." },
+    },
+    field_position: { blocks: NON_HERO, values: { left: "Towards the left.", centre: "Centred.", right: "Towards the right." } },
+    ornament: {
+      blocks: NON_HERO,
+      values: {
+        arc: "Fine gold arcs.",
+        contour: "Flowing contour lines.",
+        "quote-mark": "An oversized quotation mark.",
+        stave: "Five flowing lines, like a musical stave.",
+      },
+    },
+    ornament_position: {
+      blocks: NON_HERO,
+      values: { "top-left": "Top left.", "top-right": "Top right.", "bottom-left": "Bottom left.", "bottom-right": "Bottom right." },
+    },
+    collage: {
+      blocks: ["feature", "showcase", "statement"],
+      values: {
+        stack: "The section's images overlap in a cascade.",
+        scatter: "The images lie like prints on a table.",
+        mosaic: "An asymmetric editorial grid.",
+      },
+    },
+    type_scale: {
+      blocks: ["hero", "statement", "showcase", "feature", "cta"],
+      values: { display: "Very large heading.", monumental: "Monumental heading (short headings only)." },
+    },
+    ghost: {
+      blocks: ["statement", "showcase", "feature", "cta"],
+      values: { true: "A huge outline echo of the heading sits behind the section (decorative only)." },
+    },
+    hover: {
+      values: {
+        shift: "Photographs ease gently closer when pointed at or focused.",
+        draw: "Lines and link underlines draw across when pointed at or focused.",
+      },
+    },
+    phone: {
+      sub: {
+        focus: FOCUS_OPTION,
+        crop: { values: { portrait: "Tall crop on phones.", landscape: "Wide crop on phones.", square: "Square crop on phones." } },
+      },
+    },
     scene_length: {
       values: {
         short: "Section holds the screen for a short scene while scrolling continues.",
@@ -212,6 +278,7 @@ const cls = (prefix: string, key: string, value?: string) =>
 function allowed(opt: Option | undefined, blockType: string | undefined, value: unknown): boolean {
   if (!opt) return false;
   if (opt.blocks && blockType !== undefined && !opt.blocks.includes(blockType)) return false;
+  if (opt.sub) return isObject(value);
   if (opt.pattern) return typeof value === "string" && parseFocus(value) !== null;
   if (!opt.values) return false;
   if (own(opt.values, "true")) return value === true;
@@ -236,6 +303,8 @@ export interface ResolvedSection {
   chapter: boolean;
   /** style.scene_length is set: the section pins for a scene. */
   scene: boolean;
+  /** Validated decoration (fields, ornaments, ghost) for renderDecorations. */
+  deco?: { field?: string; ornament?: string; ghost?: boolean };
 }
 
 /** Map a block's `style` to classes. Unknown keys/values are ignored. */
@@ -243,7 +312,7 @@ export function resolveSection(block: { type?: string; style?: unknown }): Resol
   const out: ResolvedSection = { classes: [], hasTheme: false, motion: false, chapter: false, scene: false };
   const style = block?.style;
   if (!isObject(style)) return out;
-  let focus: string | undefined, focusEnd: string | undefined;
+  let focus: string | undefined, focusEnd: string | undefined, phoneFocus: string | undefined;
   for (const key of Object.keys(PRESENTATION_OPTIONS.style)) {
     if (!own(style, key)) continue;
     const opt = PRESENTATION_OPTIONS.style[key];
@@ -255,7 +324,17 @@ export function resolveSection(block: { type?: string; style?: unknown }): Resol
       else focusEnd = `${x}% ${y}%`;
       continue;
     }
+    if (key === "phone") {
+      const ph = value as Record<string, unknown>;
+      if (allowed(FOCUS_OPTION, undefined, ph.focus)) phoneFocus = parseFocus(ph.focus as string)!.map((n) => `${n}%`).join(" ");
+      const crop = PRESENTATION_OPTIONS.style.phone.sub!.crop;
+      if (allowed(crop, undefined, ph.crop)) out.classes.push(cls("p", "crop", ph.crop as string));
+      continue;
+    }
     out.classes.push(value === true ? cls("s", key) : cls("s", key, value as string));
+    if (key === "field" || key === "ornament" || key === "ghost") {
+      out.deco = { ...out.deco, [key]: value };
+    }
     if (key === "theme") out.hasTheme = true;
     if (key === "chapter") out.chapter = true;
     if (key === "motion") out.motion = true;
@@ -265,6 +344,9 @@ export function resolveSection(block: { type?: string; style?: unknown }): Resol
   // scene reframing, the start/end custom properties the CSS animates between.
   if (focus) out.imgStyle = `object-position:${focus}`;
   if (focusEnd) out.imgStyle = [out.imgStyle, `--f0:${focus ?? "50% 50%"}`, `--f1:${focusEnd}`].filter(Boolean).join(";");
+  // Phone focal point: also only from clamped integers; used under 48rem.
+  if (phoneFocus) out.imgStyle = [out.imgStyle, `--fp:${phoneFocus}`].filter(Boolean).join(";");
+  if (out.deco) out.classes.push("s-has-deco");
   return out;
 }
 
@@ -307,9 +389,37 @@ function checkObject(obj: unknown, group: "style" | "design", where: string, blo
     }
     // `false` on a boolean flag is simply "off", not a mistake.
     if (obj[key] === false && own(opt.values || {}, "true")) continue;
-    if (!allowed(opt, blockType, obj[key])) warnings.push(`${where}: ${group}.${key} = ${show(obj[key])} is not allowed (use ${describe(opt)}); ignored.`);
+    if (!allowed(opt, blockType, obj[key])) {
+      warnings.push(`${where}: ${group}.${key} = ${show(obj[key])} is not allowed (use ${describe(opt)}); ignored.`);
+      continue;
+    }
+    if (opt.sub) {
+      const sub = obj[key] as Record<string, unknown>;
+      for (const sk of Object.keys(sub)) {
+        const so = own(opt.sub, sk) ? opt.sub[sk] : undefined;
+        if (!so) warnings.push(`${where}: ${group}.${key}.${sk} is not a phone option (use ${Object.keys(opt.sub).join(" | ")}); ignored.`);
+        else if (!allowed(so, undefined, sub[sk])) warnings.push(`${where}: ${group}.${key}.${sk} = ${show(sub[sk])} is not allowed (use ${describe(so)}); ignored.`);
+      }
+    }
   }
   return warnings;
+}
+
+/** Collage image entries: `asset:<id>` or a bare image filename served from /assets. */
+export const COLLAGE_FILE_RE = /^[a-z0-9][a-z0-9._-]{0,80}\.(jpe?g|png|webp|avif)$/;
+const COLLAGE_ASSET_RE = /^asset:[a-z][a-z0-9-]{0,63}$/;
+export const validCollageEntry = (v: unknown): v is string =>
+  typeof v === "string" && (COLLAGE_ASSET_RE.test(v) || (COLLAGE_FILE_RE.test(v) && !v.includes("..")));
+
+function imagesWarnings(images: unknown, where: string): string[] {
+  if (images === undefined) return [];
+  if (!Array.isArray(images)) return [`${where}: images must be a list of 2-4 images; ignored.`];
+  const out: string[] = [];
+  if (images.length < 2 || images.length > 4) out.push(`${where}: images should hold 2-4 images (has ${images.length}); a collage needs at least 2.`);
+  images.forEach((v, i) => {
+    if (!validCollageEntry(v)) out.push(`${where}: images[${i}] = ${show(v)} must be "asset:<id>" or a plain image filename like "photo.jpeg"; dropped.`);
+  });
+  return out;
 }
 
 /**
@@ -325,11 +435,15 @@ export function presentationWarnings(doc: unknown): string[] {
     if (!isObject(s)) return;
     const label = typeof s.key === "string" ? `section ${i + 1} (${s.key})` : typeof s.from === "string" ? `section ${i + 1} (${s.from})` : `section ${i + 1}`;
     warnings.push(...checkObject(s.style, "style", label, typeof s.type === "string" ? s.type : undefined));
+    warnings.push(...imagesWarnings(s.images, label));
     if (s.media !== undefined) {
       if (!isObject(s.media)) warnings.push(`${label}: media must be an object; ignored.`);
       else
         for (const [k, v] of Object.entries(s.media)) {
-          if (!VARIANT_MEDIA_FIELDS.includes(k)) warnings.push(`${label}: media.${k} is not a replaceable field (use ${VARIANT_MEDIA_FIELDS.join(" | ")}); ignored.`);
+          if (k === "images") {
+            const ok = Array.isArray(v) && v.length >= 2 && v.length <= 4 && v.every((x) => typeof x === "string" && ASSET_REF_RE.test(x));
+            if (!ok) warnings.push(`${label}: media.images must be 2-4 asset references like "asset:julie-portrait"; invalid entries are dropped.`);
+          } else if (!VARIANT_MEDIA_FIELDS.includes(k)) warnings.push(`${label}: media.${k} is not a replaceable field (use ${[...VARIANT_MEDIA_FIELDS, "images"].join(" | ")}); ignored.`);
           else if (!ASSET_REF_RE.test(String(v))) warnings.push(`${label}: media.${k} must be an asset reference like "asset:julie-portrait"; ignored.`);
         }
     }
@@ -346,17 +460,31 @@ export function sanitizePresentation(obj: unknown, group: "style" | "design", bl
   if (!isObject(obj)) return undefined;
   const out: Record<string, unknown> = {};
   for (const key of Object.keys(PRESENTATION_OPTIONS[group])) {
-    if (own(obj, key) && allowed(PRESENTATION_OPTIONS[group][key], blockType, obj[key])) out[key] = obj[key];
+    const opt = PRESENTATION_OPTIONS[group][key];
+    if (!own(obj, key) || !allowed(opt, blockType, obj[key])) continue;
+    if (opt.sub) {
+      const sub: Record<string, unknown> = {};
+      const given = obj[key] as Record<string, unknown>;
+      for (const sk of Object.keys(opt.sub)) if (own(given, sk) && allowed(opt.sub[sk], undefined, given[sk])) sub[sk] = given[sk];
+      if (Object.keys(sub).length) out[key] = sub;
+    } else out[key] = obj[key];
   }
   return Object.keys(out).length ? out : undefined;
 }
 
 /** JSON-Schema fragments generated from the allowlist (used by OpenAPI). */
 export function presentationJsonSchema(group: "style" | "design") {
+  return presentationJsonSchemaFor(PRESENTATION_OPTIONS[group]);
+}
+
+function presentationJsonSchemaFor(options: Record<string, Option>): { type: string; additionalProperties: boolean; properties: Record<string, unknown> } {
   const properties: Record<string, unknown> = {};
-  for (const [key, opt] of Object.entries(PRESENTATION_OPTIONS[group])) {
+  for (const [key, opt] of Object.entries(options)) {
     const applies = opt.blocks ? ` Applies to: ${opt.blocks.join(", ")}.` : "";
-    if (opt.pattern) properties[key] = { type: "string", pattern: FOCUS_RE.source, description: opt.pattern.meaning + applies };
+    if (opt.sub) {
+      const sub = presentationJsonSchemaFor(opt.sub);
+      properties[key] = { ...sub, description: "Phone-only overrides (screens up to 48rem)." };
+    } else if (opt.pattern) properties[key] = { type: "string", pattern: FOCUS_RE.source, description: opt.pattern.meaning + applies };
     else if (own(opt.values!, "true")) properties[key] = { type: "boolean", description: opt.values!.true + applies };
     else properties[key] = { type: "string", enum: Object.keys(opt.values!), description: Object.entries(opt.values!).map(([v, m]) => `${v}: ${m}`).join(" ") + applies };
   }

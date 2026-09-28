@@ -11,13 +11,14 @@ const HOSTILE: unknown[] = [
 describe("resolveSection", () => {
   it("maps every allowlisted value to exactly one class", () => {
     for (const [key, opt] of Object.entries(PRESENTATION_OPTIONS.style)) {
-      if (opt.pattern) continue;
+      if (opt.pattern || opt.sub) continue;
       const type = opt.blocks?.[0] ?? "statement";
       for (const v of Object.keys(opt.values!)) {
         const value = v === "true" ? true : v;
         const r = resolveSection({ type, style: { [key]: value } });
         const expected = value === true ? `s-${key.replace(/_/g, "-")}` : `s-${key.replace(/_/g, "-")}-${v}`;
-        expect(r.classes).toEqual([expected]);
+        // decoration keys also mark the section for the decoration layer
+        expect(r.classes).toEqual(["field", "ornament", "ghost"].includes(key) ? [expected, "s-has-deco"] : [expected]);
       }
     }
   });

@@ -73,6 +73,19 @@ Writes to `pages` and `variants` return presentation `warnings` for any
   `html.js`, which an inline `<head>` guard removes after 2.5 s if `app.js` has
   not started. Reduced motion is honoured throughout.
 
+## Composition and ornament (0.9.0)
+
+- **Decoration** (`field`, `ornament`, `ghost`, `edge`) is rendered by
+  `renderDecorations()` in `src/render.ts` into one aria-hidden `.s-deco` layer
+  per section, from allowlisted values and static SVG only. Field opacity is
+  capped by the section's ground so text contrast stays at least 4.5:1
+  (`test/contrast.test.ts` computes every case from the colour tokens).
+- **Collage**: `images` (2–4) on feature/showcase/statement, resolved in the same
+  single asset query as everything else and consent-gated.
+- **Heading markup**: `headline()` escapes first, then allows only `|` (line
+  break) and `*word*` (display italic); `plainHeadline()` strips it.
+- **Phones**: `style.phone.focus` / `style.phone.crop` only.
+
 ## Tests
 
 ```bash

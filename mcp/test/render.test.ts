@@ -190,3 +190,53 @@ describe("assets, testimonials and media (Sprint 13)", () => {
     expect(bad).not.toMatch(/media-play|javascript/);
   });
 });
+
+describe("composition and ornament (Sprint 14)", () => {
+  it("heading markup: escapes first, then only <br> and display italic", async () => {
+    const { headline, plainHeadline } = await import("../src/render");
+    expect(headline("It's never | too late to *sing*.")).toBe('It&#39;s never<br>too late to <em class="display-em">sing</em>.'.replace("&#39;", "'"));
+    expect(headline('<img src=x onerror="a"> *<b>x</b>*')).toBe('&lt;img src=x onerror=&quot;a&quot;&gt; <em class="display-em">&lt;b&gt;x&lt;/b&gt;</em>');
+    expect(headline("a * b")).toBe("a * b");
+    expect(headline("Plain words")).toBe("Plain words");
+    expect(plainHeadline("It's | *fine*")).toBe("It's fine");
+  });
+  it("renders a consented collage, dropping hostile and unconsented entries", async () => {
+    const env = fakeEnv({
+      "assets/a": { file: "a.jpeg", type: "image", alt: "A \"quoted\" <alt>", consent: "granted" },
+      "assets/b": { file: "b.jpeg", type: "image", alt: "B", consent: "not-needed" },
+      "assets/p": { file: "p.jpeg", type: "image", alt: "P", consent: "pending" },
+    });
+    const html = await renderPage(env, pageWith([{ type: "feature", heading: "F", image: "f.jpeg", style: { collage: "scatter" },
+      images: ["asset:a", "asset:p", "../x.jpg", "/x.jpg", "https://x/y.jpg", "x.jpg?y", "%2e%2e/x.jpg", "x.svg", "ok.webp", "asset:b"] }]), siteFixture());
+    expect(html).toContain('<div class="collage collage--scatter collage--n3">');
+    expect(html).toContain('<img src="/assets/a.jpeg" alt="A &quot;quoted&quot; &lt;alt&gt;">');
+    expect(html).toContain('<img src="/assets/ok.webp" alt="" loading="lazy">');
+    expect(html).not.toMatch(/p\.jpeg|x\.jpg|y\.jpg|x\.svg|f\.jpeg/);
+    // every asset reference on the page is fetched in ONE query
+    expect(env.DB.queries.filter((q: string) => q.includes("collection='assets'"))).toHaveLength(1);
+  });
+  it("falls back to the single image when fewer than two collage images survive", async () => {
+    const env = fakeEnv({ "assets/p": { file: "p.jpeg", type: "image", alt: "P", consent: "pending" } });
+    const html = await renderPage(env, pageWith([{ type: "feature", heading: "F", image: "f.jpeg", images: ["asset:p", "one.jpeg"] }]), siteFixture());
+    expect(html).not.toContain("collage");
+    expect(html).toContain('src="/assets/f.jpeg"');
+  });
+  it("renders one aria-hidden decoration layer from allowlisted values and escaped plain ghost text", async () => {
+    const html = await render(pageWith([{ type: "statement", statement: '*Sing* | <b onmouseover="x">', style: { field: "blob", field_colour: "gold", ornament: "stave", ghost: true, edge: "wave" } }]));
+    const deco = /<div class="s-deco" aria-hidden="true">([\s\S]*?)<\/div><\/div>/.exec(html);
+    expect(html).toMatch(/<section class="section quiet s-edge-wave s-field-blob s-field-colour-gold s-ornament-stave s-ghost s-has-deco"><div class="s-deco" aria-hidden="true">/);
+    expect(html).toContain('<div class="s-deco__ghost">Sing &lt;b onmouseover=&quot;x&quot;&gt;</div>');
+    expect(deco).not.toBeNull();
+    expect(html.match(/class="s-deco"/g)).toHaveLength(1);
+    // decoration not offered on the hero
+    expect(await render(pageWith([{ type: "hero", heading: "H", style: { field: "halo" } }]))).not.toContain("s-deco");
+  });
+  it("emits the phone focal point only from clamped integers", async () => {
+    const { resolveSection } = await import("../src/presentation");
+    expect(resolveSection({ type: "feature", style: { phone: { focus: "120% 30%", crop: "portrait" } } })).toMatchObject({ imgStyle: "--fp:100% 30%", classes: ["p-crop-portrait"] });
+    for (const bad of ["50%;color:red", "url(x)", "calc(1% + 2%)", "var(--x)", "/*x*/50% 50%", "50px 50px", "-5% 5%", "5000% 5%", { x: 1 }, ["50% 50%"]])
+      expect(resolveSection({ type: "feature", style: { phone: { focus: bad } } }).imgStyle).toBeUndefined();
+    expect(resolveSection({ type: "feature", style: { phone: "portrait" } }).classes).toEqual([]);
+    expect(resolveSection({ type: "feature", style: { phone: { crop: "wide", colour: "red" } } }).classes).toEqual([]);
+  });
+});

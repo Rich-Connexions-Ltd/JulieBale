@@ -6,7 +6,7 @@
  * into allowlisted classes applied to each block's outer <section>; a section
  * with no `style` renders exactly as before.
  */
-import { resolveSection, resolveDesign, type ResolvedSection } from "./presentation";
+import { resolveSection, resolveDesign, validCollageEntry, type ResolvedSection } from "./presentation";
 import { assetIdOf, consentOk, testimonialConsentOk } from "./assets";
 
 interface Env {
@@ -78,6 +78,62 @@ const img = (file: string, alt: string, cls = "", style = ""): string =>
   file ? `<img src="${esc(assetUrl(file))}" alt="${esc(alt)}"${cls ? ` class="${cls}"` : ""}${style ? ` style="${esc(style)}"` : ""}>` : "";
 
 const caption = (text: unknown): string => (text ? `<figcaption class="caption">${esc(text)}</figcaption>` : "");
+
+/**
+ * Heading mini-markup (Sprint 14), the only markup allowed in heading-type
+ * fields: "|" = line break, "*word*" = display italic. Escapes FIRST, so the
+ * output can only ever contain escaped text, <br> and <em class="display-em">.
+ * Text without markup renders exactly as esc() did.
+ */
+export function headline(text: unknown): string {
+  return esc(text)
+    .replace(/\*([^*|]+)\*/g, '<em class="display-em">$1</em>')
+    .replace(/\s*\|\s*/g, "<br>");
+}
+/** The same words with the markup removed (titles, alt text, labels, ghost text). */
+export function plainHeadline(text: unknown): string {
+  return String(text ?? "").replace(/\*([^*|]+)\*/g, "$1").replace(/\s*\|\s*/g, " ").trim();
+}
+
+/* ---- Collage (#15) ---- */
+const COLLAGE_PRESETS = ["stack", "scatter", "mosaic"];
+/**
+ * 2-4 images from `images` (consent-resolved to {file, alt}, or bare filenames
+ * that pass validCollageEntry). Fewer than two usable images -> no collage.
+ */
+function renderCollage(b: any, p: ResolvedSection): string {
+  const items = (Array.isArray(b.images) ? b.images : [])
+    .map((v: any) =>
+      typeof v === "string"
+        ? validCollageEntry(v) && !v.startsWith("asset:") ? { file: v, alt: "" } : null
+        : v && typeof v.file === "string" ? v : null
+    )
+    .filter(Boolean)
+    .slice(0, 4);
+  if (items.length < 2) return "";
+  const preset = COLLAGE_PRESETS.find((x) => p.classes.includes(`s-collage-${x}`)) || "stack";
+  return `<div class="collage collage--${preset} collage--n${items.length}">${items
+    .map((it: any, i: number) => `<figure class="collage__item"><img src="${esc(assetUrl(it.file))}" alt="${esc(it.alt || "")}"${i ? ' loading="lazy"' : ""}></figure>`)
+    .join("")}</div>`;
+}
+
+/* ---- Decoration layer (#13, #17, #14 ghost) ---- */
+// Static, server-owned SVG: nothing from documents is ever placed in these.
+const ORNAMENTS: Record<string, string> = {
+  arc: '<svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet"><path d="M10 190 A180 180 0 0 1 190 10" /><path d="M40 190 A150 150 0 0 1 190 40" /><path d="M70 190 A120 120 0 0 1 190 70" /></svg>',
+  contour: '<svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet"><path d="M0 60 C50 20 90 100 140 60 S200 40 200 40" /><path d="M0 90 C50 50 90 130 140 90 S200 70 200 70" /><path d="M0 120 C50 80 90 160 140 120 S200 100 200 100" /><path d="M0 150 C50 110 90 190 140 150 S200 130 200 130" /></svg>',
+  "quote-mark": '<svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet"><text x="10" y="190" font-family="Playfair Display, Georgia, serif" font-size="260">“</text></svg>',
+  stave: '<svg viewBox="0 0 400 120" preserveAspectRatio="none"><path d="M0 20 C100 0 200 40 400 10" /><path d="M0 40 C100 20 200 60 400 30" /><path d="M0 60 C100 40 200 80 400 50" /><path d="M0 80 C100 60 200 100 400 70" /><path d="M0 100 C100 80 200 120 400 90" /></svg>',
+};
+/** The aria-hidden decoration layer: only allowlisted enums, static SVG, and escaped plain ghost text. */
+export function renderDecorations(p: ResolvedSection, ghostText: string): string {
+  const d = p.deco;
+  if (!d) return "";
+  const field = d.field ? `<div class="s-deco__field"></div>` : "";
+  const ornament = d.ornament && ORNAMENTS[d.ornament] ? `<div class="s-deco__ornament">${ORNAMENTS[d.ornament]}</div>` : "";
+  const ghost = d.ghost && ghostText ? `<div class="s-deco__ghost">${esc(ghostText)}</div>` : "";
+  return field || ornament || ghost ? `<div class="s-deco" aria-hidden="true">${field}${ornament}${ghost}</div>` : "";
+}
 
 // Optional second photograph for scene_image "dissolve". A decorative
 // duplicate of the scene (the first image carries the alt text). Rendered only
@@ -188,11 +244,11 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
   switch (b.type) {
     case "hero":
       return `<section class="hero-stage media-band">
-  ${img(b.image, b.image_alt || b.heading || "Julie Bale", "", p.imgStyle)}${secondImage(b, p)}
+  ${img(b.image, b.image_alt || plainHeadline(b.heading) || "Julie Bale", "", p.imgStyle)}${secondImage(b, p)}
   <div class="media-band__scrim"></div>
   <div class="media-band__inner"><div class="container--wide reveal">
     ${b.kicker ? `<p class="kicker">${esc(b.kicker)}</p>` : ""}
-    <h1>${esc(b.heading)}</h1>
+    <h1>${headline(b.heading)}</h1>
     ${b.intro ? `<p class="lede">${esc(b.intro)}</p>` : ""}
     ${button(b.cta)}
   </div></div>
@@ -201,19 +257,20 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
     case "statement":
       return `<section class="section quiet${ivory}"><div class="container--reading reveal">
     ${b.eyebrow ? `<p class="kicker">${esc(b.eyebrow)}</p>` : ""}
-    <p class="statement--lead">${esc(b.statement)}</p>
-    ${b.sub ? `<p>${esc(b.sub)}</p>` : ""}
+    <p class="statement--lead">${headline(b.statement)}</p>
+    ${b.sub ? `<p>${esc(b.sub)}</p>` : ""}${renderCollage(b, p)}
   </div></section>`;
 
     case "showcase":
       return `<section class="showcase"><div class="showcase__grid">
     <div class="showcase__media reveal">${
-      b.image
-        ? img(b.image, b.image_alt || b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption)
-        : `<span class="showcase__ph">${esc(b.heading)}<span>Large performance / Diva photograph</span></span>`
+      renderCollage(b, p) ||
+      (b.image
+        ? img(b.image, b.image_alt || plainHeadline(b.heading), "", p.imgStyle) + secondImage(b, p) + caption(b.caption)
+        : `<span class="showcase__ph">${esc(plainHeadline(b.heading))}<span>Large performance / Diva photograph</span></span>`)
     }</div>
     <div class="showcase__body reveal">
-      <h2>${esc(b.heading)}</h2>
+      <h2>${headline(b.heading)}</h2>
       ${b.sub ? `<p class="showcase__sub">${esc(b.sub)}</p>` : ""}
       ${b.facts ? `<p class="showcase__facts">${esc(b.facts)}</p>` : ""}
       ${textlink(b.cta)}
@@ -228,7 +285,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
 
     case "panels":
       return `<section class="section"><div class="container">
-    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}
     <div class="panels stagger">
       ${(b.items || [])
         .map(
@@ -247,12 +304,12 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
 
     case "feature":
       return `<section class="section${ivory}"><div class="container feature__grid${b.reverse ? " feature--reverse" : ""}">
-    <div class="feature__media reveal"><figure class="frame image--portrait">${
-      b.image ? img(b.image, b.image_alt || b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption) : `<figcaption class="frame__label">${esc(b.heading)}</figcaption>`
-    }</figure></div>
+    <div class="feature__media reveal">${renderCollage(b, p) || `<figure class="frame image--portrait">${
+      b.image ? img(b.image, b.image_alt || plainHeadline(b.heading), "", p.imgStyle) + secondImage(b, p) + caption(b.caption) : `<figcaption class="frame__label">${esc(plainHeadline(b.heading))}</figcaption>`
+    }</figure>`}</div>
     <div class="feature__body reveal">
       ${b.eyebrow ? `<p class="eyebrow">${esc(b.eyebrow)}</p>` : ""}
-      <h2>${esc(b.heading)}</h2>
+      <h2>${headline(b.heading)}</h2>
       ${b.body ? md(b.body) : ""}
       ${textlink(b.cta)}
     </div>
@@ -260,7 +317,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
 
     case "duo":
       return `<section class="section"><div class="container">
-    ${b.heading ? `<h2 class="section-title section-title--centre">${esc(b.heading)}</h2>` : ""}
+    ${b.heading ? `<h2 class="section-title section-title--centre">${headline(b.heading)}</h2>` : ""}
     <div class="duo stagger">
       ${(b.items || [])
         .map(
@@ -278,14 +335,14 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
     case "cta":
       return `<section class="section ground-teal cta-band cta-band--final"><div class="container--reading reveal">
     ${b.eyebrow ? `<p class="kicker">${esc(b.eyebrow)}</p>` : ""}
-    <h2>${esc(b.heading)}</h2>
+    <h2>${headline(b.heading)}</h2>
     ${b.note ? `<p class="cta-band__note">${esc(b.note)}</p>` : ""}
     ${button(b.cta)}
   </div></section>`;
 
     case "doorway":
       return `<section class="section--tight ground-ivory doorway"><div class="container--reading reveal">
-    <h2>${esc(b.heading)}</h2>
+    <h2>${headline(b.heading)}</h2>
     ${b.body ? `<p>${esc(b.body)}</p>` : ""}
     <form class="newsletter__form" action="#" novalidate>
       <label class="visually-hidden" for="email">Email address</label>
@@ -297,13 +354,13 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
 
     case "richtext":
       return `<section class="section${ivory}"><div class="container--reading reveal">
-    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}
     ${b.body ? md(b.body) : ""}
   </div></section>`;
 
     case "form":
       return `<section class="section ground-ivory"><div class="container--reading reveal">
-    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}
     <form class="stack-form" action="#" novalidate>
       ${(b.fields || [])
         .map((f: string) => `<label class="field"><span>${esc(f)}</span><input type="text" name="${esc(f)}"></label>`)
@@ -315,7 +372,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
     case "listing": {
       const rows = await readRows(env, b.collection);
       return `<section class="section${ivory}"><div class="container">
-    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}
     ${
       rows.length
         ? `<ul class="listing">${rows
@@ -354,7 +411,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
 
     case "lessons": {
       const items = b.items || [];
-      const heading = b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : "";
+      const heading = b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : "";
       return `<section class="section${ivory}"><div class="container--reading">
     ${heading}
     ${
@@ -376,7 +433,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
 
     case "calendar": {
       const items = await upcomingDates(env);
-      const heading = b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : "";
+      const heading = b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : "";
       if (!items.length)
         return `<section class="section${ivory}"><div class="container">${heading}<p class="muted">${esc(b.empty || "Nothing on the calendar yet.")}</p></div></section>`;
       const uid = `dv${i}`;
@@ -413,7 +470,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
  * when a theme is chosen, and insert a decorative chapter number. Returns the
  * HTML untouched when the block has no presentation.
  */
-function decorate(html: string, p: ResolvedSection, chapterNo: number): string {
+function decorate(html: string, p: ResolvedSection, chapterNo: number, ghostText = ""): string {
   if (!p.classes.length) return html;
   const m = /^(\s*<section class=")([^"]*)(")/.exec(html);
   if (!m) return html;
@@ -423,7 +480,7 @@ function decorate(html: string, p: ResolvedSection, chapterNo: number): string {
   const mark = p.chapter ? `<span class="chapter-mark" aria-hidden="true">${String(chapterNo).padStart(2, "0")}</span>` : "";
   const rest = html.slice(m[0].length);
   const close = rest.indexOf(">");
-  let out = `${m[1]}${[base, ...p.classes].filter(Boolean).join(" ")}${m[3]}${rest.slice(0, close)}${attrs}>${mark}${rest.slice(close + 1)}`;
+  let out = `${m[1]}${[base, ...p.classes].filter(Boolean).join(" ")}${m[3]}${rest.slice(0, close)}${attrs}>${renderDecorations(p, ghostText)}${mark}${rest.slice(close + 1)}`;
   // Scenes pin their content while the visitor scrolls through this spacer
   // (a real element: sticky content can only travel within its parent).
   if (p.scene) {
@@ -463,7 +520,11 @@ async function loadAssets(env: Env, ids: string[]): Promise<Map<string, any>> {
 export async function resolveAssetRefs(env: Env, page: any): Promise<any> {
   const sections: any[] = Array.isArray(page?.sections) ? page.sections : [];
   const ids = new Set<string>();
-  const collect = (o: any) => isObj(o) && MEDIA_FIELDS.forEach((f) => { const id = assetIdOf(o[f]); if (id) ids.add(id); });
+  const collect = (o: any) => {
+    if (!isObj(o)) return;
+    MEDIA_FIELDS.forEach((f) => { const id = assetIdOf(o[f]); if (id) ids.add(id); });
+    if (Array.isArray(o.images)) o.images.forEach((v: unknown) => { const id = assetIdOf(v); if (id) ids.add(id); });
+  };
   sections.forEach((s) => { collect(s); if (isObj(s) && Array.isArray(s.items)) s.items.forEach(collect); });
   if (!ids.size) return page;
   const assets = await loadAssets(env, [...ids]);
@@ -482,6 +543,16 @@ export async function resolveAssetRefs(env: Env, page: any): Promise<any> {
       }
     }
     if (Array.isArray(o.items)) c.items = o.items.map((it: any) => apply(it, false));
+    // Collage entries: consented assets become {file, alt}; anything unconsented or unknown is dropped.
+    if (Array.isArray(o.images))
+      c.images = o.images
+        .map((v: unknown) => {
+          const id = assetIdOf(v);
+          if (!id) return v;
+          const a = assets.get(id);
+          return a && consentOk(a) ? { file: a.file, alt: a.alt || "" } : null;
+        })
+        .filter((v: unknown) => v !== null);
     return c;
   };
   return { ...page, sections: sections.map((s) => apply(s, true)) };
@@ -499,14 +570,14 @@ function mediaButton(uid: string, label: string, poster: string, loop = false): 
 
 function renderMedia(b: any, ivory: string): string {
   const uid = typeof b.video === "string" && STREAM_RE.test(b.video) ? b.video : "";
-  const what = b.caption || b.heading || "performance";
+  const what = b.caption || plainHeadline(b.heading) || "performance";
   const visual = uid
     ? mediaButton(uid, `${b.loop ? "Play atmospheric video" : "Play video"}: ${what}`, b.poster || "", !!b.loop)
     : b.poster ? img(b.poster, b.image_alt || what) : "";
   const audio = b.audio ? `<audio class="media-audio" controls preload="none" src="${esc(mediaUrl(b.audio))}"></audio>` : "";
   if (!visual && !audio) return "";
   return `<section class="section media-scene${ivory}"><div class="container">
-    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}
     <figure class="media-frame">${visual ? `<div class="media-frame__visual">${visual}</div>` : ""}${audio}${b.caption ? `<figcaption class="caption">${esc(b.caption)}</figcaption>` : ""}</figure>
     ${b.transcript ? `<details class="transcript"><summary>Transcript</summary>${md(b.transcript)}</details>` : ""}
   </div></section>`;
@@ -560,7 +631,7 @@ async function renderTestimonials(env: Env, b: any, p: ResolvedSection, ivory: s
   } else if (layout === "carousel") {
     const n = items.length;
     inner = `<div class="carousel" data-carousel>
-      <div class="carousel__track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="${esc(b.heading || "Singer stories")}">${items
+      <div class="carousel__track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="${esc(plainHeadline(b.heading) || "Singer stories")}">${items
         .map((t, i) => `<figure class="carousel__slide testimonial" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${n}">${portrait(t)}<blockquote>${esc(t.quote)}</blockquote>${who(t)}</figure>`)
         .join("")}</div>
       <div class="carousel__controls"><button type="button" class="carousel__prev" aria-label="Previous story">&lsaquo;</button><span class="carousel__count" aria-live="polite">1 / ${n}</span><button type="button" class="carousel__next" aria-label="Next story">&rsaquo;</button></div>
@@ -571,7 +642,7 @@ async function renderTestimonials(env: Env, b: any, p: ResolvedSection, ivory: s
       .join("")}</ul>`;
   }
   return `<section class="section${ivory}"><div class="container">
-    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}
     ${inner}
   </div></section>`;
 }
@@ -654,7 +725,7 @@ export interface RenderOptions {
 
 /** Short chapter label for scene navigation: the section's own words, trimmed. */
 function chapterLabel(b: any, n: number): string {
-  const raw = String(b.eyebrow || b.heading || b.statement || b.quote || b.title || `Chapter ${n}`).replace(/\s+/g, " ").trim();
+  const raw = plainHeadline(b.eyebrow || b.heading || b.statement || b.quote || b.title || `Chapter ${n}`).replace(/\s+/g, " ").trim();
   return raw.length > 42 ? raw.slice(0, 40).trimEnd() + "…" : raw;
 }
 
@@ -678,7 +749,7 @@ export async function renderPage(env: Env, page: any, site: any, opts: RenderOpt
       const p = resolveSection(b);
       const n = p.chapter ? ++chapter : 0;
       if (n) chapters.push({ n, label: chapterLabel(b, n) });
-      return renderBlock(env, b, i, p).then((html) => decorate(html, p, n));
+      return renderBlock(env, b, i, p).then((html) => decorate(html, p, n, plainHeadline(b.heading || b.statement || "")));
     })
   );
   const design = resolveDesign(page.design);

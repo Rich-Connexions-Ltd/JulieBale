@@ -162,7 +162,7 @@ describe("site", () => {
   });
   it("OpenAPI exposes the new operations and generated enums", async () => {
     const r = await body(await call(newEnv(), anon("/openapi.json")));
-    expect(r.info.version).toBe("0.8.0");
+    expect(r.info.version).toBe("0.9.0");
     expect(r.paths["/api/pages/{base}/variants"].post.operationId).toBe("createPageVariant");
     expect(r.components.schemas.SectionStyle.properties.theme.enum).toEqual(["cream", "ivory", "teal", "night"]);
     expect(r.components.schemas.Section.properties.key.pattern).toBeTruthy();
@@ -221,5 +221,30 @@ describe("asset search route", () => {
     const env = newEnv();
     const r = await body(await call(env, authed("/api/assets/x", { method: "PUT", body: JSON.stringify({ file: "x.jpeg", type: "image", alt: "X" }) })));
     expect(r.warnings[0]).toMatch(/consent is required/);
+  });
+});
+
+describe("Sprint 14 values are checked the same way on every write path", () => {
+  const hostile = { sections: [{ key: "feature-1", type: "feature", heading: "F", images: ["../x.jpg", "asset:a"],
+    style: { phone: { focus: "50%;color:red", crop: "wide", extra: 1 }, field: "tartan", collage: "stack" } }] };
+  it("REST PUT and PATCH warn identically", async () => {
+    const env = newEnv();
+    const put = await body(await call(env, authed("/api/pages/test", { method: "PUT", body: JSON.stringify(hostile) })));
+    const patch = await body(await call(env, authed("/api/pages/test", { method: "PATCH", body: JSON.stringify(hostile) })));
+    expect(put.warnings).toEqual(patch.warnings);
+    const w = put.warnings.join("\n");
+    for (const needle of ["images[0]", "phone.focus", "phone.crop", "phone.extra", "style.field"]) expect(w).toContain(needle);
+  });
+  it("publish strips everything not allowlisted, including phone sub-keys", async () => {
+    const env = newEnv();
+    await create(env);
+    await call(env, authed("/api/variants/home-stage", { method: "PATCH", body: JSON.stringify({ sections: [{ from: "feature-1",
+      style: { phone: { focus: "10% 20%", crop: "wide", extra: 1 }, field: "tartan", ornament: "arc" },
+      media: { images: ["asset:a", "../x.jpg", "asset:b"] } }] }) }));
+    const r = await body(await call(env, post("/api/variants/home-stage/publish", {})));
+    expect(r.ok).toBe(true);
+    const live = doc(env, "pages", "home").sections[0];
+    expect(live.style).toEqual({ phone: { focus: "10% 20%" }, ornament: "arc" });
+    expect(live.images).toEqual(["asset:a", "asset:b"]);
   });
 });
