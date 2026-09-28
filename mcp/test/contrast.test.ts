@@ -57,4 +57,10 @@ describe("decorative fields keep text readable", () => {
       }
     });
   }
+  it("kickers on the teal ground use gold-soft (>= 4.5:1), not antique gold", () => {
+    expect(css).toMatch(/\.ground-teal \.kicker \{ color: var\(--colour-gold-soft\); \}/);
+    expect(ratio(rgb(token("gold-soft")), rgb(token("primary")))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(rgb(token("gold")), rgb(token("primary")))).toBeLessThan(4.5);
+  });
 });
+

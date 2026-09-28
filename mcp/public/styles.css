@@ -157,6 +157,8 @@ img { max-width: 100%; display: block; }
   gap: var(--space-2);
 }
 .ground-teal .eyebrow { color: var(--colour-gold-soft); }
+/* kickers on the teal ground (e.g. the CTA band) need gold-soft too: antique gold on teal is ~3:1 */
+.ground-teal .kicker { color: var(--colour-gold-soft); }
 
 /* small gold tick that precedes an eyebrow */
 .eyebrow::before {
@@ -779,7 +781,7 @@ textarea:focus-visible { border-color: var(--colour-primary); }
 .stagger.is-visible .eyebrow::before { width: 1.75rem; }
 
 /* Slow, gentle zoom on framed photography */
-.frame > img { transition: transform 1200ms cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+.frame > img { transition: transform 1200ms cubic-bezier(0.22, 1, 0.36, 1); }
 .frame:hover > img { transform: scale(1.045); }
 
 /* Subtle lift on primary controls */

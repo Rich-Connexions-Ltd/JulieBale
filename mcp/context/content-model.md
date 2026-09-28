@@ -339,8 +339,10 @@ concept its own collage. Phones show a tidy two-column grid.
 
 ### Phones
 The `phone` key in a section's `style` changes two things on phones only:
-`{"phone": {"focus": "50% 30%", "crop": "portrait"}}` (crop: `portrait`,
-`landscape`, `square`). Everything else adapts automatically.
+`{"phone": {"focus": "50% 30%", "crop": "portrait"}}`. Phone `crop` is
+`portrait`, `landscape` or `square` (note: `square` instead of the main `crop`'s
+`bleed`); phone `focus` works like `focus`. "Phones" means screens up to 48rem
+(about 770px) wide. Everything else adapts automatically.
 
 ### Not available yet (deferred)
 Bottom edges and other edge shapes, shapes that spill into neighbouring
