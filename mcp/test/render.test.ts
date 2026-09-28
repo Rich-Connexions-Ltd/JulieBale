@@ -263,3 +263,17 @@ describe("renderDecorations combinations", () => {
     }
   });
 });
+
+describe("renderDecorations with hostile or empty values", () => {
+  it("never emits a stored value; only static markup and escaped ghost text", async () => {
+    const { renderDecorations } = await import("../src/render");
+    const p = (deco: any) => ({ classes: [], hasTheme: false, motion: false, chapter: false, scene: false, deco });
+    const html = renderDecorations(p({ field: '"><script>alert(1)</script>', ornament: '"><img onerror=x>', ghost: "yes" }), '"><svg onload=x>');
+    expect(html).toBe('<div class="s-deco" aria-hidden="true"><div class="s-deco__field"></div><div class="s-deco__ghost">&quot;&gt;&lt;svg onload=x&gt;</div></div>');
+    for (const empty of [{}, { field: "" }, { ornament: "" }, { ghost: false }, { field: null, ornament: undefined, ghost: 0 }]) expect(renderDecorations(p(empty), "X")).toBe("");
+  });
+  it("is only ever fed allowlisted values by resolveSection", async () => {
+    const { resolveSection } = await import("../src/presentation");
+    expect(resolveSection({ type: "statement", style: { field: '"><x>', ornament: "arc", ghost: "yes" } }).deco).toEqual({ ornament: "arc" });
+  });
+});

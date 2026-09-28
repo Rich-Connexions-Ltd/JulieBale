@@ -42,7 +42,7 @@ Only the smallest vocabulary that delivers each request's core look:
 | Ornaments (#17) | `ornament`: `arc`, `contour`, `quote-mark`, `stave` · `ornament_position`: `top-left`, `top-right`, `bottom-left`, `bottom-right` |
 | Collage (#15) | content `images` (2–4) · `collage`: `stack`, `scatter`, `mosaic` |
 | Typography (#14) | heading markup `\|` and `*word*` · `type_scale`: `display`, `monumental` · `ghost`: `true` |
-| Phone (#20) | `phone.focus` (`"x% y%"`), `phone.crop`: `portrait`, `landscape`, `square` |
+| Phone overrides (#20) | `style.phone.focus` (`"x% y%"`), `style.phone.crop`: `portrait`, `landscape`, `square` (phones = screens up to 48rem) |
 | Hover (#22) | `hover`: `shift`, `draw` |
 
 **Deferred** (recorded in each request's resolution): `edge` shapes beyond wave/
