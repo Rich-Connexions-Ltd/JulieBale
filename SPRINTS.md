@@ -223,6 +223,16 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 15 — Landing page sanitiser
+**Status:** In progress (council review)
+
+- **Goal:** landing pages (`/l/{slug}`) can never run script or load active content, whatever HTML is stored.
+- **Source:** owner decision 2026-09-28 (previously accepted risk).
+- **Scope:** parser-based allowlist sanitiser for landing HTML and CSS at render time, warnings at write time, strict CSP on `/l/` responses.
+- **Exit criteria:** XSS payload corpus neutralised; existing landing page renders unchanged; council approved; deployed.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship
