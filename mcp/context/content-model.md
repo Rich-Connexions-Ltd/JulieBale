@@ -194,3 +194,27 @@ layout, a new content type, a bug), call `createFeatureRequest` /
 `request_feature` with a clear title, what it should do, and where. Tell the
 person it has been logged for the dev team. Do not fake it with a workaround that
 breaks the design.
+
+**Always list requests first** (`list_feature_requests` / `listFeatureRequests`).
+Each has a `status` and a `resolution` note from the developers: `planned` means
+it is scheduled (the note says which sprint), and a `declined` request says what
+superseded it. Do not log something that is already open or planned.
+
+### Current development focus (from 28 September 2026)
+- **Pause on new art-direction requests.** There are five homepage concepts
+  (Stage, Studio, Journey, Gallery, Atelier) and a large planned backlog. The
+  priority now is helping Julie **compare the concepts and choose one**. Build
+  with the tools that exist; do not log new layout, motion or styling requests
+  until she has chosen. Bugs, and content Julie genuinely needs, can still be
+  logged.
+- **Planned, in order:**
+  - Sprint 12, *Scenes*: scroll-progress scenes (#12, including the
+    photographic storytelling in #16) and scene navigation (#21).
+  - Sprint 13, *Trust content*: a visual asset library starting with
+    rights/consent and usage metadata (#23), testimonials and singer stories
+    (#18, which supersedes #1), and performance media (#19).
+  - Sprint 14, *Composition and ornament*: organic backgrounds and decorative
+    elements (#13 with #17), multi-image collage (#15), display typography
+    (#14), hover interactions (#22), and phone-only overrides (#20, narrowed).
+- Do not feature photographs or testimonials of real singers prominently until
+  their consent is recorded (Sprint 13).

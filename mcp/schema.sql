@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS feature_requests (
   detail      TEXT,
   context     TEXT,                              -- where on the site / which page
   status      TEXT NOT NULL DEFAULT 'open',      -- open | planned | done | declined
+  resolution  TEXT,                              -- developer note: planned sprint / merged into / why declined
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL
 );

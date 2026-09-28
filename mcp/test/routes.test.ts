@@ -162,7 +162,7 @@ describe("site", () => {
   });
   it("OpenAPI exposes the new operations and generated enums", async () => {
     const r = await body(await call(newEnv(), anon("/openapi.json")));
-    expect(r.info.version).toBe("0.7.0");
+    expect(r.info.version).toBe("0.7.1");
     expect(r.paths["/api/pages/{base}/variants"].post.operationId).toBe("createPageVariant");
     expect(r.components.schemas.SectionStyle.properties.theme.enum).toEqual(["cream", "ivory", "teal", "night"]);
     expect(r.components.schemas.Section.properties.key.pattern).toBeTruthy();
@@ -195,5 +195,15 @@ describe("listing before any variant exists", () => {
     // and create persists exactly those keys
     await create(env);
     expect(doc(env, "pages", "home").sections.map((s: any) => s.key)).toEqual(r.sections.map((s: any) => s.key));
+  });
+});
+
+describe("feature requests carry the developer's resolution", () => {
+  it("lists status and resolution", async () => {
+    const env = newEnv();
+    await call(env, post("/api/feature-requests", { title: "Carousel" }));
+    env.DB.raw.prepare("UPDATE feature_requests SET status='declined', resolution='Superseded by #18' WHERE id=1").run();
+    const r = await body(await call(env, authed("/api/feature-requests")));
+    expect(r.requests[0]).toMatchObject({ id: 1, title: "Carousel", status: "declined", resolution: "Superseded by #18" });
   });
 });

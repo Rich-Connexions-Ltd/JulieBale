@@ -197,6 +197,32 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 12 — Scenes
+**Status:** Not started
+
+- **Goal:** sections that take the viewport for a moment and evolve with scroll, then release, using native scrolling only.
+- **Source:** #12 (scroll-progress scenes), #16 merged in (photographic storytelling), #21 (scene navigation); scroll-linked drift from #13.
+- **Scope:** pin length presets; enter/hold/release phases; progress-linked fade/reveal/scale/translate and staged text; background colour interpolation; image zoom/re-crop/dissolve to an optional second image (new optional content field); carry into the next section; chapter label / progress rail. CSS scroll-driven animations with static fallback (Firefox, reduced motion); phones shorter or static.
+- **Exit criteria:** goldens unchanged; tests pass; Gallery preview checked desktop + phone; deployed; content-model updated.
+
+## Sprint 13 — Trust content
+**Status:** Not started
+
+- **Goal:** first-class content for people and performance, with consent recorded before use.
+- **Source:** #23 (asset library; rights/consent + usage metadata first), #18 (testimonials and singer stories; supersedes #1), #19 (performance media).
+- **Scope:** `assets` collection with metadata, search/filter and variant assignment; testimonial/story content type with presentation modes (portrait + quote, story card, restrained carousel without auto-advance, short video); performance media block (poster frame, muted loop, audio excerpt, captions/transcript, lazy loading).
+- **Exit criteria:** consent status enforced where assets are featured; accessible controls; tests; deployed.
+
+## Sprint 14 — Composition and ornament
+**Status:** Not started
+
+- **Goal:** richer editorial composition once the content exists.
+- **Source:** #13 with #17 merged (organic backgrounds, decorative SVG), #15 (collage), #14 (display typography), #22 (hover), #20 narrowed.
+- **Scope:** background shapes/dividers/washes and decorative elements in the brand palette; 2–4 image compositions; display type (with minimal inline markup for line breaks / emphasised words); touch-safe hover effects; phone-only overrides for crop, focal point, image escape, type size and motion (not every option per breakpoint).
+- **Exit criteria:** contrast and reading order preserved; no horizontal overflow; tests; deployed.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship

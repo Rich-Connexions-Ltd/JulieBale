@@ -303,7 +303,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.7.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.7.1" });
 
   async init() {
     this.server.tool(
@@ -379,7 +379,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "request_feature",
-      "Log a request to the developer team for something the website cannot do yet: a new kind of section/block, a new layout, a new content type, or a bug. WHEN: use this INSTEAD of improvising a workaround that breaks the design or content model, whenever Julie wants something the existing block types cannot express. Give a clear title, what it should do and look like (detail) and where on the site (context). Then tell Julie it is logged and offer the closest thing possible now. DO NOT use for ordinary content edits you can already make.",
+      "Log a request to the developer team for something the website cannot do yet: a new kind of section/block, a new layout, a new content type, or a bug. FIRST call list_feature_requests: if something similar is already open or planned, do not log it again (its resolution says where it is scheduled). WHEN: use this INSTEAD of improvising a workaround that breaks the design or content model, whenever Julie wants something the existing block types cannot express. Give a clear title, what it should do and look like (detail) and where on the site (context). Then tell Julie it is logged and offer the closest thing possible now. DO NOT use for ordinary content edits you can already make.",
       {
         title: z.string().describe("Short summary of what's wanted"),
         detail: z.string().optional().describe("What it should do / look like"),
@@ -394,7 +394,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "list_feature_requests",
-      "List logged feature/element requests and their status (open, planned, done, declined). WHEN: check what has already been requested before logging a new one, or when Julie asks what is outstanding. Optionally filter by status.",
+      "List logged feature/element requests with their status (open, planned, done, declined) and resolution (the developer's note: which sprint it is planned for, what it was merged into, or why it was declined). WHEN: always before logging a new request, or when Julie asks what is outstanding. Optionally filter by status.",
       { status: z.enum(["open", "planned", "done", "declined"]).optional() },
       async ({ status }) => {
         const rows = await listFeatureRequests(this.env, status);
@@ -672,7 +672,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-      version: "0.7.0",
+      version: "0.7.1",
     },
     servers: [{ url: origin }],
     paths: {
@@ -729,7 +729,7 @@ function openApiSchema(origin: string) {
         PresentationOptions: { type: "object", description: "Allowed presentation values with meanings and examples.", properties: { style: { type: "object", description: "Section style keys: each has values (value -> meaning), optional blocks it applies to, or a pattern.", additionalProperties: true }, design: { type: "object", description: "Page design keys, same shape as style.", additionalProperties: true }, rules: { type: "array", items: { type: "string" } }, examples: { type: "object", description: "One worked variant per concept (stage, editorial, journey).", additionalProperties: true } } },
         VariantList: { type: "object", properties: { ok: { type: "boolean" }, base: { type: "string" }, limit: { type: "integer" }, error: { type: "string" }, variants: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, previewUrl: { type: "string" }, unresolved: { type: "array", items: { type: "string" } }, warnings: { type: "array", items: { type: "string" } } } } }, sections: { type: "array", description: "The live page's section keys", items: { type: "object", properties: { key: { type: "string" }, type: { type: "string" }, heading: { type: "string" } } } } } },
         Variant: { type: "object", description: "An unpublished variant (collection 'variants'). Copy comes from the live base page; only order and presentation live here. `token` and `base` are managed by the server.", properties: { base: { type: "string", readOnly: true }, label: { type: "string" }, note: { type: "string" }, token: { type: "string", readOnly: true }, design: { $ref: "#/components/schemas/PageDesign" }, sections: { type: "array", items: { type: "object", required: ["from"], properties: { from: { type: "string", description: "Section key on the live page" }, style: { $ref: "#/components/schemas/SectionStyle" } } } } } },
-        FeatureRequest: { type: "object", required: ["title"], properties: { title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] } } },
+        FeatureRequest: { type: "object", required: ["title"], properties: { id: { type: "integer", readOnly: true }, title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] }, status: { type: "string", readOnly: true, enum: ["open", "planned", "done", "declined"] }, resolution: { type: "string", readOnly: true, description: "Developer note: planned sprint, merged-into, or reason declined" }, created_at: { type: "string", readOnly: true }, updated_at: { type: "string", readOnly: true } } },
         FeatureRequestList: { type: "object", properties: { requests: { type: "array", items: { $ref: "#/components/schemas/FeatureRequest" } } } },
       },
       securitySchemes: { bearerAuth: { type: "http", scheme: "bearer" } },

@@ -46,3 +46,12 @@ Feature requests #10 and #11. Review mode: no council (owner's call); tests + br
 - `mcp/context/content-model.md` — new options, guidance, Gallery example
 - `mcp/test/render.test.ts`, `mcp/test/docs.test.ts` — classes, CSS safety (no horizontal scroll, pointer-events, reduced-motion and motion-gated transitions)
 - `Documentation/archive/PLAN_Sprint11.md` — plan and implementation notes
+
+## Backlog triage: requests #12–#23 — 2026-09-28
+
+**Files changed:**
+- `mcp/schema.sql` + D1 — `feature_requests.resolution` column (developer note on each status)
+- `mcp/src/index.ts` — 0.7.1: `request_feature` / `list_feature_requests` descriptions (list first, don't re-log planned items); OpenAPI `FeatureRequest` exposes id, status, resolution, timestamps
+- `mcp/context/content-model.md` — pause on new art-direction requests until Julie chooses a concept; planned sprint order; consent note
+- `SPRINTS.md` — Sprints 12–14
+- `mcp/test/routes.test.ts` — resolution is listed
