@@ -1,0 +1,41 @@
+# Findings Tracker: Sprint 10 (code)
+
+Editor: Update the **Status** and **Resolution** columns after addressing each finding.
+Status values: `OPEN` | `ADDRESSED` | `VERIFIED` | `WONTFIX` | `REOPENED`
+
+| # | Round | Severity | Finding | Status | Resolution |
+|---|-------|----------|---------|--------|------------|
+| 1 | R1 | High | Variant-management REST routes may expose preview URLs, tokens, labels, notes, unresolved refs, or unpublished struct... | ADDRESSED | All variant routes under bearer /api + no-store; unauth tests (routes.test.ts) |
+| 2 | R1 | High | Variant tokens are not protected across all persistence paths. Full replace/write, REST PUT/PATCH, publish, or future... | ADDRESSED | prepareVariantWrite in central writeDoc/mergeDoc path incl. undo; tests per path |
+| 3 | R1 | High | Persisted variant references rely on derived section keys, which are unstable if sections are inserted or reordered. ... | ADDRESSED | Persisted keys via ensureSectionKeys in central pages write path; insertion/reorder tests |
+| 4 | R1 | High | The proposed separate `renderVariant()` path risks duplicating renderer behavior and coupling previews to renderer in... | ADDRESSED | variantToPage() normalisation; renderPage single renderer with opts.preview |
+| 5 | R1 | High | OpenAPI/spec updates are not explicitly planned for the new REST surface, schema changes, warning responses, presenta... | ADDRESSED | OpenAPI ops/schemas/enums/examples listed under Documentation |
+| 6 | R1 | High | MCP tool descriptions are not required to explain the new variant workflow, presentation vocabulary, allowed values, ... | ADDRESSED | MCP description requirements listed under Documentation |
+| 7 | R1 | High | The presentation vocabulary is too broad for one sprint and will spread conditional rendering and CSS complexity acro... | WONTFIX | Partly declined: every control traces to a request (Req column); mobile_first removed; CSS budget +350 |
+| 8 | R1 | Medium | Raw unresolved section keys in HTML comments create an HTML injection surface. Missing refs should not render user-co... | ADDRESSED | Unresolved refs render nothing; test asserts no key text |
+| 9 | R1 | Medium | Preview token entropy and encoding are underspecified. The plan should require at least 128 bits of randomness, a fix... | ADDRESSED | 144-bit, base64url 24 chars, shape check, constant-time compare |
+| 10 | R1 | Medium | Publishing needs a strict final validation gate so unknown or unsafe presentation fields cannot persist into `pages/{... | ADDRESSED | sanitizePresentation on publish; refuse unresolved; hostile-value test |
+| 11 | R1 | Medium | Mobile presentation controls may allow visual order to diverge from logical reading order. `mobile_first` should be r... | ADDRESSED | mobile_first removed; visual order = DOM order |
+| 12 | R1 | Medium | CSS growth is high and may increase render-blocking cost. The plan should cap Round 1 CSS, reuse existing classes, an... | ADDRESSED | +350-line budget; reuse ground-* rules and shared custom properties |
+| 13 | R1 | Medium | `context/content-model.md`, README, OpenAPI descriptions, and MCP descriptions need a shared glossary and concrete as... | ADDRESSED | Shared glossary + examples in content-model.md, tools, OpenAPI |
+| 14 | R1 | Medium | README and changelog requirements are too vague. `CHANGES.md` already exists and should be modified with a dated Spri... | ADDRESSED | CHANGES.md dated Sprint 10 / 0.7.0 entry; README items listed |
+| 15 | R1 | Low | Add brief comments around derived-key handling, token preservation, publish refusal for unresolved refs, and no-JS mo... | ADDRESSED | Comments required on keys, token, publish refusal, no-JS guard |
+| 16 | R1 | Low | Treat `robots.txt` as advisory only; real controls are random tokens, auth, `no-store`, and `noindex` headers. (Sourc... | ADDRESSED | robots.txt documented as advisory only |
+| 17 | R2 | High | Potential render-blocking CSS caused by `html.js` gating for no-JS behavior. The plan should ensure core CSS is not d... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 18 | R2 | Medium | Variant/base IDs and preview URL path segments need explicit route-safe validation and URL encoding. Require a strict... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 19 | R2 | Medium | New D1 queries need an explicit bound-parameter requirement. All variant/base lookups, list queries, filters, limits,... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 20 | R2 | Medium | OpenAPI documentation does not explicitly cover persisted section `key` fields or new `caption` fields on eligible bl... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 21 | R2 | Medium | Presentation vocabulary is still duplicated across implementation, OpenAPI, MCP descriptions, and content-model docs.... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 22 | R2 | Medium | Terminology for “full-bleed” is inconsistent and should be normalized across the requirements table, presentation voc... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 23 | R2 | Low | Variant style precedence needs one explicit documented rule. State whether variant section `style` replaces the base ... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 24 | R2 | Low | `prepareVariantWrite` should not run on delete paths. Token preservation is relevant to writes, merges, and undo rest... | ADDRESSED | Addressed in plan R3 (see Revision History) |
+| 25 | R3 | Medium | Unauthenticated preview markup still exposes the variant label via `"Preview · <label> · not live"`, despite the stat... | WONTFIX | Label kept on banner: Julie needs it to compare concepts; it is her own non-sensitive text, escaped. Token/note/keys/warnings still never exposed. |
+| 26 | R3 | Low | `list_page_variants` may risk N+1 D1 query behavior depending on how preview metadata is loaded. The implementation s... | ADDRESSED | list_page_variants uses one bound query for the variants collection + one base read |
+| 27 | R1 | High | Potential HTML/CSS injection in landing page rendering. Rendering logic appears to allow unsafe HTML/CSS content into... | WONTFIX | Pre-existing: /l/{slug} deliberately renders raw HTML authored via the bearer-authenticated API (landing pages). Not touched by this sprint beyond adding the motion guard. Raised with the owner as a follow-up (sanitise or CSP). |
+| 28 | R1 | High | Insufficient contrast for `.card__index` text. The current gold text color does not provide adequate contrast in its ... | WONTFIX | Pre-existing rule from a8a210a, not used by the renderer (no .card__index in src/). Out of sprint scope; raised as follow-up. |
+| 29 | R1 | High | `CHANGES.md` is missing the required Sprint 10 entry. This is a release/process documentation gap for the sprint. (Fi... | ADDRESSED | Sprint 10 / 0.7.0 entry added. |
+| 30 | R1 | Medium | Header shrink behavior depends on a main-thread `scroll` listener. Although passive and `requestAnimationFrame`-debou... | WONTFIX | Pre-existing header shrink listener (passive + rAF), unchanged by this sprint; new motion uses no scroll listeners. |
+| 31 | R2 | Medium | Image sizing and cropping are not explicitly handled for all image block types, which may cause inconsistent layout o... | WONTFIX | Non-specific; every image block uses object-fit cover in fixed/aspect containers, and crop options set aspect-ratio. No concrete defect identified. |
+| 32 | R2 | Medium | `fakeDb` uses synchronous `DatabaseSync` while exposing async `Stmt` methods, reducing test fidelity for async databa... | WONTFIX | Deliberate: D1's API is async; wrapping node:sqlite gives real SQL semantics. Async timing is not under test. |
+| 33 | R2 | Medium | Focus indication for `dateswitch` radio buttons is inconsistent, which can reduce keyboard accessibility clarity. (Fi... | WONTFIX | Pre-existing calendar control, not changed this sprint; follow-up. |
+| 34 | R2 | Low | Clarify the effect of `hero` `treatment: none` in the content model and `presentation_options` tool description. (Fil... | ADDRESSED | content-model.md now states split/portrait vs cinematic behaviour; matches presentation_options meaning. |

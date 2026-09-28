@@ -82,7 +82,7 @@ Section `style`, particular blocks:
 | `hero` | hero | `cinematic` (default), `split`, `portrait` |
 | `align` | hero | `left`, `centre` |
 | `measure` | hero | `narrow`, `wide` |
-| `treatment` | hero | `teal` (default), `cream`, `none` |
+| `treatment` | hero | `teal` (default), `cream`, `none` (split/portrait: plain ivory copy panel; cinematic: lighter overlay kept for legibility) |
 | `focus` | hero | focal point `"<x>% <y>%"`, e.g. `"60% 20%"` |
 | `sequence` | hero | `true`: kicker, heading, intro, button appear in turn |
 | `image_side` | showcase, feature, duo | `left`, `right` (wide screens) |

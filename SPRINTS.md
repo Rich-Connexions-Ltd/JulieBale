@@ -150,7 +150,7 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 ---
 
 ## Sprint 10 — Homepage art direction & concept previews
-**Status:** In progress
+**Status:** Done (code complete, council approved 2026-09-28; deploy pending)
 
 - **Goal:** chat can build up to three homepage concepts from Julie's existing
   copy, with real art direction and restrained motion, and preview them without
