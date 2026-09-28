@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "council": {
+    "parallel_timeout_seconds": 180,
+    "consolidator_timeout_seconds": 180,
+    "max_plan_rounds": 5,
+    "max_code_rounds": 6,
+    "convergence_warning_at": 3,
+    "output_dir": "council",
+    "codex_stagger_seconds": 2,
+    "retry_delay_seconds": 5,
+    "members": [
+      {
+        "role": "security",
+        "label": "Security Expert",
+        "phases": [
+          "plan",
+          "code"
+        ],
+        "platform": "codex",
+        "model": "codex",
+        "api_key_env": null,
+        "fallback": {
+          "platform": "google",
+          "model": "gemini-2.5-flash",
+          "api_key_env": "GOOGLE_API_KEY"
+        },
+        "max_tokens": 2048,
+        "temperature": 0.2,
+        "lens": "You are a security-focused reviewer for a Cloudflare Worker that server-renders a public website from JSON documents in D1 and exposes MCP + REST editing APIs. Focus EXCLUSIVELY on: HTML/attribute/CSS injection from document fields into rendered markup (every value that reaches class names, inline style or URLs must be allowlisted or escaped), authentication on write paths, what unauthenticated routes expose (e.g. preview pages), SQL injection in D1 queries, secret leakage, cache poisoning, and search-engine exposure of unpublished content. Be PROACTIVE about missing controls. Ignore style, performance, docs and UX."
+      },
+      {
+        "role": "performance",
+        "label": "Performance Expert",
+        "phases": [
+          "plan",
+          "code"
+        ],
+        "platform": "google",
+        "model": "gemini-2.5-flash",
+        "api_key_env": "GOOGLE_API_KEY",
+        "fallback": {
+          "platform": "codex",
+          "model": "codex",
+          "api_key_env": null
+        },
+        "max_tokens": 2048,
+        "temperature": 0.2,
+        "lens": "You are a web performance reviewer. Focus EXCLUSIVELY on: Core Web Vitals (LCP, CLS, INP), layout shift introduced by animation or late-applied classes, render-blocking CSS/JS, animation cost (only transform/opacity should animate; avoid scroll handlers on the main thread; prefer IntersectionObserver / CSS scroll-driven animation), image sizing and cropping, D1 query counts per request (N+1 reads), and CSS size growth. Ignore security, docs and code style."
+      },
+      {
+        "role": "documentation",
+        "label": "Documentation Expert",
+        "phases": [
+          "plan",
+          "code"
+        ],
+        "platform": "codex",
+        "model": "codex",
+        "api_key_env": null,
+        "fallback": {
+          "platform": "google",
+          "model": "gemini-2.5-flash",
+          "api_key_env": "GOOGLE_API_KEY"
+        },
+        "max_tokens": 2048,
+        "temperature": 0.2,
+        "lens": "You are a documentation-focused reviewer. Focus EXCLUSIVELY on: whether the content model / presentation vocabulary is documented where chat assistants read it (MCP tool descriptions, OpenAPI descriptions, the context/content-model.md pack), README and CHANGES updates, comments on non-obvious logic, clear naming, and consistent terminology between code, docs and tool descriptions. Ignore security, performance, architecture and UX."
+      },
+      {
+        "role": "ux",
+        "label": "User Experience Expert",
+        "phases": [
+          "plan",
+          "code"
+        ],
+        "platform": "google",
+        "model": "gemini-2.5-flash",
+        "api_key_env": "GOOGLE_API_KEY",
+        "fallback": {
+          "platform": "codex",
+          "model": "codex",
+          "api_key_env": null
+        },
+        "max_tokens": 2048,
+        "temperature": 0.2,
+        "lens": "You are a UX and accessibility reviewer for an elegant editorial website edited by a non-technical owner through chat. Focus EXCLUSIVELY on: WCAG 2.2 AA (contrast of every theme/colour combination, focus visibility, keyboard use, reading order vs visual order on mobile, decorative elements hidden from assistive tech), prefers-reduced-motion and no-JavaScript fallbacks (content must never be invisible), mobile behaviour, and whether the editing vocabulary (field names, enum values, tool descriptions) is understandable and hard to misuse by a chat assistant acting for the owner. Ignore security, performance and internal code structure."
+      },
+      {
+        "role": "simplicity",
+        "label": "Code Simplicity Expert",
+        "phases": [
+          "plan",
+          "code"
+        ],
+        "platform": "codex",
+        "model": "codex",
+        "api_key_env": null,
+        "fallback": {
+          "platform": "google",
+          "model": "gemini-2.5-pro",
+          "api_key_env": "GOOGLE_API_KEY"
+        },
+        "max_tokens": 2048,
+        "temperature": 0.2,
+        "lens": "You are a code simplicity and maintainability reviewer for a small TypeScript Cloudflare Worker with a hand-written server renderer and one CSS file. Focus EXCLUSIVELY on: unnecessary complexity or abstraction, duplication that should be extracted, a presentation vocabulary that is larger than the stated requirements need, tight coupling between rendering and storage, inconsistent patterns versus the existing code, and CSS that fights the existing design system instead of extending it. Ignore security, performance, docs and UX."
+      },
+      {
+        "role": "testing",
+        "label": "Test Quality Expert",
+        "phases": [
+          "code"
+        ],
+        "platform": "codex",
+        "model": "codex",
+        "api_key_env": null,
+        "fallback": {
+          "platform": "google",
+          "model": "gemini-2.5-flash",
+          "api_key_env": "GOOGLE_API_KEY"
+        },
+        "max_tokens": 2048,
+        "temperature": 0.2,
+        "lens": "You are a test quality expert. Focus EXCLUSIVELY on: whether tests cover the pure logic (presentation allowlisting, variant resolution, chapter numbering, publish/promote), rejection of invalid or hostile values, regression of existing rendering (pages without any presentation fields must render byte-identically or near-identically), test isolation (fake D1), and whether tests would catch regressions. Ignore security, performance, docs and UX."
+      }
+    ],
+    "consolidator": {
+      "platform": "codex",
+      "model": "codex",
+      "api_key_env": null,
+      "fallback": {
+        "platform": "google",
+        "model": "gemini-2.5-pro",
+        "api_key_env": "GOOGLE_API_KEY"
+      },
+      "max_tokens": 4096,
+      "temperature": 0.1
+    }
+  }
+}

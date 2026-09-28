@@ -1,0 +1,4 @@
+# council review artefacts
+council/
+.review-round-sprint*
+.sprint-base-commit-*

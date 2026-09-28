@@ -149,6 +149,34 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 10 — Homepage art direction & concept previews
+**Status:** In progress
+
+- **Goal:** chat can build up to three homepage concepts from Julie's existing
+  copy, with real art direction and restrained motion, and preview them without
+  touching the live homepage.
+- **Source:** feature requests #3–#8 (logged 2026-09-28 from the homepage design
+  exploration). #1 (testimonials carousel) is deliberately out of scope.
+- **Scope:**
+  - **Previews (#6):** unpublished page variants that reference the live page's
+    copy, with independent ordering and presentation, a private preview URL, and
+    a publish step that is undoable.
+  - **Section presentation (#3):** per-section theme, width, spacing and gold
+    rule; page-level concept.
+  - **Hero layouts (#4)** and **editorial image/text controls (#5)** as
+    presentation-only options on existing blocks.
+  - **Journey chapters (#7):** chapter numbering and a slim progress line.
+  - **Motion (#8):** a small, selectable animation vocabulary that honours
+    reduced motion and never hides content when JavaScript is unavailable.
+- **Deliverables:** presentation vocabulary + renderer support; variants
+  collection, preview route and MCP/REST tools; CSS; automated tests; updated
+  content-model context pack and tool descriptions.
+- **Exit criteria:** pages with no presentation fields render as before; three
+  variants of `home` can be created, previewed and one published (and undone)
+  by chat; all tests and typecheck pass; council code review APPROVED.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship
