@@ -198,7 +198,7 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 ---
 
 ## Sprint 12 — Scenes
-**Status:** Not started
+**Status:** Done (2026-09-28)
 
 - **Goal:** sections that take the viewport for a moment and evolve with scroll, then release, using native scrolling only.
 - **Source:** #12 (scroll-progress scenes), #16 merged in (photographic storytelling), #21 (scene navigation); scroll-linked drift from #13.

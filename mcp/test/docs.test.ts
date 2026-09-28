@@ -24,7 +24,10 @@ describe("styles.css keeps content visible without JavaScript", () => {
     const offenders = rules
       .filter((r) => /opacity:\s*0\s*;|clip-path:\s*inset\(0 0 100% 0\)|scaleX\(0\)/.test(r))
       .map((r) => r.slice(0, r.indexOf("{")).trim())
-      .filter((sel) => !/^(html\.js|:where\(html\.js\))|@keyframes|^from|\.nav-toggle|dateswitch/.test(sel.split("\n").pop()!.trim()));
+      .filter((sel) => !/^(html\.js|:where\(html\.js\))|@keyframes|^from|\.nav-toggle|dateswitch/.test(sel.split("\n").pop()!.trim()))
+      // Deliberately hidden, never page content: the dissolve target duplicates a
+      // visible photograph; nav labels appear on hover/focus or when a chapter is current.
+      .filter((sel) => !/^(\.scene-img-2|\.scene-nav--rail \.scene-nav__label|\.scene-nav--label(-narrow)?:not\(\.is-active\))$/.test(sel.split("\n").pop()!.trim()));
     expect(offenders).toEqual([]);
   });
   it("lets .is-visible win: hidden states are :where(html.js) (no specificity) or exclude .is-visible", () => {
@@ -63,3 +66,22 @@ describe("Sprint 11 CSS safety", () => {
   });
 });
 
+describe("Sprint 12 CSS safety", () => {
+  const css = read("../public/styles.css");
+  const scenes = css.slice(css.indexOf("SCENES (Sprint 12)"), css.indexOf("Scene navigation (#21)"));
+  it("puts every scene animation inside reduced-motion and scroll-timeline guards", () => {
+    const guarded = scenes.slice(scenes.indexOf("@supports (animation-timeline: view())"));
+    const unguarded = scenes.slice(0, scenes.indexOf("@supports (animation-timeline: view())"));
+    expect(unguarded).not.toMatch(/animation-timeline: --scene/);
+    expect(guarded).toMatch(/animation-timeline: --scene/);
+    expect(unguarded.indexOf("prefers-reduced-motion: no-preference")).toBeGreaterThan(-1);
+    expect(unguarded.indexOf("position: sticky")).toBeGreaterThan(unguarded.indexOf("prefers-reduced-motion: no-preference"));
+  });
+  it("keeps the dissolve image hidden by default so unsupported browsers show the first photograph", () => {
+    expect(scenes).toMatch(/\.scene-img-2 \{ opacity: 0; \}/);
+  });
+  it("lets unpinned text scenes finish by the time the section is fully on screen (never stuck dim at the foot of a page)", () => {
+    expect(scenes).toMatch(/\[class\*="s-scene-text-"\] \{ --scene-text-range: entry 0% contain 0%; \}/);
+    expect(scenes).not.toMatch(/scene-text-range: var\(--scene-phase\)/);
+  });
+});

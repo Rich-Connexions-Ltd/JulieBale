@@ -82,3 +82,39 @@ describe("image overflow and transitions (Sprint 11)", () => {
     expect(html).toContain('<section class="section quiet ground-ivory s-transition-hold">');
   });
 });
+
+describe("scenes (Sprint 12)", () => {
+  it("adds a spacer only to pinned scenes and renders image_2 only when present", async () => {
+    const html = await render(pageWith([
+      { type: "feature", heading: "F", image: "a.jpeg", image_2: "b.jpeg", style: { scene_length: "medium", scene_image: "dissolve", focus: "20% 30%", focus_end: "80% 40%" } },
+      { type: "showcase", heading: "S", image: "c.jpeg", style: { scene_text: "stagger" } },
+      { type: "hero", heading: "H", image: "h.jpeg" },
+    ]));
+    expect(html.match(/class="scene-spacer"/g)).toHaveLength(1);
+    expect(html).toContain('<img src="/assets/b.jpeg" alt="" class="scene-img-2" loading="lazy" style="object-position:20% 30%;--f0:20% 30%;--f1:80% 40%">');
+    expect(html.match(/scene-img-2/g)).toHaveLength(1);
+    expect(html).toMatch(/<\/div><div class="scene-spacer" aria-hidden="true"><\/div><\/section>/);
+  });
+  it("ignores image_2 unless the dissolve scene is chosen", async () => {
+    const html = await render(pageWith([{ type: "feature", heading: "F", image: "a.jpeg", image_2: "b.jpeg", style: { scene_image: "zoom" } }]));
+    expect(html).not.toContain("b.jpeg");
+  });
+  it("builds chapter anchors and a scene nav from chapter sections", async () => {
+    const page = { title: "T", design: { scene_nav: "both" }, sections: [
+      { type: "statement", eyebrow: "It starts with one note", statement: "x", style: { chapter: true } },
+      { type: "feature", heading: "I'm a singer <first>", style: { chapter: true } },
+      { type: "cta", heading: "Go" },
+    ] };
+    const html = await render(page);
+    expect(html).toContain('id="chapter-01"');
+    expect(html).toContain('id="chapter-02"');
+    expect(html).toContain('<nav class="scene-nav scene-nav--rail scene-nav--label-narrow" aria-label="Chapters">');
+    expect(html).toContain('<a href="#chapter-01" data-chapter="chapter-01"><span class="scene-nav__no">01</span><span class="scene-nav__label">It starts with one note</span></a>');
+    expect(html).toContain("I&#39;m a singer &lt;first&gt;".replace("&#39;", "'"));
+  });
+  it("omits the nav with fewer than two chapters or an unknown mode", async () => {
+    expect(await render({ title: "T", design: { scene_nav: "rail" }, sections: [{ type: "statement", statement: "a", style: { chapter: true } }] })).not.toContain("scene-nav");
+    expect(await render({ title: "T", design: { scene_nav: "dots" }, sections: [
+      { type: "statement", statement: "a", style: { chapter: true } }, { type: "statement", statement: "b", style: { chapter: true } }] })).not.toContain("<nav class=\"scene-nav");
+  });
+});

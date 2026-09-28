@@ -74,8 +74,12 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
       },
     },
     focus: {
-      blocks: ["hero"],
-      pattern: { shape: "<x>% <y>%", meaning: "Focal point of the hero photograph, e.g. \"60% 20%\" (whole numbers 0-100)." },
+      blocks: ["hero", "showcase", "feature"],
+      pattern: { shape: "<x>% <y>%", meaning: "Focal point of the photograph, e.g. \"60% 20%\" (whole numbers 0-100)." },
+    },
+    focus_end: {
+      blocks: ["hero", "showcase", "feature"],
+      pattern: { shape: "<x>% <y>%", meaning: "Where the focal point ends up with scene_image \"reframe\", e.g. \"30% 60%\"." },
     },
     sequence: { blocks: ["hero"], values: { true: "Kicker, heading, intro and button appear one after another." } },
     image_side: {
@@ -125,6 +129,41 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
       },
     },
     intensity: { values: { gentle: "Lighter transition.", standard: "Normal transition.", strong: "Stronger transition." } },
+    scene_length: {
+      values: {
+        short: "Section holds the screen for a short scene while scrolling continues.",
+        medium: "A medium scene.",
+        long: "A long scene (use at most once or twice per page).",
+      },
+    },
+    scene_timing: {
+      values: { enter: "Scene effects play as the section arrives.", hold: "Effects play while it is held (the default).", release: "Effects play as it leaves." },
+    },
+    scene_text: {
+      values: {
+        fade: "Text fades in with scroll.",
+        rise: "Text rises into place with scroll.",
+        stagger: "Lines and elements appear one after another with scroll.",
+        spotlight: "Text brightens from dim with scroll.",
+      },
+    },
+    scene_image: {
+      blocks: ["hero", "showcase", "feature"],
+      values: {
+        zoom: "Photograph slowly zooms in with scroll.",
+        pan: "Photograph slowly drifts sideways with scroll.",
+        reframe: "Focal point moves from focus to focus_end with scroll.",
+        dissolve: "Photograph dissolves into image_2 with scroll.",
+        carry: "Photograph travels on into the next section as the scene releases.",
+      },
+    },
+    scene_background: {
+      values: {
+        deepen: "Dark sections deepen toward near-black with scroll.",
+        warm: "Light sections warm toward cream with scroll.",
+        glow: "A soft gold glow gathers at the edges with scroll.",
+      },
+    },
   },
   design: {
     concept: {
@@ -135,6 +174,13 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
       },
     },
     progress: { values: { true: "Slim reading-progress line at the top of the page." } },
+    scene_nav: {
+      values: {
+        rail: "Slim chapter rail at the side (wide screens) linking the chapter sections.",
+        label: "Small label naming the current chapter.",
+        both: "Rail and label.",
+      },
+    },
   },
 };
 
@@ -169,38 +215,48 @@ export interface ResolvedSection {
   hasTheme: boolean;
   motion: boolean;
   chapter: boolean;
+  /** style.scene_length is set: the section pins for a scene. */
+  scene: boolean;
 }
 
 /** Map a block's `style` to classes. Unknown keys/values are ignored. */
 export function resolveSection(block: { type?: string; style?: unknown }): ResolvedSection {
-  const out: ResolvedSection = { classes: [], hasTheme: false, motion: false, chapter: false };
+  const out: ResolvedSection = { classes: [], hasTheme: false, motion: false, chapter: false, scene: false };
   const style = block?.style;
   if (!isObject(style)) return out;
+  let focus: string | undefined, focusEnd: string | undefined;
   for (const key of Object.keys(PRESENTATION_OPTIONS.style)) {
     if (!own(style, key)) continue;
     const opt = PRESENTATION_OPTIONS.style[key];
     const value = style[key];
     if (!allowed(opt, block.type, value)) continue;
-    if (key === "focus") {
+    if (key === "focus" || key === "focus_end") {
       const [x, y] = parseFocus(value as string)!;
-      out.imgStyle = `object-position:${x}% ${y}%`;
+      if (key === "focus") focus = `${x}% ${y}%`;
+      else focusEnd = `${x}% ${y}%`;
       continue;
     }
     out.classes.push(value === true ? cls("s", key) : cls("s", key, value as string));
     if (key === "theme") out.hasTheme = true;
     if (key === "chapter") out.chapter = true;
     if (key === "motion") out.motion = true;
+    if (key === "scene_length") out.scene = true;
   }
+  // Only ever built from clamped integers: "object-position:X% Y%" plus, for
+  // scene reframing, the start/end custom properties the CSS animates between.
+  if (focus) out.imgStyle = `object-position:${focus}`;
+  if (focusEnd) out.imgStyle = [out.imgStyle, `--f0:${focus ?? "50% 50%"}`, `--f1:${focusEnd}`].filter(Boolean).join(";");
   return out;
 }
 
 /** Map a page's `design` to <body> classes. */
-export function resolveDesign(design: unknown): { bodyClasses: string[]; progress: boolean } {
-  const out = { bodyClasses: [] as string[], progress: false };
+export function resolveDesign(design: unknown): { bodyClasses: string[]; progress: boolean; sceneNav?: string } {
+  const out: { bodyClasses: string[]; progress: boolean; sceneNav?: string } = { bodyClasses: [], progress: false };
   if (!isObject(design)) return out;
   for (const key of Object.keys(PRESENTATION_OPTIONS.design)) {
     if (!own(design, key) || !allowed(PRESENTATION_OPTIONS.design[key], undefined, design[key])) continue;
     if (key === "progress") out.progress = true;
+    else if (key === "scene_nav") out.sceneNav = design[key] as string;
     else out.bodyClasses.push(cls("d", key, design[key] as string));
   }
   return out;

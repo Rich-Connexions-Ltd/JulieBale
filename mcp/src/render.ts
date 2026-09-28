@@ -78,6 +78,15 @@ const img = (file: string, alt: string, cls = "", style = ""): string =>
 
 const caption = (text: unknown): string => (text ? `<figcaption class="caption">${esc(text)}</figcaption>` : "");
 
+// Optional second photograph for scene_image "dissolve". A decorative
+// duplicate of the scene (the first image carries the alt text). Rendered only
+// when that scene is chosen, so adding image_2 to a live page changes nothing
+// until a dissolve is published.
+const secondImage = (b: any, p: ResolvedSection): string =>
+  b.image && b.image_2 && p.classes.includes("s-scene-image-dissolve")
+    ? `<img src="${esc(assetUrl(b.image_2))}" alt="" class="scene-img-2" loading="lazy"${p.imgStyle ? ` style="${esc(p.imgStyle)}"` : ""}>`
+    : "";
+
 const button = (cta: any, cls = "button"): string =>
   cta && cta.label ? `<a class="${cls}" href="${esc(cta.href || "#")}">${esc(cta.label)}</a>` : "";
 
@@ -178,7 +187,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
   switch (b.type) {
     case "hero":
       return `<section class="hero-stage media-band">
-  ${img(b.image, b.heading || "Julie Bale", "", p.imgStyle)}
+  ${img(b.image, b.heading || "Julie Bale", "", p.imgStyle)}${secondImage(b, p)}
   <div class="media-band__scrim"></div>
   <div class="media-band__inner"><div class="container--wide reveal">
     ${b.kicker ? `<p class="kicker">${esc(b.kicker)}</p>` : ""}
@@ -199,7 +208,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
       return `<section class="showcase"><div class="showcase__grid">
     <div class="showcase__media reveal">${
       b.image
-        ? img(b.image, b.heading || "") + caption(b.caption)
+        ? img(b.image, b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption)
         : `<span class="showcase__ph">${esc(b.heading)}<span>Large performance / Diva photograph</span></span>`
     }</div>
     <div class="showcase__body reveal">
@@ -238,7 +247,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
     case "feature":
       return `<section class="section${ivory}"><div class="container feature__grid${b.reverse ? " feature--reverse" : ""}">
     <div class="feature__media reveal"><figure class="frame image--portrait">${
-      b.image ? img(b.image, b.heading || "") + caption(b.caption) : `<figcaption class="frame__label">${esc(b.heading)}</figcaption>`
+      b.image ? img(b.image, b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption) : `<figcaption class="frame__label">${esc(b.heading)}</figcaption>`
     }</figure></div>
     <div class="feature__body reveal">
       ${b.eyebrow ? `<p class="eyebrow">${esc(b.eyebrow)}</p>` : ""}
@@ -403,11 +412,18 @@ function decorate(html: string, p: ResolvedSection, chapterNo: number): string {
   if (!m) return html;
   let base = m[2];
   if (p.hasTheme) base = base.replace(/\s*\bground-(?:cream|ivory|teal)\b/g, "");
-  const attrs = p.motion ? ` data-motion` : "";
+  const attrs = (p.chapter ? ` id="chapter-${String(chapterNo).padStart(2, "0")}"` : "") + (p.motion ? ` data-motion` : "");
   const mark = p.chapter ? `<span class="chapter-mark" aria-hidden="true">${String(chapterNo).padStart(2, "0")}</span>` : "";
   const rest = html.slice(m[0].length);
   const close = rest.indexOf(">");
-  return `${m[1]}${[base, ...p.classes].filter(Boolean).join(" ")}${m[3]}${rest.slice(0, close)}${attrs}>${mark}${rest.slice(close + 1)}`;
+  let out = `${m[1]}${[base, ...p.classes].filter(Boolean).join(" ")}${m[3]}${rest.slice(0, close)}${attrs}>${mark}${rest.slice(close + 1)}`;
+  // Scenes pin their content while the visitor scrolls through this spacer
+  // (a real element: sticky content can only travel within its parent).
+  if (p.scene) {
+    const end = out.lastIndexOf("</section>");
+    out = `${out.slice(0, end)}<div class="scene-spacer" aria-hidden="true"></div>${out.slice(end)}`;
+  }
+  return out;
 }
 
 /* ------------------------------ Helpers -------------------------------- */
@@ -486,12 +502,31 @@ export interface RenderOptions {
   preview?: { label: string };
 }
 
+/** Short chapter label for scene navigation: the section's own words, trimmed. */
+function chapterLabel(b: any, n: number): string {
+  const raw = String(b.eyebrow || b.heading || b.statement || b.quote || b.title || `Chapter ${n}`).replace(/\s+/g, " ").trim();
+  return raw.length > 42 ? raw.slice(0, 40).trimEnd() + "…" : raw;
+}
+
+/** Chapter rail / current-chapter label (design.scene_nav), linking #chapter-NN. */
+function renderSceneNav(mode: string, chapters: Array<{ n: number; label: string }>): string {
+  if (chapters.length < 2) return "";
+  const id = (n: number) => `chapter-${String(n).padStart(2, "0")}`;
+  // rail: wide screens only; label: everywhere; both: rail on wide screens, label on phones
+  const cls = mode === "rail" ? "scene-nav--rail" : mode === "label" ? "scene-nav--label" : "scene-nav--rail scene-nav--label-narrow";
+  return `<nav class="scene-nav ${cls}" aria-label="Chapters"><ol>${chapters
+    .map((c) => `<li><a href="#${id(c.n)}" data-chapter="${id(c.n)}"><span class="scene-nav__no">${String(c.n).padStart(2, "0")}</span><span class="scene-nav__label">${esc(c.label)}</span></a></li>`)
+    .join("")}</ol></nav>`;
+}
+
 export async function renderPage(env: Env, page: any, site: any, opts: RenderOptions = {}): Promise<string> {
   let chapter = 0;
+  const chapters: Array<{ n: number; label: string }> = [];
   const sections = await Promise.all(
     (page.sections || []).map((b: any, i: number) => {
       const p = resolveSection(b);
       const n = p.chapter ? ++chapter : 0;
+      if (n) chapters.push({ n, label: chapterLabel(b, n) });
       return renderBlock(env, b, i, p).then((html) => decorate(html, p, n));
     })
   );
@@ -499,7 +534,9 @@ export async function renderPage(env: Env, page: any, site: any, opts: RenderOpt
   const desc = page?.seo?.description || site?.brand?.tagline || "";
   const noindex = page.noindex || opts.preview ? `<meta name="robots" content="noindex">` : "";
   const bodyClass = design.bodyClasses.length ? ` class="${design.bodyClasses.join(" ")}"` : "";
-  const progress = design.progress ? `<div class="progress-line" aria-hidden="true"></div>` : "";
+  const progress =
+    (design.progress ? `<div class="progress-line" aria-hidden="true"></div>` : "") +
+    (design.sceneNav ? renderSceneNav(design.sceneNav, chapters) : "");
   const banner = opts.preview ? `<div class="preview-banner" role="note">Preview · ${esc(opts.preview.label)} · not live</div>` : "";
   return `<!doctype html>
 <html lang="en-GB">

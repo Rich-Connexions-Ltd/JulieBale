@@ -46,7 +46,15 @@ describe("resolveSection", () => {
     expect(resolveSection({ type: "hero", style: { focus: "150% 999%" } }).imgStyle).toBe("object-position:100% 100%");
     for (const bad of ["60%20%", "60% 20", "-1% 5%", "60% 20%;color:red", "1000% 1%", "a% b%", 60])
       expect(resolveSection({ type: "hero", style: { focus: bad } }).imgStyle).toBeUndefined();
-    expect(resolveSection({ type: "feature", style: { focus: "50% 50%" } }).imgStyle).toBeUndefined();
+    expect(resolveSection({ type: "duo", style: { focus: "50% 50%" } }).imgStyle).toBeUndefined();
+    expect(resolveSection({ type: "feature", style: { focus: "50% 50%" } }).imgStyle).toBe("object-position:50% 50%");
+  });
+
+  it("builds reframe start/end properties only from clamped integers", () => {
+    expect(resolveSection({ type: "showcase", style: { focus: "10% 20%", focus_end: "90% 80%" } }).imgStyle)
+      .toBe("object-position:10% 20%;--f0:10% 20%;--f1:90% 80%");
+    expect(resolveSection({ type: "feature", style: { focus_end: "300% 5%" } }).imgStyle).toBe("--f0:50% 50%;--f1:100% 5%");
+    expect(resolveSection({ type: "feature", style: { focus_end: "1%;background:url(x)" } }).imgStyle).toBeUndefined();
   });
 
   it("reports theme, motion and chapter flags", () => {

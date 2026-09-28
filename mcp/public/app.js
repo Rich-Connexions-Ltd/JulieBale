@@ -42,6 +42,38 @@
     onScroll();
   }
 
+  /* ---- Scene navigation (design.scene_nav) ------------------- */
+  // Marks the chapter currently in the middle of the screen; the nav links
+  // work without this (plain #chapter-NN anchors).
+  var sceneNav = document.querySelector(".scene-nav");
+  if (sceneNav && "IntersectionObserver" in window) {
+    var chapterLinks = {};
+    sceneNav.querySelectorAll("a[data-chapter]").forEach(function (a) {
+      chapterLinks[a.getAttribute("data-chapter")] = a;
+    });
+    var currentChapter = null;
+    var chapterIo = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var link = chapterLinks[entry.target.id];
+        if (!link) return;
+        if (entry.isIntersecting) {
+          if (currentChapter) currentChapter.removeAttribute("aria-current");
+          link.setAttribute("aria-current", "location");
+          currentChapter = link;
+          sceneNav.classList.add("is-active");
+        } else if (currentChapter === link) {
+          link.removeAttribute("aria-current");
+          currentChapter = null;
+          sceneNav.classList.remove("is-active");
+        }
+      });
+    }, { rootMargin: "-45% 0px -45% 0px" });
+    Object.keys(chapterLinks).forEach(function (id) {
+      var section = document.getElementById(id);
+      if (section) chapterIo.observe(section);
+    });
+  }
+
   /* ---- Scroll reveal (single blocks + staggered groups) ----- */
   // Tell the <head> guard that motion is running, so it keeps html.js.
   window.__jbMotion = true;

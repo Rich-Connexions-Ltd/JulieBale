@@ -1470,6 +1470,135 @@ html.js .s-transition-divider:not(.is-visible)::after { transform: scaleX(0); }
   .s-transition-settle { scroll-snap-align: start; }
 }
 
+/* ============================================================
+   SCENES (Sprint 12)
+   Scroll-driven, native scrolling only. Without support for scroll-driven
+   animation, or with reduced motion, everything shows in its final state.
+   ============================================================ */
+
+@property --wash { syntax: "<number>"; inherits: false; initial-value: 0; }
+:root { --scene-len: 60vh; --scene-phase: contain; }
+.s-scene-length-short { --scene-len: 30vh; }
+.s-scene-length-long  { --scene-len: 100vh; }
+@media (max-width: 48rem) {
+  :root { --scene-len: 25vh; }
+  .s-scene-length-short { --scene-len: 15vh; }
+  .s-scene-length-long  { --scene-len: 35vh; }
+}
+.s-scene-timing-enter   { --scene-phase: entry; }
+.s-scene-timing-release { --scene-phase: exit; }
+.scene-spacer { display: none; }
+/* dissolve target: hidden unless the scene animation shows it */
+.scene-img-2 { opacity: 0; }
+.hero-stage:is(.s-hero-split, .s-hero-portrait) > .scene-img-2 { grid-column: 1; grid-row: 1; }
+.hero-stage:not(.s-hero-split, .s-hero-portrait) > .scene-img-2 { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* pin: content stays below the header while the spacer scrolls past */
+  [class*="s-scene-length-"] { overflow: clip; }
+  [class*="s-scene-length-"] > :not(.chapter-mark, .scene-spacer) { position: sticky; top: var(--header-clear); }
+  [class*="s-scene-length-"] > .scene-spacer { display: block; height: var(--scene-len); }
+
+  @supports (animation-timeline: view()) {
+    [class*="s-scene-"] { view-timeline: --scene block; }
+    /* a scene replaces the default reveal inside its section */
+    [class*="s-scene-"] :is(.reveal, .stagger > *) { opacity: 1; transform: none; transition: none; }
+
+    /* text: ranges that always complete, so copy can never be left dim.
+       Unpinned: done by the time the section is fully on screen (reachable
+       even at the foot of the page). Pinned: within the hold, which the spacer
+       guarantees can be scrolled through. `release` does not apply to text. */
+    [class*="s-scene-text-"] { --scene-text-range: entry 0% contain 0%; }
+    [class*="s-scene-text-"][class*="s-scene-length-"] { --scene-text-range: contain 0% contain 60%; }
+    [class*="s-scene-text-"].s-scene-timing-enter { --scene-text-range: entry 0% entry 100%; }
+    :is(.s-scene-text-fade, .s-scene-text-rise, .s-scene-text-spotlight, .s-scene-text-stagger) :is(h1, h2, h3, p, blockquote, figcaption, ul, ol, .button, .textlink) {
+      animation: var(--scene-text-kf) linear both; animation-timeline: --scene; animation-range: var(--scene-text-range);
+    }
+    .s-scene-text-fade      { --scene-text-kf: jb-scene-fade; }
+    .s-scene-text-rise      { --scene-text-kf: jb-scene-rise; }
+    .s-scene-text-spotlight { --scene-text-kf: jb-scene-spot; }
+    .s-scene-text-stagger   { --scene-text-kf: jb-scene-rise; }
+    /* stagger: same range, later elements wait longer before moving */
+    .s-scene-text-stagger :is(h1, h2, h3, p, blockquote, figcaption, ul, ol, .button, .textlink):nth-child(2) { animation-name: jb-scene-rise-2; }
+    .s-scene-text-stagger :is(h1, h2, h3, p, blockquote, figcaption, ul, ol, .button, .textlink):nth-child(3) { animation-name: jb-scene-rise-3; }
+    .s-scene-text-stagger :is(h1, h2, h3, p, blockquote, figcaption, ul, ol, .button, .textlink):nth-child(n+4) { animation-name: jb-scene-rise-4; }
+    @keyframes jb-scene-fade   { from { opacity: 0.12; } to { opacity: 1; } }
+    @keyframes jb-scene-rise   { from { opacity: 0.12; translate: 0 2.5rem; } to { opacity: 1; translate: 0 0; } }
+    @keyframes jb-scene-rise-2 { 0%, 20% { opacity: 0.12; translate: 0 2.5rem; } to { opacity: 1; translate: 0 0; } }
+    @keyframes jb-scene-rise-3 { 0%, 38% { opacity: 0.12; translate: 0 2.5rem; } to { opacity: 1; translate: 0 0; } }
+    @keyframes jb-scene-rise-4 { 0%, 55% { opacity: 0.12; translate: 0 2.5rem; } to { opacity: 1; translate: 0 0; } }
+    @keyframes jb-scene-spot   { from { opacity: 0.3; scale: 0.985; } to { opacity: 1; scale: 1; } }
+
+    /* photographs (the first image; the dissolve target has its own rule) */
+    :is(.s-scene-image-zoom, .s-scene-image-pan, .s-scene-image-reframe) :is(.media-band > img, .showcase__media > img, .frame > img):not(.scene-img-2) {
+      animation: var(--scene-img-kf) linear both; animation-timeline: --scene;
+      animation-range: var(--scene-phase) 0% var(--scene-phase) 100%;
+    }
+    .s-scene-image-zoom    { --scene-img-kf: jb-scene-zoom; }
+    .s-scene-image-pan     { --scene-img-kf: jb-scene-pan; }
+    .s-scene-image-reframe { --scene-img-kf: jb-scene-reframe; }
+    @keyframes jb-scene-zoom    { from { scale: 1; } to { scale: 1.15; } }
+    @keyframes jb-scene-pan     { from { scale: 1.1; translate: -4% 0; } to { scale: 1.1; translate: 4% 0; } }
+    @keyframes jb-scene-reframe { from { object-position: var(--f0, 50% 50%); } to { object-position: var(--f1, 50% 50%); } }
+    .s-scene-image-dissolve .scene-img-2 {
+      animation: jb-scene-dissolve linear both; animation-timeline: --scene;
+      animation-range: var(--scene-phase) 15% var(--scene-phase) 85%;
+    }
+    @keyframes jb-scene-dissolve { from { opacity: 0; } to { opacity: 1; } }
+    /* carry: the image travels on into the next section as the scene releases */
+    .s-scene-image-carry { position: relative; z-index: 3; overflow: visible; }
+    .s-scene-image-carry :is(.feature__media, .showcase__media) { pointer-events: none; }
+    .s-scene-image-carry :is(.feature__media, .showcase__media, .media-band > img) {
+      animation: jb-scene-carry linear both; animation-timeline: --scene; animation-range: exit 0% exit 100%;
+    }
+    @keyframes jb-scene-carry { from { translate: 0 0; } to { translate: 0 35%; } }
+
+    /* background washes stay within a light or dark family, so contrast holds */
+    :is(.s-scene-background-deepen, .s-scene-background-warm, .s-scene-background-glow) {
+      animation: jb-scene-wash linear both; animation-timeline: --scene;
+      animation-range: var(--scene-phase) 0% var(--scene-phase) 100%;
+    }
+    .s-scene-background-deepen:is(.s-theme-teal, .s-theme-night, .ground-teal, .showcase, .hero-stage) { box-shadow: inset 0 0 0 100vmax rgb(20 18 16 / calc(var(--wash) * 0.55)); }
+    .s-scene-background-warm:not(.s-theme-teal, .s-theme-night, .ground-teal, .showcase, .hero-stage) { box-shadow: inset 0 0 0 100vmax rgb(236 219 190 / calc(var(--wash) * 0.6)); }
+    .s-scene-background-glow { box-shadow: inset 0 0 14vmax 2vmax rgb(209 181 128 / calc(var(--wash) * 0.45)); }
+    @keyframes jb-scene-wash { from { --wash: 0; } to { --wash: 1; } }
+  }
+}
+
+/* --- Scene navigation (#21) ----------------------------------- */
+.scene-nav { display: none; }
+.scene-nav ol { list-style: none; margin: 0; padding: 0; }
+.scene-nav a { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--colour-ink); font-size: var(--text-xs); letter-spacing: 0.12em; }
+.scene-nav__no {
+  display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%;
+  border: 1px solid var(--colour-line); background: color-mix(in srgb, var(--colour-ivory) 92%, transparent);
+  font-family: var(--font-display); letter-spacing: 0;
+}
+.scene-nav a[aria-current] .scene-nav__no { background: var(--colour-primary); border-color: var(--colour-primary); color: var(--colour-ivory); }
+.scene-nav a:focus-visible { outline: 2px solid var(--colour-gold); outline-offset: 3px; border-radius: 1rem; }
+@media (min-width: 60rem) {
+  .scene-nav--rail { display: block; position: fixed; z-index: 40; right: clamp(0.75rem, 1.5vw, 1.5rem); top: 50%; translate: 0 -50%; }
+  .scene-nav--rail ol { display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
+  .scene-nav--rail .scene-nav__label {
+    order: -1; padding: 0.3rem 0.7rem; border-radius: 1rem; background: var(--colour-ivory); box-shadow: 0 0 0 1px var(--colour-line);
+    opacity: 0; translate: 0.4rem 0; transition: opacity 200ms ease, translate 200ms ease; pointer-events: none;
+  }
+  .scene-nav--rail a:is(:hover, :focus-visible) .scene-nav__label { opacity: 1; translate: 0 0; }
+}
+/* current-chapter label (needs app.js to know the current chapter) */
+html.js .scene-nav--label { display: block; }
+.scene-nav--label { position: fixed; z-index: 40; left: clamp(0.75rem, 2vw, 1.5rem); bottom: clamp(0.75rem, 2vw, 1.5rem); transition: opacity 250ms ease; }
+.scene-nav--label li:not(:has(a[aria-current])) { display: none; }
+.scene-nav--label a { padding: 0.25rem 0.8rem 0.25rem 0.25rem; border-radius: 2rem; background: var(--colour-ivory); box-shadow: 0 0 0 1px var(--colour-line); }
+.scene-nav--label:not(.is-active) { opacity: 0; visibility: hidden; }
+@media (max-width: 59.99rem) {
+  html.js .scene-nav--label-narrow { display: block; }
+  .scene-nav--label-narrow { position: fixed; z-index: 40; left: 0.75rem; bottom: 0.75rem; transition: opacity 250ms ease; }
+  .scene-nav--label-narrow li:not(:has(a[aria-current])) { display: none; }
+  .scene-nav--label-narrow a { padding: 0.25rem 0.8rem 0.25rem 0.25rem; border-radius: 2rem; background: var(--colour-ivory); box-shadow: 0 0 0 1px var(--colour-line); }
+  .scene-nav--label-narrow:not(.is-active) { opacity: 0; visibility: hidden; }
+}
+
 /* --- Reduced motion: every presentation motion at its end state - */
 @media (prefers-reduced-motion: reduce) {
   html.js .reveal, html.js .stagger > * { opacity: 1; transform: none; }
@@ -1482,5 +1611,6 @@ html.js .s-transition-divider:not(.is-visible)::after { transform: scaleX(0); }
   html.js .s-transition-wipe:not(.is-visible) { clip-path: none; }
   html.js .s-transition-divider:not(.is-visible)::after { transform: none; }
   .s-transition-wipe, .s-transition-crossfade, .s-transition-divider::after { transition: none; }
+  .scene-nav--rail .scene-nav__label, .scene-nav--label, .scene-nav--label-narrow { transition: none; }
   .panel:focus-visible .panel__media img, .duo__item:focus-within .duo__media img, .button:focus-visible { transform: none; }
 }

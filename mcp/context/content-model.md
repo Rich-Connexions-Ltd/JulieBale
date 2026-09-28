@@ -34,10 +34,10 @@ Each block is `{ "type": "...", ...fields }`. Use these types only. If you need 
 kind of section that does not exist, do NOT invent markup: raise a **feature
 request** (see below) describing it.
 
-- **hero** — cinematic top. `{kicker, heading, intro, image, cta:{label,href}}`
+- **hero** — cinematic top. `{kicker, heading, intro, image, image_2?, cta:{label,href}}`
 - **statement** — a big quiet line. `{eyebrow?, statement, sub?}`
-- **showcase** — flagship band. `{heading, sub, facts, image?, caption?, cta:{label,href}}`
-- **feature** — image + copy. `{eyebrow?, heading, body, image, caption?, reverse?, cta?}`
+- **showcase** — flagship band. `{heading, sub, facts, image?, image_2?, caption?, cta:{label,href}}`
+- **feature** — image + copy. `{eyebrow?, heading, body, image, image_2?, caption?, reverse?, cta?}`
 - **panels** — up to three cards. `{heading?, items:[{title,line,href,image}]}`
 - **duo** — two tiles side by side. `{heading?, items:[{kicker,title,href,image,caption?}]}`
 - **pullquote** — a testimonial. `{quote, cite}`
@@ -83,7 +83,8 @@ Section `style`, particular blocks:
 | `align` | hero | `left`, `centre` |
 | `measure` | hero | `narrow`, `wide` |
 | `treatment` | hero | `teal` (default), `cream`, `none` (split/portrait: plain ivory copy panel; cinematic: lighter overlay kept for legibility) |
-| `focus` | hero | focal point `"<x>% <y>%"`, e.g. `"60% 20%"` |
+| `focus` | hero, showcase, feature | focal point `"<x>% <y>%"`, e.g. `"60% 20%"` |
+| `focus_end` | hero, showcase, feature | where the focal point ends up with `scene_image: "reframe"` |
 | `sequence` | hero | `true`: kicker, heading, intro, button appear in turn |
 | `image_side` | showcase, feature, duo | `left`, `right` (wide screens) |
 | `crop` | showcase, feature, duo | `portrait`, `landscape`, `bleed` |
@@ -112,8 +113,31 @@ visitor is already close. Phones get lighter versions, and visitors who prefer
 reduced motion see clean static boundaries. Use `hold` sparingly (one or two per
 page): it makes that section taller.
 
+### Scenes (a section takes the screen for a moment and changes as you scroll)
+| key | blocks | values |
+|---|---|---|
+| `scene_length` | any | `short`, `medium`, `long`: the section's content stays pinned while the visitor scrolls on (phones: much shorter) |
+| `scene_timing` | any | `enter`, `hold` (default), `release`: when the effects below play (text always finishes by the time it is fully readable; `release` applies to photographs and backgrounds) |
+| `scene_text` | any | `fade`, `rise`, `stagger` (lines appear one after another), `spotlight` (text brightens from dim) |
+| `scene_image` | hero, showcase, feature | `zoom`, `pan`, `reframe` (focal point moves from `focus` to `focus_end`), `dissolve` (into the block's `image_2`), `carry` (the photograph travels on into the next section as the scene ends) |
+| `scene_background` | any | `deepen` (dark sections only), `warm` (light sections only), `glow` (soft gold edges) |
+
+Everything is driven by the visitor's own scrolling; nothing is scrolled for
+them. Effects appear in browsers that support scroll-linked animation (Chrome,
+Edge, Safari); elsewhere, and for visitors who prefer reduced motion, the
+section simply shows its finished state (and does not pin). `dissolve` needs a
+second photograph in the block's `image_2` field on the live page (it has no
+effect there until a dissolve scene uses it). Use at most two or three
+scenes per page, and `long` once at most.
+
+**Scene navigation** (`design.scene_nav`) lists the sections marked
+`chapter: true`, labelled with their own eyebrow or heading: `rail` is a slim
+numbered rail at the side on wide screens, `label` a small label naming the
+current chapter, `both` shows the rail on wide screens and the label on phones.
+It needs at least two chapter sections.
+
 Page `design`: `concept` = `stage` | `editorial` | `journey`; `progress` = `true`
-(slim reading-progress line).
+(slim reading-progress line); `scene_nav` = `rail` | `label` | `both` (see Scenes).
 
 Motion always respects visitors who ask for reduced motion, and content is never
 hidden if scripts fail. Without a `motion` value, sections keep the site's usual
@@ -153,7 +177,7 @@ refused until then.
 Worked examples (home page keys):
 - **Stage** — `design: {concept: "stage"}`; hero `{hero: "cinematic", align: "left", sequence: true}`; showcase `{theme: "night", grid: "asymmetric", motion: "mask"}`; statement `{theme: "teal", rule: true, spacing: "generous"}`; pullquote `{size: "oversized"}`.
 - **Editorial** — `design: {concept: "editorial"}`; hero `{hero: "portrait", treatment: "cream", measure: "narrow"}`; feature `{image_side: "left", crop: "portrait", overlap: true}`; pullquote `{theme: "ivory", size: "oversized", rule: true}`.
-- **Gallery** — `design: {concept: "editorial"}`; feature `{image_escape: "side-up", overshoot: "bold", shape: "arch", transition: "overlap"}`; pullquote `{theme: "night", size: "oversized", transition: "hold", intensity: "gentle"}`; showcase `{image_escape: "down", shape: "slant", transition: "wipe"}`; duo `{image_escape: "side", shape: "soft", transition: "divider"}`; cta `{theme: "teal", transition: "crossfade"}`.
+- **Gallery** — `design: {concept: "editorial", scene_nav: "rail"}`; feature `{image_escape: "side-up", overshoot: "bold", shape: "arch", transition: "overlap"}`; pullquote `{theme: "night", size: "oversized", transition: "hold", intensity: "gentle"}`; showcase `{image_escape: "down", shape: "slant", transition: "wipe"}`; duo `{image_escape: "side", shape: "soft", transition: "divider"}`; cta `{theme: "teal", transition: "crossfade"}`.
 - **Journey** — `design: {concept: "journey", progress: true}`; hero `{hero: "split", treatment: "none"}`; then statement, feature, showcase and cta each with `{chapter: true}`, e.g. showcase `{chapter: true, theme: "teal", motion: "drift"}`.
 
 ## Markdown

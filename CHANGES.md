@@ -55,3 +55,16 @@ Feature requests #10 and #11. Review mode: no council (owner's call); tests + br
 - `mcp/context/content-model.md` — pause on new art-direction requests until Julie chooses a concept; planned sprint order; consent note
 - `SPRINTS.md` — Sprints 12–14
 - `mcp/test/routes.test.ts` — resolution is listed
+
+## Sprint 12: Scenes — 2026-09-28
+
+Feature requests #12, #16 (merged) and #21. Review mode: no council; tests + headless-Chrome check.
+
+**Files changed:**
+- `mcp/src/presentation.ts` — `scene_length`, `scene_timing`, `scene_text`, `scene_image`, `scene_background`, `focus_end`; `focus` extended to showcase/feature; page `design.scene_nav`
+- `mcp/src/render.ts` — focal points on showcase/feature, optional `image_2` (dissolve only, lazy), pin spacer, `#chapter-NN` anchors, server-rendered scene nav
+- `mcp/public/styles.css` — scroll-driven scenes (pin, text, photograph, background wash) behind reduced-motion and `@supports` guards; scene nav rail/label
+- `mcp/public/app.js` — current-chapter tracking for the scene nav
+- `mcp/context/content-model.md` — scenes, `image_2`, `focus_end`, scene nav
+- `mcp/test/*` — scene rendering, nav, CSS guards (motion/support gating, text ranges always complete)
+- `Documentation/archive/PLAN_Sprint12.md`
