@@ -162,7 +162,7 @@ describe("site", () => {
   });
   it("OpenAPI exposes the new operations and generated enums", async () => {
     const r = await body(await call(newEnv(), anon("/openapi.json")));
-    expect(r.info.version).toBe("0.7.1");
+    expect(r.info.version).toBe("0.8.0");
     expect(r.paths["/api/pages/{base}/variants"].post.operationId).toBe("createPageVariant");
     expect(r.components.schemas.SectionStyle.properties.theme.enum).toEqual(["cream", "ivory", "teal", "night"]);
     expect(r.components.schemas.Section.properties.key.pattern).toBeTruthy();
@@ -205,5 +205,21 @@ describe("feature requests carry the developer's resolution", () => {
     env.DB.raw.prepare("UPDATE feature_requests SET status='declined', resolution='Superseded by #18' WHERE id=1").run();
     const r = await body(await call(env, authed("/api/feature-requests")));
     expect(r.requests[0]).toMatchObject({ id: 1, title: "Carousel", status: "declined", resolution: "Superseded by #18" });
+  });
+});
+
+describe("asset search route", () => {
+  it("requires auth and filters by usability", async () => {
+    const env = fakeEnv({ "pages/home": homeFixture(), "assets/a": { file: "a.jpeg", type: "image", alt: "A", consent: "pending" }, "assets/b": { file: "b.jpeg", type: "image", alt: "B", consent: "not-needed" } });
+    expect((await call(env, anon("/api/assets/search"))).status).toBe(401);
+    const all = await body(await call(env, authed("/api/assets/search")));
+    expect(all.assets.map((x: any) => x.ref)).toEqual(["asset:a", "asset:b"]);
+    const usable = await body(await call(env, authed("/api/assets/search?usable=true")));
+    expect(usable.assets.map((x: any) => x.ref)).toEqual(["asset:b"]);
+  });
+  it("returns asset warnings on write", async () => {
+    const env = newEnv();
+    const r = await body(await call(env, authed("/api/assets/x", { method: "PUT", body: JSON.stringify({ file: "x.jpeg", type: "image", alt: "X" }) })));
+    expect(r.warnings[0]).toMatch(/consent is required/);
   });
 });

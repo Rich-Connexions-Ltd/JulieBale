@@ -7,6 +7,7 @@
  * with no `style` renders exactly as before.
  */
 import { resolveSection, resolveDesign, type ResolvedSection } from "./presentation";
+import { assetIdOf, consentOk, testimonialConsentOk } from "./assets";
 
 interface Env {
   DB: D1Database;
@@ -187,7 +188,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
   switch (b.type) {
     case "hero":
       return `<section class="hero-stage media-band">
-  ${img(b.image, b.heading || "Julie Bale", "", p.imgStyle)}${secondImage(b, p)}
+  ${img(b.image, b.image_alt || b.heading || "Julie Bale", "", p.imgStyle)}${secondImage(b, p)}
   <div class="media-band__scrim"></div>
   <div class="media-band__inner"><div class="container--wide reveal">
     ${b.kicker ? `<p class="kicker">${esc(b.kicker)}</p>` : ""}
@@ -208,7 +209,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
       return `<section class="showcase"><div class="showcase__grid">
     <div class="showcase__media reveal">${
       b.image
-        ? img(b.image, b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption)
+        ? img(b.image, b.image_alt || b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption)
         : `<span class="showcase__ph">${esc(b.heading)}<span>Large performance / Diva photograph</span></span>`
     }</div>
     <div class="showcase__body reveal">
@@ -233,7 +234,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
         .map(
           (it: any) => `<a class="panel" href="${esc(it.href || "#")}">
         <span class="panel__media">${
-          it.image ? img(it.image, it.title || "") : `<span class="panel__ph">${esc(it.title)}</span>`
+          it.image ? img(it.image, it.image_alt || it.title || "") : `<span class="panel__ph">${esc(it.title)}</span>`
         }</span>
         <span class="panel__title">${esc(it.title)}</span>
         ${it.line ? `<span class="panel__line">${esc(it.line)}</span>` : ""}
@@ -247,7 +248,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
     case "feature":
       return `<section class="section${ivory}"><div class="container feature__grid${b.reverse ? " feature--reverse" : ""}">
     <div class="feature__media reveal"><figure class="frame image--portrait">${
-      b.image ? img(b.image, b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption) : `<figcaption class="frame__label">${esc(b.heading)}</figcaption>`
+      b.image ? img(b.image, b.image_alt || b.heading || "", "", p.imgStyle) + secondImage(b, p) + caption(b.caption) : `<figcaption class="frame__label">${esc(b.heading)}</figcaption>`
     }</figure></div>
     <div class="feature__body reveal">
       ${b.eyebrow ? `<p class="eyebrow">${esc(b.eyebrow)}</p>` : ""}
@@ -264,7 +265,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
       ${(b.items || [])
         .map(
           (it: any) => `<article class="duo__item">
-        <span class="duo__media">${it.image ? img(it.image, it.title || "") : `<span class="duo__ph">${esc(it.title)}</span>`}</span>${it.caption ? `\n        <p class="caption">${esc(it.caption)}</p>` : ""}
+        <span class="duo__media">${it.image ? img(it.image, it.image_alt || it.title || "") : `<span class="duo__ph">${esc(it.title)}</span>`}</span>${it.caption ? `\n        <p class="caption">${esc(it.caption)}</p>` : ""}
         ${it.kicker ? `<p class="kicker">${esc(it.kicker)}</p>` : ""}
         <h3 class="duo__title">${esc(it.title)}</h3>
         ${textlink({ label: it.cta_label || "Open", href: it.href })}
@@ -395,6 +396,12 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
   </div></section>`;
     }
 
+    case "testimonials":
+      return renderTestimonials(env, b, p, ivory);
+
+    case "media":
+      return renderMedia(b, ivory);
+
     default:
       return `<!-- unknown block type: ${esc(b.type)} -->`;
   }
@@ -424,6 +431,149 @@ function decorate(html: string, p: ResolvedSection, chapterNo: number): string {
     out = `${out.slice(0, end)}<div class="scene-spacer" aria-hidden="true"></div>${out.slice(end)}`;
   }
   return out;
+}
+
+/* ------------------------- Assets and consent -------------------------- */
+
+// Fields that may hold an `asset:<id>` reference (sections and list items).
+const MEDIA_FIELDS = ["image", "image_2", "poster", "video", "audio"];
+const isObj = (v: unknown): v is Record<string, any> => !!v && typeof v === "object" && !Array.isArray(v);
+
+/** Load the named assets in one bound query. */
+async function loadAssets(env: Env, ids: string[]): Promise<Map<string, any>> {
+  const map = new Map<string, any>();
+  if (!ids.length) return map;
+  const { results } = await env.DB.prepare(`SELECT id, data FROM documents WHERE collection='assets' AND id IN (${ids.map(() => "?").join(",")})`)
+    .bind(...ids)
+    .all<{ id: string; data: string }>();
+  for (const r of results) {
+    try {
+      map.set(r.id, JSON.parse(r.data));
+    } catch {}
+  }
+  return map;
+}
+
+/**
+ * Replace `asset:<id>` references with the asset's file (plus its alt text and
+ * default focal point for the main image). An asset without consent (pending,
+ * refused, expired, or missing) resolves to nothing, so it is never shown.
+ * Pages without references are returned unchanged.
+ */
+export async function resolveAssetRefs(env: Env, page: any): Promise<any> {
+  const sections: any[] = Array.isArray(page?.sections) ? page.sections : [];
+  const ids = new Set<string>();
+  const collect = (o: any) => isObj(o) && MEDIA_FIELDS.forEach((f) => { const id = assetIdOf(o[f]); if (id) ids.add(id); });
+  sections.forEach((s) => { collect(s); if (isObj(s) && Array.isArray(s.items)) s.items.forEach(collect); });
+  if (!ids.size) return page;
+  const assets = await loadAssets(env, [...ids]);
+  const apply = (o: any, withStyle: boolean) => {
+    if (!isObj(o)) return o;
+    const c: any = { ...o };
+    for (const f of MEDIA_FIELDS) {
+      const id = assetIdOf(o[f]);
+      if (!id) continue;
+      const a = assets.get(id);
+      if (!a || !consentOk(a)) { c[f] = ""; continue; }
+      c[f] = a.file;
+      if (f === "image") {
+        if (!c.image_alt && a.alt) c.image_alt = a.alt;
+        if (withStyle && a.focus && !(isObj(c.style) && c.style.focus)) c.style = { ...(isObj(c.style) ? c.style : {}), focus: a.focus };
+      }
+    }
+    if (Array.isArray(o.items)) c.items = o.items.map((it: any) => apply(it, false));
+    return c;
+  };
+  return { ...page, sections: sections.map((s) => apply(s, true)) };
+}
+
+/* --------------------------- Media (#19) --------------------------------- */
+
+const STREAM_RE = /^[a-f0-9]{32}$/;
+
+/** Poster-first video: nothing heavy loads until the visitor presses play (app.js swaps in the player). */
+function mediaButton(uid: string, label: string, poster: string, loop = false): string {
+  const src = poster ? assetUrl(poster) : `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg`;
+  return `<button type="button" class="media-play" data-stream="${uid}"${loop ? ` data-loop="1"` : ""} aria-label="${esc(label)}"><img src="${esc(src)}" alt="" loading="lazy"><span class="media-play__icon" aria-hidden="true"></span></button>`;
+}
+
+function renderMedia(b: any, ivory: string): string {
+  const uid = typeof b.video === "string" && STREAM_RE.test(b.video) ? b.video : "";
+  const what = b.caption || b.heading || "performance";
+  const visual = uid
+    ? mediaButton(uid, `${b.loop ? "Play atmospheric video" : "Play video"}: ${what}`, b.poster || "", !!b.loop)
+    : b.poster ? img(b.poster, b.image_alt || what) : "";
+  const audio = b.audio ? `<audio class="media-audio" controls preload="none" src="${esc(mediaUrl(b.audio))}"></audio>` : "";
+  if (!visual && !audio) return "";
+  return `<section class="section media-scene${ivory}"><div class="container">
+    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    <figure class="media-frame">${visual ? `<div class="media-frame__visual">${visual}</div>` : ""}${audio}${b.caption ? `<figcaption class="caption">${esc(b.caption)}</figcaption>` : ""}</figure>
+    ${b.transcript ? `<details class="transcript"><summary>Transcript</summary>${md(b.transcript)}</details>` : ""}
+  </div></section>`;
+}
+
+/* ------------------------ Testimonials (#18) ----------------------------- */
+
+/** Consent-checked testimonials for a block: explicit `items` (ids, in order) or all, optionally by `tag`. */
+async function loadTestimonials(env: Env, b: any): Promise<any[]> {
+  const wanted: string[] = Array.isArray(b.items) ? b.items.filter((x: unknown) => typeof x === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(x as string)) : [];
+  const { results } = wanted.length
+    ? await env.DB.prepare(`SELECT id, data FROM documents WHERE collection='testimonials' AND id IN (${wanted.map(() => "?").join(",")})`).bind(...wanted).all<{ id: string; data: string }>()
+    : await env.DB.prepare("SELECT id, data FROM documents WHERE collection='testimonials' ORDER BY id").all<{ id: string; data: string }>();
+  let rows = results.map((r) => { try { return { id: r.id, ...JSON.parse(r.data) }; } catch { return null; } }).filter(Boolean) as any[];
+  if (wanted.length) rows.sort((x, y) => wanted.indexOf(x.id) - wanted.indexOf(y.id));
+  if (typeof b.tag === "string") rows = rows.filter((t) => Array.isArray(t.tags) && t.tags.includes(b.tag));
+  rows = rows.filter((t) => testimonialConsentOk(t)).slice(0, Math.min(Math.max(Number(b.limit) || 6, 1), 12));
+  // Portraits and videos may be asset references: consent-check those too.
+  const assets = await loadAssets(env, [...new Set(rows.flatMap((t) => [assetIdOf(t.portrait), assetIdOf(t.video)]).filter(Boolean) as string[])]);
+  return rows.map((t) => {
+    const pa = assets.get(assetIdOf(t.portrait) || "");
+    const va = assets.get(assetIdOf(t.video) || "");
+    const videoUid = va ? (consentOk(va) ? va.file : "") : t.video;
+    return {
+      ...t,
+      portraitFile: pa && consentOk(pa) ? pa.file : "",
+      portraitAlt: pa?.alt || `Portrait of ${t.name}`,
+      videoUid: typeof videoUid === "string" && STREAM_RE.test(videoUid) ? videoUid : "",
+    };
+  });
+}
+
+async function renderTestimonials(env: Env, b: any, p: ResolvedSection, ivory: string): Promise<string> {
+  let items = await loadTestimonials(env, b);
+  const layout = (p.classes.find((c) => c.startsWith("s-testimonial-layout-")) || "s-testimonial-layout-cards").slice("s-testimonial-layout-".length);
+  if (layout === "before-after") items = items.filter((t) => t.before && t.after);
+  if (!items.length) return ""; // nothing consented to show: omit the section entirely
+  const who = (t: any) => `<figcaption class="testimonial__who"><strong>${esc(t.name)}</strong>${t.role ? ` · ${esc(t.role)}` : ""}</figcaption>`;
+  const portrait = (t: any) => (t.portraitFile ? `<span class="testimonial__portrait"><img src="${esc(assetUrl(t.portraitFile))}" alt="${esc(t.portraitAlt)}" loading="lazy"></span>` : "");
+  const video = (t: any) => (t.videoUid ? mediaButton(t.videoUid, `Watch ${t.name}'s story`, t.portraitFile) : "");
+  const story = (t: any) => (t.story ? `<details class="testimonial__story"><summary>Read ${esc(t.name)}'s story</summary>${md(t.story)}</details>` : "");
+  let inner: string;
+  if (layout === "quote") {
+    inner = `<div class="testimonials testimonials--quote">${items.map((t) => `<figure class="testimonial"><blockquote>${esc(t.quote)}</blockquote>${who(t)}</figure>`).join("")}</div>`;
+  } else if (layout === "portrait") {
+    inner = `<div class="testimonials testimonials--portrait">${items.map((t) => `<figure class="testimonial">${portrait(t)}<div class="testimonial__body"><blockquote>${esc(t.quote)}</blockquote>${who(t)}${video(t)}</div></figure>`).join("")}</div>`;
+  } else if (layout === "before-after") {
+    inner = `<div class="testimonials testimonials--ba">${items
+      .map((t) => `<figure class="testimonial"><div class="ba"><div class="ba__side"><span class="ba__label">Before</span><p>${esc(t.before)}</p></div><div class="ba__side ba__side--after"><span class="ba__label">After</span><p>${esc(t.after)}</p></div></div>${who(t)}</figure>`)
+      .join("")}</div>`;
+  } else if (layout === "carousel") {
+    const n = items.length;
+    inner = `<div class="carousel" data-carousel>
+      <div class="carousel__track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="${esc(b.heading || "Singer stories")}">${items
+        .map((t, i) => `<figure class="carousel__slide testimonial" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${n}">${portrait(t)}<blockquote>${esc(t.quote)}</blockquote>${who(t)}</figure>`)
+        .join("")}</div>
+      <div class="carousel__controls"><button type="button" class="carousel__prev" aria-label="Previous story">&lsaquo;</button><span class="carousel__count" aria-live="polite">1 / ${n}</span><button type="button" class="carousel__next" aria-label="Next story">&rsaquo;</button></div>
+    </div>`;
+  } else {
+    inner = `<ul class="testimonials testimonials--cards">${items
+      .map((t) => `<li><figure class="testimonial-card testimonial">${portrait(t)}<blockquote>${esc(t.quote)}</blockquote>${who(t)}${story(t)}${video(t)}</figure></li>`)
+      .join("")}</ul>`;
+  }
+  return `<section class="section${ivory}"><div class="container">
+    ${b.heading ? `<h2 class="section-title">${esc(b.heading)}</h2>` : ""}
+    ${inner}
+  </div></section>`;
 }
 
 /* ------------------------------ Helpers -------------------------------- */
@@ -520,6 +670,7 @@ function renderSceneNav(mode: string, chapters: Array<{ n: number; label: string
 }
 
 export async function renderPage(env: Env, page: any, site: any, opts: RenderOptions = {}): Promise<string> {
+  page = await resolveAssetRefs(env, page);
   let chapter = 0;
   const chapters: Array<{ n: number; label: string }> = [];
   const sections = await Promise.all(

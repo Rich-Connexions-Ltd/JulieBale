@@ -206,7 +206,7 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 - **Exit criteria:** goldens unchanged; tests pass; Gallery preview checked desktop + phone; deployed; content-model updated.
 
 ## Sprint 13 — Trust content
-**Status:** Not started
+**Status:** Done (2026-09-28)
 
 - **Goal:** first-class content for people and performance, with consent recorded before use.
 - **Source:** #23 (asset library; rights/consent + usage metadata first), #18 (testimonials and singer stories; supersedes #1), #19 (performance media).

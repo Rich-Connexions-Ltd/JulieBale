@@ -12,6 +12,8 @@ in collections, addressed by `collection` and `id`. Read before you write.
 - **dates** — calendar entries. `{title, date, note, link}`.
 - **landing** — standalone landing pages served at `/l/{id}`. `{title, html}`.
 - **variants** — unpublished design variants of a page (see *Page variants*).
+- **assets** — the photo, video and audio library, with consent (see *Assets and consent*).
+- **testimonials** — singers' quotes and stories, with consent (see *Testimonials*).
 - **context** — this pack (brand/voice/offers/content-model). Read, don't publish.
 
 ## A page document
@@ -47,6 +49,8 @@ request** (see below) describing it.
 - **listing** — auto-list a collection. `{heading?, collection, empty?}`
 - **accordion** — grouped lists (Diva Hub). `{items:[{title,collection,empty?}]}`
 - **form** — a simple form. `{heading?, fields:[...], submit}`
+- **testimonials** — singers' words from the testimonials collection. `{heading?, items?:[ids], tag?, limit?}` (no items = all, newest id order; only consented ones appear)
+- **media** — a performance moment. `{heading?, video?, audio?, poster?, caption?, transcript?, loop?}` (video: asset ref or Stream id; audio: asset ref or media key; transcript is Markdown)
 
 `image` is a filename served from /assets (e.g. "about-julie.jpeg").
 
@@ -91,6 +95,8 @@ Section `style`, particular blocks:
 | `overlap` | showcase, feature | `true`: copy overlaps the image (wide screens) |
 | `grid` | showcase, feature | `balanced`, `asymmetric` |
 | `size` | pullquote | `standard`, `oversized` |
+| `testimonial_layout` | testimonials | `quote`, `portrait`, `cards` (default), `before-after`, `carousel` (visitors move through it themselves; it never advances on its own) |
+| `media_ratio` | media | `landscape` (default), `portrait`, `cinematic`, `square` |
 | `image_escape` | showcase, feature, duo | `side`, `up`, `down`, `both`, `side-up`, `side-down`: the image breaks out of its frame (sideways toward the page edge, and/or into the section above/below) |
 | `overshoot` | showcase, feature, duo | `subtle`, `medium` (default), `bold`: how far it escapes |
 | `layer` | showcase, feature, duo | `above` (default), `below`: over or under neighbouring sections |
@@ -162,7 +168,10 @@ every variant picks them up.
    ```
    `from` is a section key of the live page (`list_page_variants` shows them).
    Leave a section out to hide it. A variant section's `style` **replaces** the
-   live section's style (it is not merged).
+   live section's style (it is not merged). A section may also choose different
+   photographs or media with `"media": {"image": "asset:…", "image_2": "asset:…",
+   "poster": "asset:…", "video": "asset:…", "audio": "asset:…"}` (asset references
+   only), so a concept can use its own photography without touching the live page.
 3. Julie opens the preview link to compare concepts.
 4. When she chooses one, `publish_page_variant`. This writes the variant's order,
    styles and design into the live page. **Sections the variant leaves out are
@@ -242,3 +251,47 @@ superseded it. Do not log something that is already open or planned.
     (#14), hover interactions (#22), and phone-only overrides (#20, narrowed).
 - Do not feature photographs or testimonials of real singers prominently until
   their consent is recorded (Sprint 13).
+
+## Assets and consent
+The **assets** collection describes each photograph, video and audio file for
+design use. Find them with `search_assets` / `searchAssets` (filters: words,
+type, usage, role, orientation, consent, usable). Use an asset anywhere an
+image, second image, poster, video or audio is expected by writing its
+reference, e.g. `"image": "asset:vip-diva-day"`; its alt text and focal point
+come with it.
+
+An asset document: `{file, type, title, alt, people:[…], setting, orientation,
+focus, tone:[…], usage:[…], roles:[…], suits:[…], consent, consent_note,
+consent_expires, date, lighting, crop_zones, notes}`.
+- `type`: `image`, `video`, `audio`. `orientation`: `portrait`, `landscape`, `square`.
+- `usage`: `julie-portrait`, `julie-singing`, `teaching`, `singer`, `community`,
+  `backstage`, `concert`, `venue`, `atmosphere`.
+- `roles` (good for): `hero`, `background`, `collage`, `testimonial-portrait`,
+  `poster`, `tile`. `suits`: `desktop`, `mobile`.
+- `consent`: `granted` (everyone identifiable agreed; say who/when/how in
+  `consent_note`), `not-needed` (no identifiable people other than Julie),
+  `pending`, `refused`.
+
+**The rule:** an asset reference is shown only when its consent is `granted`
+or `not-needed` and `consent_expires` has not passed. Otherwise it is simply left
+out. Never change consent to `granted` unless Julie confirms that the people
+shown agreed. Photographs referenced by plain filename (as on the current live
+pages) are not checked, so prefer asset references for anything new.
+
+## Testimonials
+The **testimonials** collection: `{name, role?, quote, story? (Markdown),
+before?, after?, portrait? ("asset:…"), video? ("asset:…" or Stream id),
+tags?:[…], consent, consent_note?, consent_expires?}`. `consent` is `granted`,
+`pending` or `refused`; **only `granted` testimonials appear**, and a portrait or
+video appears only if its asset is consented too. Show them with a
+`testimonials` block and choose a `testimonial_layout`. `before-after` shows only
+testimonials that have both `before` and `after`. If nothing is consented, the
+block shows nothing.
+
+## Performance media
+The **media** block shows a video with a poster frame: nothing heavy loads until
+the visitor presses play. `loop: true` makes it a muted atmospheric loop that
+starts when on screen (never for visitors who prefer reduced motion; the player
+can always be paused). Add a `caption`, and a `transcript` for anything with
+speech or lyrics. Audio plays with standard controls and only loads on demand.
+

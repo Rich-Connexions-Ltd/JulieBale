@@ -68,3 +68,17 @@ Feature requests #12, #16 (merged) and #21. Review mode: no council; tests + hea
 - `mcp/context/content-model.md` — scenes, `image_2`, `focus_end`, scene nav
 - `mcp/test/*` — scene rendering, nav, CSS guards (motion/support gating, text ranges always complete)
 - `Documentation/archive/PLAN_Sprint12.md`
+
+## Sprint 13: Trust Content (0.8.0) — 2026-09-28
+
+Requests #23, #18 (supersedes #1), #19. Review mode: no council; tests + headless-Chrome check.
+
+**Files changed:**
+- `mcp/src/assets.ts` — asset library vocabulary, consent rule (granted / not-needed / pending / refused, optional expiry), warnings, search
+- `mcp/src/render.ts` — `asset:<id>` resolution with consent gate; `testimonials` and `media` blocks
+- `mcp/src/presentation.ts`, `mcp/src/variants.ts` — `testimonial_layout`, `media_ratio`; variant-level asset assignment
+- `mcp/src/index.ts` — `search_assets` / `GET /api/assets/search`; asset and testimonial write warnings; OpenAPI 0.8.0
+- `mcp/public/app.js`, `mcp/public/styles.css` — poster-first video, restrained carousel, testimonial and media styling
+- `mcp/context/content-model.md` — assets and consent, testimonials, media
+- `mcp/seed/sprint13-assets.*` — existing photography as assets (people other than Julie: consent pending)
+- `mcp/test/assets.test.ts`, `seed.test.ts`, render and route tests

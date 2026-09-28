@@ -13,6 +13,11 @@
  * on <body>. All visual behaviour lives in public/styles.css.
  */
 
+import { ASSET_REF_RE } from "./assets";
+
+/** Fields a variant may swap for a different asset (request #23, variant-level assignment). */
+export const VARIANT_MEDIA_FIELDS = ["image", "image_2", "poster", "video", "audio"];
+
 type Meanings = Record<string, string>;
 interface Option {
   /** Block types the key applies to; omitted = every block type. */
@@ -129,6 +134,20 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
       },
     },
     intensity: { values: { gentle: "Lighter transition.", standard: "Normal transition.", strong: "Stronger transition." } },
+    testimonial_layout: {
+      blocks: ["testimonials"],
+      values: {
+        quote: "Large quotes, one after another.",
+        portrait: "Portrait beside each quote.",
+        cards: "Story cards: portrait, quote, and the longer story on request (the default).",
+        "before-after": "Before and after, side by side (only testimonials that have both).",
+        carousel: "A restrained carousel: visitors move through stories themselves; it never advances on its own.",
+      },
+    },
+    media_ratio: {
+      blocks: ["media"],
+      values: { landscape: "3:2 frame (the default).", portrait: "4:5 frame.", cinematic: "16:9 frame.", square: "1:1 frame." },
+    },
     scene_length: {
       values: {
         short: "Section holds the screen for a short scene while scrolling continues.",
@@ -306,6 +325,14 @@ export function presentationWarnings(doc: unknown): string[] {
     if (!isObject(s)) return;
     const label = typeof s.key === "string" ? `section ${i + 1} (${s.key})` : typeof s.from === "string" ? `section ${i + 1} (${s.from})` : `section ${i + 1}`;
     warnings.push(...checkObject(s.style, "style", label, typeof s.type === "string" ? s.type : undefined));
+    if (s.media !== undefined) {
+      if (!isObject(s.media)) warnings.push(`${label}: media must be an object; ignored.`);
+      else
+        for (const [k, v] of Object.entries(s.media)) {
+          if (!VARIANT_MEDIA_FIELDS.includes(k)) warnings.push(`${label}: media.${k} is not a replaceable field (use ${VARIANT_MEDIA_FIELDS.join(" | ")}); ignored.`);
+          else if (!ASSET_REF_RE.test(String(v))) warnings.push(`${label}: media.${k} must be an asset reference like "asset:julie-portrait"; ignored.`);
+        }
+    }
   });
   return warnings;
 }

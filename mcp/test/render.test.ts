@@ -118,3 +118,75 @@ describe("scenes (Sprint 12)", () => {
       { type: "statement", statement: "a", style: { chapter: true } }, { type: "statement", statement: "b", style: { chapter: true } }] })).not.toContain("<nav class=\"scene-nav");
   });
 });
+
+describe("assets, testimonials and media (Sprint 13)", () => {
+  const assets = {
+    "assets/julie": { file: "julie-portrait.jpeg", type: "image", alt: "Julie Bale smiling", focus: "40% 20%", consent: "not-needed" },
+    "assets/group": { file: "diva-days.jpeg", type: "image", alt: "Singers on the steps", consent: "pending" },
+    "assets/old": { file: "old.jpeg", type: "image", alt: "Old", consent: "granted", consent_expires: "2020-01-01" },
+    "assets/eve": { file: "eve.jpeg", type: "image", alt: "Eve at the piano", consent: "granted" },
+    "assets/clip": { file: "0123456789abcdef0123456789abcdef", type: "video", consent: "granted" },
+  };
+  const env2 = (extra: Record<string, unknown> = {}) => fakeEnv({ ...assets, ...extra });
+  const r = (page: any, extra?: any) => renderPage(env2(extra), page, siteFixture());
+
+  it("resolves consented asset references with their alt text and focal point", async () => {
+    const html = await r(pageWith([{ type: "feature", heading: "F", image: "asset:julie" }]));
+    expect(html).toContain('<img src="/assets/julie-portrait.jpeg" alt="Julie Bale smiling" style="object-position:40% 20%">');
+  });
+  it("never shows pending, refused, expired or unknown assets", async () => {
+    const html = await r(pageWith([
+      { type: "feature", heading: "F", image: "asset:group" },
+      { type: "panels", items: [{ title: "A", image: "asset:old" }, { title: "B", image: "asset:missing" }] },
+    ]));
+    expect(html).not.toMatch(/diva-days|old\.jpeg|missing/);
+  });
+  it("lets a variant swap in an asset (asset references only)", async () => {
+    const { variantToPage } = await import("../src/variants");
+    const base = { sections: [{ key: "feature-1", type: "feature", heading: "F", image: "about-julie.jpeg" }] };
+    const { page } = variantToPage(base, { sections: [{ from: "feature-1", media: { image: "asset:julie", image_2: "plain.jpeg", heading: "asset:x" } }] });
+    expect(page.sections[0].image).toBe("asset:julie");
+    expect(page.sections[0].image_2).toBeUndefined();
+    expect(page.sections[0].heading).toBe("F");
+  });
+
+  const testimonials = {
+    "testimonials/eve": { name: "Eve", role: "Diva Energy singer", quote: "Julie unlocked something", story: "**Long** story", before: "Afraid", after: "Singing", portrait: "asset:eve", video: "asset:clip", consent: "granted" },
+    "testimonials/sam": { name: "Sam", quote: "Pending words", consent: "pending" },
+    "testimonials/kit": { name: "Kit", quote: "Refused words", consent: "refused" },
+    "testimonials/ann": { name: "Ann", quote: "Ann's words", consent: "granted", portrait: "asset:group" },
+  };
+  it("shows only consented testimonials, and only consented portraits", async () => {
+    const html = await r(pageWith([{ type: "testimonials", heading: "Stories" }]), testimonials);
+    expect(html).toContain("Julie unlocked something");
+    expect(html).toContain("Ann&#39;s words".replace("&#39;", "'"));
+    expect(html).not.toMatch(/Pending words|Refused words|diva-days/);
+    expect(html).toContain('<img src="/assets/eve.jpeg" alt="Eve at the piano" loading="lazy">');
+    expect(html).toContain('<summary>Read Eve&#39;s story</summary>'.replace("&#39;", "'"));
+    expect(html).toContain('data-stream="0123456789abcdef0123456789abcdef"');
+  });
+  it("respects explicit items order, before-after filtering and the carousel markup", async () => {
+    const ordered = await r(pageWith([{ type: "testimonials", items: ["ann", "eve"], style: { testimonial_layout: "quote" } }]), testimonials);
+    expect(ordered.indexOf("Ann")).toBeLessThan(ordered.indexOf("Julie unlocked"));
+    const ba = await r(pageWith([{ type: "testimonials", style: { testimonial_layout: "before-after" } }]), testimonials);
+    expect(ba).toContain("Afraid");
+    expect(ba).not.toContain("Ann");
+    const car = await r(pageWith([{ type: "testimonials", style: { testimonial_layout: "carousel" } }]), testimonials);
+    expect(car).toContain('aria-roledescription="carousel"');
+    expect(car).toContain('aria-label="1 of 2"');
+    expect(car).toContain('class="carousel__count" aria-live="polite">1 / 2<');
+  });
+  it("omits the block entirely when nothing is consented", async () => {
+    const html = await r(pageWith([{ type: "testimonials", heading: "Stories", items: ["sam", "kit"] }]), testimonials);
+    expect(html).not.toContain("Stories");
+  });
+  it("renders media poster-first with transcript and on-demand audio; ignores bad video ids", async () => {
+    const html = await r(pageWith([{ type: "media", heading: "Aria", video: "asset:clip", poster: "asset:julie", caption: "Live", transcript: "Words", audio: "clips/aria.mp3", loop: true, style: { media_ratio: "cinematic" } }]));
+    expect(html).toContain('<button type="button" class="media-play" data-stream="0123456789abcdef0123456789abcdef" data-loop="1" aria-label="Play atmospheric video: Live">');
+    expect(html).toContain('<audio class="media-audio" controls preload="none" src="/media/clips/aria.mp3"></audio>');
+    expect(html).toContain("<details class=\"transcript\"><summary>Transcript</summary>");
+    expect(html).toContain("s-media-ratio-cinematic");
+    const bad = await r(pageWith([{ type: "media", video: "javascript:alert(1)" }]));
+    expect(bad).not.toMatch(/media-play|javascript/);
+  });
+});

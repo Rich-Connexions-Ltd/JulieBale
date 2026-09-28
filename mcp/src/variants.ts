@@ -9,7 +9,16 @@
  *
  * Everything here is pure (no D1 access) so it can be unit-tested directly.
  */
-import { presentationWarnings, sanitizePresentation } from "./presentation";
+import { presentationWarnings, sanitizePresentation, VARIANT_MEDIA_FIELDS } from "./presentation";
+import { ASSET_REF_RE } from "./assets";
+
+/** A variant entry's media overrides, keeping only asset references for replaceable fields. */
+function mediaOverrides(media: unknown): Record<string, string> {
+  if (!media || typeof media !== "object" || Array.isArray(media)) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(media)) if (VARIANT_MEDIA_FIELDS.includes(k) && typeof v === "string" && ASSET_REF_RE.test(v)) out[k] = v;
+  return out;
+}
 
 /** Page and variant ids: lowercase slug, safe in a URL path segment. */
 export const ID_RE = /^[a-z][a-z0-9-]{0,63}$/;
@@ -69,7 +78,8 @@ export function sectionSummaries(page: any): Array<{ key: string; type: string; 
 /**
  * Rebuild an ordinary page document from the live base page and a variant.
  * Each referenced base section is used as-is except that its `style` is
- * REPLACED (not merged) by the variant entry's `style`. The page `design` is
+ * REPLACED (not merged) by the variant entry's `style`, and any `media`
+ * entries (asset references only) replace that section's image/poster/video. The page `design` is
  * replaced by the variant's. Unresolved references are skipped and listed;
  * base sections the variant does not reference are listed as `dropped`.
  */
@@ -88,7 +98,9 @@ export function variantToPage(base: any, variant: any): { page: any; unresolved:
     }
     referenced.add(from!);
     const { style: _baseStyle, ...rest } = src;
-    sections.push(entry.style === undefined ? rest : { ...rest, style: entry.style });
+    // A variant may also choose different photographs/media (asset references only).
+    const withMedia = { ...rest, ...mediaOverrides(entry.media) };
+    sections.push(entry.style === undefined ? withMedia : { ...withMedia, style: entry.style });
   }
   const dropped = [...byKey.keys()].filter((k) => !referenced.has(k));
   const { design: _baseDesign, ...baseRest } = isObject(base) ? base : ({} as any);

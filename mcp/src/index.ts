@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding } from "./render";
 import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
+import { ASSET_OPTIONS, CONSENT_MEANINGS, assetWarnings, testimonialWarnings, searchAssets, type AssetQuery } from "./assets";
 import {
   ensureSectionKeys, prepareVariantWrite, variantToPage, publishedPage, newVariant, sectionSummaries,
   tokensEqual, isValidId, previewPath, TOKEN_RE, MAX_VARIANTS_PER_BASE,
@@ -95,14 +96,26 @@ function applyWriteRules(collection: string, prev: string | null, data: string):
   return JSON.stringify(prepareVariantWrite(prevDoc, doc));
 }
 
-/** Presentation warnings for a page or variant document (empty otherwise). */
+/** Write warnings: presentation (pages, variants), asset and testimonial checks. */
 function warningsFor(collection: string, data: string): string[] {
-  if (collection !== "pages" && collection !== "variants") return [];
+  const check =
+    collection === "pages" || collection === "variants" ? presentationWarnings
+    : collection === "assets" ? assetWarnings
+    : collection === "testimonials" ? testimonialWarnings
+    : null;
+  if (!check) return [];
   try {
-    return presentationWarnings(JSON.parse(data));
+    return check(JSON.parse(data));
   } catch {
     return [];
   }
+}
+
+/** Search the asset library (one bound query for the collection, filtered in memory). */
+async function findAssets(env: Env, query: AssetQuery) {
+  const { results } = await env.DB.prepare("SELECT id, data FROM documents WHERE collection=? ORDER BY id").bind("assets").all<{ id: string; data: string }>();
+  const rows = results.map((r) => ({ id: r.id, doc: parse(r.data) }));
+  return { assets: searchAssets(rows, query), vocabulary: ASSET_OPTIONS, consent: CONSENT_MEANINGS };
 }
 
 async function writeDoc(env: Env, collection: string, id: string, data: string, status = "published") {
@@ -303,12 +316,12 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.7.1" });
+  server = new McpServer({ name: "juliebale-content", version: "0.8.0" });
 
   async init() {
     this.server.tool(
       "list_content",
-      "List the ids of documents in a collection. WHEN: use first to discover what already exists before creating or editing (e.g. list 'pages' for every page slug, 'events' for existing events). Does NOT return the documents themselves, follow up with read_content. Collections: pages, posts, events, courses, dates, landing, variants, site, context.",
+      "List the ids of documents in a collection. WHEN: use first to discover what already exists before creating or editing (e.g. list 'pages' for every page slug, 'events' for existing events). Does NOT return the documents themselves, follow up with read_content. Collections: pages, posts, events, courses, dates, landing, variants, assets, testimonials, site, context.",
       { collection: z.string() },
       async ({ collection }) => {
         const ids = await listDocs(this.env, collection);
@@ -400,6 +413,20 @@ export class ContentMCP extends McpAgent<Env> {
         const rows = await listFeatureRequests(this.env, status);
         return { content: [{ type: "text", text: rows.length ? JSON.stringify(rows, null, 2) : "(no requests)" }] };
       }
+    );
+
+    this.server.tool(
+      "search_assets",
+      "Find photographs, video and audio in the asset library, with what each shows, how it can be used, and whether it may be shown (consent). WHEN: choosing an image for a section, testimonial portrait or video poster. Use the result's ref (asset:<id>) in image/image_2/poster/video/audio fields or a testimonial portrait. Only assets with usable: true are ever shown on the site. All filters optional.",
+      {
+        q: z.string().optional().describe("Words to match in title, description, people, setting, tone"),
+        type: z.enum(["image", "video", "audio"]).optional(),
+        usage: z.string().optional().describe("e.g. julie-singing, concert, community, venue"),
+        role: z.string().optional().describe("e.g. hero, background, collage, testimonial-portrait, poster, tile"),
+        orientation: z.enum(["portrait", "landscape", "square"]).optional(),
+        usable: z.boolean().optional().describe("true = only assets that may be shown now"),
+      },
+      async (args) => ({ content: [{ type: "text", text: JSON.stringify(await findAssets(this.env, args), null, 2) }] })
     );
 
     this.server.tool(
@@ -555,6 +582,14 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
     return json({ ok: true, uploadURL: j.result.uploadURL, uid: j.result.uid });
   }
 
+  // Asset library search: GET /api/assets/search?q=&type=&usage=&role=&orientation=&consent=&usable=true
+  if (parts[0] === "assets" && parts[1] === "search" && parts.length === 2) {
+    if (method !== "GET") return json({ error: "method not allowed" }, 405);
+    const sp = new URL(request.url).searchParams;
+    const get = (k: string) => sp.get(k) || undefined;
+    return json(await findAssets(env, { q: get("q"), type: get("type"), usage: get("usage"), role: get("role"), orientation: get("orientation"), consent: get("consent"), suits: get("suits"), usable: sp.get("usable") === "true" }));
+  }
+
   // Presentation vocabulary: GET /api/presentation-options
   if (parts[0] === "presentation-options" && parts.length === 1) {
     if (method !== "GET") return json({ error: "method not allowed" }, 405);
@@ -672,7 +707,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-      version: "0.7.1",
+      version: "0.8.0",
     },
     servers: [{ url: origin }],
     paths: {
@@ -690,6 +725,14 @@ function openApiSchema(origin: string) {
       },
       "/api/dates/{id}/convert-to-event": {
         post: { operationId: "convertDateToEvent", summary: "Convert a date into a full event.", description: "Promotes a calendar date into an event with its own page (description, location, details). Creates the event from the date's title and date, then removes the date (both undoable). After converting, edit the event to add its description, location and details.", parameters: [{ name: "id", in: "path", required: true, description: "The date id", schema: { type: "string" } }], responses: { "200": { description: "Converted", content: { "application/json": { schema: { $ref: "#/components/schemas/WriteResult" } } } } } },
+      },
+      "/api/assets/search": {
+        get: {
+          operationId: "searchAssets", summary: "Search the photo/video/audio library",
+          description: "Find assets by words and filters. Use a result's ref (asset:<id>) in image, image_2, poster, video or audio fields or as a testimonial portrait. Only assets with usable: true are shown on the site (consent granted or not needed).",
+          parameters: ["q", "type", "usage", "role", "orientation", "consent"].map((name) => ({ name, in: "query", required: false, schema: { type: "string" } })).concat([{ name: "usable", in: "query", required: false, schema: { type: "string", enum: ["true"] } } as any]),
+          responses: { "200": { description: "Matching assets", content: { "application/json": { schema: { $ref: "#/components/schemas/AssetList" } } } } },
+        },
       },
       "/api/presentation-options": {
         get: { operationId: "presentationOptions", summary: "List allowed style/design values", description: "Every allowed layout, theme and motion value for a section's `style` and a page's `design`, with meanings and a worked example per homepage concept. Call before setting any style/design value; never guess.", responses: { "200": { description: "The vocabulary", content: { "application/json": { schema: { $ref: "#/components/schemas/PresentationOptions" } } } } } },
@@ -728,6 +771,9 @@ function openApiSchema(origin: string) {
         PageDesign: { ...presentationJsonSchema("design"), description: "Page-level presentation (on a page or a variant)." },
         PresentationOptions: { type: "object", description: "Allowed presentation values with meanings and examples.", properties: { style: { type: "object", description: "Section style keys: each has values (value -> meaning), optional blocks it applies to, or a pattern.", additionalProperties: true }, design: { type: "object", description: "Page design keys, same shape as style.", additionalProperties: true }, rules: { type: "array", items: { type: "string" } }, examples: { type: "object", description: "One worked variant per concept (stage, editorial, journey).", additionalProperties: true } } },
         VariantList: { type: "object", properties: { ok: { type: "boolean" }, base: { type: "string" }, limit: { type: "integer" }, error: { type: "string" }, variants: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, previewUrl: { type: "string" }, unresolved: { type: "array", items: { type: "string" } }, warnings: { type: "array", items: { type: "string" } } } } }, sections: { type: "array", description: "The live page's section keys", items: { type: "object", properties: { key: { type: "string" }, type: { type: "string" }, heading: { type: "string" } } } } } },
+        AssetList: { type: "object", properties: { assets: { type: "array", items: { type: "object", properties: { ref: { type: "string" }, title: { type: "string" }, type: { type: "string" }, file: { type: "string" }, orientation: { type: "string" }, usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } }, people: { type: "array", items: { type: "string" } }, consent: { type: "string" }, usable: { type: "boolean" } } } }, vocabulary: { type: "object", additionalProperties: true }, consent: { type: "object", additionalProperties: true } } },
+        Asset: { type: "object", description: "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).", properties: { file: { type: "string", description: "Filename in /assets, media key, or Stream video id" }, type: { type: "string", enum: [...ASSET_OPTIONS.type] }, title: { type: "string" }, alt: { type: "string" }, people: { type: "array", items: { type: "string" } }, setting: { type: "string" }, orientation: { type: "string", enum: [...ASSET_OPTIONS.orientation] }, focus: { type: "string", description: "Default focal point, e.g. 60% 20%" }, tone: { type: "array", items: { type: "string" } }, usage: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.usage] } }, roles: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.roles] } }, suits: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.suits] } }, consent: { type: "string", enum: [...ASSET_OPTIONS.consent] }, consent_note: { type: "string" }, consent_expires: { type: "string" }, date: { type: "string" }, lighting: { type: "string" }, crop_zones: { type: "string" }, notes: { type: "string" } } },
+        Testimonial: { type: "object", description: "Collection 'testimonials'. Shown only when consent is granted.", properties: { name: { type: "string" }, role: { type: "string" }, quote: { type: "string" }, story: { type: "string", description: "Markdown" }, before: { type: "string" }, after: { type: "string" }, portrait: { type: "string", description: "asset:<id>" }, video: { type: "string", description: "asset:<id> or Stream id" }, tags: { type: "array", items: { type: "string" } }, consent: { type: "string", enum: ["granted", "pending", "refused"] }, consent_note: { type: "string" }, consent_expires: { type: "string" } } },
         Variant: { type: "object", description: "An unpublished variant (collection 'variants'). Copy comes from the live base page; only order and presentation live here. `token` and `base` are managed by the server.", properties: { base: { type: "string", readOnly: true }, label: { type: "string" }, note: { type: "string" }, token: { type: "string", readOnly: true }, design: { $ref: "#/components/schemas/PageDesign" }, sections: { type: "array", items: { type: "object", required: ["from"], properties: { from: { type: "string", description: "Section key on the live page" }, style: { $ref: "#/components/schemas/SectionStyle" } } } } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { id: { type: "integer", readOnly: true }, title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] }, status: { type: "string", readOnly: true, enum: ["open", "planned", "done", "declined"] }, resolution: { type: "string", readOnly: true, description: "Developer note: planned sprint, merged-into, or reason declined" }, created_at: { type: "string", readOnly: true }, updated_at: { type: "string", readOnly: true } } },
         FeatureRequestList: { type: "object", properties: { requests: { type: "array", items: { $ref: "#/components/schemas/FeatureRequest" } } } },

@@ -42,6 +42,66 @@
     onScroll();
   }
 
+  var prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---- Performance media: poster first, player on demand -------- */
+  // Nothing heavy loads until the visitor presses play. Atmospheric loops
+  // (data-loop) start muted when on screen, unless motion is reduced; the
+  // player keeps its own pause control.
+  var loadStream = function (btn, auto) {
+    var uid = btn.getAttribute("data-stream");
+    if (!/^[a-f0-9]{32}$/.test(uid || "")) return;
+    var loop = btn.getAttribute("data-loop") === "1";
+    var params = "autoplay=true" + (loop ? "&muted=true&loop=true" : "");
+    var frame = document.createElement("iframe");
+    frame.src = "https://iframe.videodelivery.net/" + uid + "?" + params;
+    frame.title = btn.getAttribute("aria-label") || "Video";
+    frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    frame.setAttribute("allowfullscreen", "");
+    frame.className = "media-iframe";
+    btn.replaceWith(frame);
+    if (!auto) frame.focus();
+  };
+  document.querySelectorAll(".media-play[data-stream]").forEach(function (btn) {
+    btn.addEventListener("click", function () { loadStream(btn, false); });
+    if (btn.getAttribute("data-loop") === "1" && !prefersReduced && "IntersectionObserver" in window) {
+      var loopIo = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) { loopIo.disconnect(); loadStream(btn, true); }
+      }, { threshold: 0.4 });
+      loopIo.observe(btn);
+    }
+  });
+
+  /* ---- Testimonial carousel: visitor-driven, never auto-advances -- */
+  document.querySelectorAll("[data-carousel]").forEach(function (root) {
+    var track = root.querySelector(".carousel__track");
+    var slides = track ? track.children : [];
+    var count = root.querySelector(".carousel__count");
+    if (!track || !slides.length) return;
+    var index = function () { return Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)); };
+    var go = function (i) {
+      i = Math.max(0, Math.min(slides.length - 1, i));
+      track.scrollTo({ left: i * track.clientWidth, behavior: prefersReduced ? "auto" : "smooth" });
+    };
+    var prev = root.querySelector(".carousel__prev");
+    var next = root.querySelector(".carousel__next");
+    if (prev) prev.addEventListener("click", function () { go(index() - 1); });
+    if (next) next.addEventListener("click", function () { go(index() + 1); });
+    track.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") { e.preventDefault(); go(index() + 1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(index() - 1); }
+    });
+    var ticking = false;
+    track.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        if (count) count.textContent = (index() + 1) + " / " + slides.length;
+        ticking = false;
+      });
+    }, { passive: true });
+  });
+
   /* ---- Scene navigation (design.scene_nav) ------------------- */
   // Marks the chapter currently in the middle of the screen; the nav links
   // work without this (plain #chapter-NN anchors).
