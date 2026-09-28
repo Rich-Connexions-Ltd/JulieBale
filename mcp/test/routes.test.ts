@@ -183,3 +183,16 @@ describe("OpenAPI passes the ChatGPT Actions validator rules", () => {
     expect(problems).toEqual([]);
   });
 });
+
+describe("listing before any variant exists", () => {
+  it("reports the section keys the page will get, without writing", async () => {
+    const env = newEnv();
+    const r = await body(await call(env, authed("/api/pages/home/variants")));
+    expect(r.variants).toEqual([]);
+    expect(r.sections.map((s: any) => s.key)).toEqual(["hero-1", "statement-1", "showcase-1", "pullquote-1", "panels-1", "feature-1", "duo-1", "cta-1", "doorway-1"]);
+    expect(doc(env, "pages", "home").sections[0].key).toBeUndefined();
+    // and create persists exactly those keys
+    await create(env);
+    expect(doc(env, "pages", "home").sections.map((s: any) => s.key)).toEqual(r.sections.map((s: any) => s.key));
+  });
+});

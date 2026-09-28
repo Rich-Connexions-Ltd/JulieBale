@@ -233,8 +233,12 @@ async function createVariant(env: Env, origin: string, a: { base: unknown; id: u
 
 async function listVariants(env: Env, origin: string, base: unknown): Promise<Result> {
   if (!isValidId(base)) return { ok: false, error: "base must be a page id like 'home'" };
-  const basePage = parse(await readDoc(env, "pages", base));
-  if (!basePage) return { ok: false, error: `no page at pages/${base}` };
+  const stored = parse(await readDoc(env, "pages", base));
+  if (!stored) return { ok: false, error: `no page at pages/${base}` };
+  // Report the keys the page has, or will get on its first write (the same
+  // deterministic assignment create_page_variant persists), so assistants can
+  // see them before any variant exists. Read-only: nothing is written here.
+  const basePage = ensureSectionKeys(stored).page;
   const variants = (await variantsFor(env, base)).map(({ id, doc }) => {
     const { unresolved } = variantToPage(basePage, doc);
     return {
