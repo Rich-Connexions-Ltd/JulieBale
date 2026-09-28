@@ -1793,6 +1793,9 @@ html.js .carousel__controls { display: flex; justify-content: center; align-item
   .s-hover-draw .textlink:is(:hover, :focus-visible) { background-size: 100% 1px; }
 }
 
+/* Landing pages (Sprint 15): their own stacking context, so no landing z-index can reach the site header. */
+.landing { position: relative; isolation: isolate; }
+
 /* --- Reduced motion: every presentation motion at its end state - */
 @media (prefers-reduced-motion: reduce) {
   /* landing pages (Sprint 15): their own CSS may use transitions */

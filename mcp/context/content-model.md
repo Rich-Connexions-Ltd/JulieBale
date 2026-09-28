@@ -368,7 +368,7 @@ objects, SVG and MathML.
 `required`, `checked`, `autocomplete`; `label`: `for`; `button`: `type`. No
 event handlers, `data-*`, `target` or other attributes.
 
-**Links and addresses:**
+**Addresses (the same three rules everywhere below: in-page anchor, site path, or full https: address):**
 - `href`: an in-page `#anchor`, a site path like `/about`, `mailto:`, `tel:`,
   or a full `https:` address. `http:` addresses are removed (use `https:`).
 - Images (`src`): only site files under `/assets/` or `/media/` (upload media
@@ -386,8 +386,14 @@ landing content (`.landing`); `:root`, `html` and `body` mean the landing area,
 so landing styles never change the site header or footer. No url() of any kind
 (use gradients for backgrounds), no `@import` or fonts, no `\` escapes,
 `position` only `static`, `relative`, `absolute` or `sticky` (no `fixed`), and
-`z-index` 0–50. Allowed properties: `align-items`, `backdrop-filter`, `background`, `border`, `border-bottom`, `border-color`, `border-left`, `border-radius`, `border-top`, `bottom`, `box-shadow`, `box-sizing`, `color`, `content`, `cursor`, `display`, `filter`, `flex-wrap`, `font`, `font-family`, `font-size`, `font-weight`, `gap`, `grid-template-columns`, `height`, `justify-content`, `letter-spacing`, `line-height`, `margin`, `margin-bottom`, `margin-right`, `margin-top`, `max-width`, `min-height`, `outline`, `overflow`, `padding`, `padding-bottom`, `padding-top`, `position`, `right`, `scroll-behavior`, `scroll-margin-top`, `text-decoration`, `text-transform`, `top`, `transform`, `transition`, `width`, `z-index`, `text-align`, `font-style`, `opacity`, `left`, `margin-left`, `padding-left`, `padding-right`, `background-color`, `flex`, `flex-direction`, `list-style`, `white-space`, `min-width`, `grid-column`, and custom
+`z-index` 0–20 (landing content has its own layer and can never cover the site
+header). Allowed properties: `align-items`, `backdrop-filter`, `background`, `border`, `border-bottom`, `border-color`, `border-left`, `border-radius`, `border-top`, `bottom`, `box-shadow`, `box-sizing`, `color`, `content`, `cursor`, `display`, `filter`, `flex-wrap`, `font`, `font-family`, `font-size`, `font-weight`, `gap`, `grid-template-columns`, `height`, `justify-content`, `letter-spacing`, `line-height`, `margin`, `margin-bottom`, `margin-right`, `margin-top`, `max-width`, `min-height`, `outline`, `overflow`, `padding`, `padding-bottom`, `padding-top`, `position`, `right`, `scroll-behavior`, `scroll-margin-top`, `text-decoration`, `text-transform`, `top`, `transform`, `transition`, `width`, `z-index`, `text-align`, `font-style`, `opacity`, `left`, `margin-left`, `padding-left`, `padding-right`, `background-color`, `flex`, `flex-direction`, `list-style`, `white-space`, `min-width`, `grid-column`, and custom
 properties such as `--gold`.
+
+**Accessibility:** keep text contrast at least 4.5:1 against its background
+(set heading colours explicitly on coloured panels, because site headings
+default to dark ink), never remove focus outlines (`outline: none` without a
+replacement), and give every input a `label`.
 
 **Instead of blocked content:** for video, audio or embeds use a `media` block
 on a normal page (or link to one); for images upload them to `/media/` or use

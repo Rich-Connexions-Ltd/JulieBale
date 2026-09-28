@@ -224,7 +224,7 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 ---
 
 ## Sprint 15 — Landing page sanitiser
-**Status:** In progress (council review)
+**Status:** Done (2026-09-28; council approved R3)
 
 - **Goal:** landing pages (`/l/{slug}`) can never run script or load active content, whatever HTML is stored.
 - **Source:** owner decision 2026-09-28 (previously accepted risk).

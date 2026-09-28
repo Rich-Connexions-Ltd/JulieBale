@@ -145,7 +145,7 @@ export const cssPolicy = {
     if (BANNED_VALUE.test(value)) return notes.add("removed a CSS value containing url(), escapes or other active content"), null;
     const bare = value.replace(/\s*!important\s*$/i, "").trim().toLowerCase();
     if (prop === "position" && !LANDING_POSITIONS.includes(bare)) return notes.add("removed position: fixed (or other disallowed position)"), null;
-    if (prop === "z-index" && !(bare === "auto" || (/^\d{1,2}$/.test(bare) && Number(bare) <= 50))) return notes.add("removed a z-index above 50"), null;
+    if (prop === "z-index" && !(bare === "auto" || (/^\d{1,2}$/.test(bare) && Number(bare) <= 20))) return notes.add("removed a z-index above 20"), null;
     return `${prop}: ${value}`;
   },
   /** Scope one selector under .landing, namespacing ids. */

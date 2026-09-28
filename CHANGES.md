@@ -108,3 +108,4 @@ Owner decision to sanitise `/l/{slug}` landing pages. Council review (security).
 - `mcp/context/content-model.md` — canonical "Landing pages" rules and alternatives; README summary
 - `mcp/test/sanitize.test.ts` — XSS/CSS corpus, real landing page regression, docs drift guard; route tests for CSP and editor
 - Fix: the existing landing page's CSS no longer restyles the site header/nav (now scoped)
+- `mcp/public/styles.css` — `.landing` stacking context (z-index capped at 20) and reduced-motion rule for landing transitions

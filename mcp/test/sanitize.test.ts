@@ -85,11 +85,11 @@ describe("landing CSS sanitiser", () => {
   });
   it.each([
     "a{background:url(https://evil.example/?)}", "a{background:image-set('x.png' 1x)}", "a{width:expression(alert(1))}", "a{color:red;} @import url(x.css);",
-    "@font-face{font-family:x;src:url(x.woff)}", "a{background:\\75 rl(x)}", "a{position:fixed}", "a{z-index:9999}", "a{-moz-binding:url(x)}",
+    "@font-face{font-family:x;src:url(x.woff)}", "a{background:\\75 rl(x)}", "a{position:fixed}", "a{z-index:9999}", "a{z-index:21}", "a{-moz-binding:url(x)}",
     "a{behavior:url(x.htc)}", "</style><script>alert(1)</script>", "a[href^=a]{background:url(//x/?a)}", "a{content:'<'}", "a{color:red}}{}body{x:y",
   ])("drops dangerous CSS: %s", (payload) => {
     const out = css(payload);
-    expect(out).not.toMatch(/url\(|image-set|expression|@import|@font-face|\\|fixed|9999|binding|behavior|<|script/i);
+    expect(out).not.toMatch(/url\(|image-set|expression|@import|@font-face|\\|fixed|9999|z-index: 21|binding|behavior|<|script/i);
     for (const line of out.split("\n").filter((l) => l && !l.startsWith("@media"))) expect(line.startsWith(".landing")).toBe(true);
   });
 });
@@ -144,6 +144,13 @@ describe("landing pages honour reduced motion", () => {
   });
   it("authors may also write their own reduced-motion @media block", () => {
     expect(sanitizeLandingCss("@media (prefers-reduced-motion: reduce){.btn{transition:none}}").css).toBe("@media (prefers-reduced-motion: reduce) { .landing .btn { transition: none; } }");
+  });
+});
+
+describe("landing stacking", () => {
+  it("landing content has its own stacking context and z-index is capped at 20", () => {
+    expect(read("../public/styles.css")).toMatch(/\.landing \{ position: relative; isolation: isolate; \}/);
+    expect(sanitizeLandingCss("a{z-index:20} b{z-index:21}").css).toBe(".landing a { z-index: 20; }");
   });
 });
 
