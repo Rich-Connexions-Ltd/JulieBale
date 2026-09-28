@@ -136,3 +136,14 @@ describe("write warnings", () => {
     expect(landingWarnings({})).toEqual(["landing pages need an html field (a string)."]);
   });
 });
+
+describe("landing pages honour reduced motion", () => {
+  it("the site stylesheet turns off landing transitions for reduced-motion visitors", () => {
+    const css = read("../public/styles.css");
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.landing \*, \.landing \*::before, \.landing \*::after \{ transition: none !important;/);
+  });
+  it("authors may also write their own reduced-motion @media block", () => {
+    expect(sanitizeLandingCss("@media (prefers-reduced-motion: reduce){.btn{transition:none}}").css).toBe("@media (prefers-reduced-motion: reduce) { .landing .btn { transition: none; } }");
+  });
+});
+

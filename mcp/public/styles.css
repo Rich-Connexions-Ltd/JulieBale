@@ -1795,6 +1795,8 @@ html.js .carousel__controls { display: flex; justify-content: center; align-item
 
 /* --- Reduced motion: every presentation motion at its end state - */
 @media (prefers-reduced-motion: reduce) {
+  /* landing pages (Sprint 15): their own CSS may use transitions */
+  .landing *, .landing *::before, .landing *::after { transition: none !important; scroll-behavior: auto !important; }
   html.js .reveal, html.js .stagger > * { opacity: 1; transform: none; }
   html.js [data-motion]:not(.is-visible) > *,
   html.js .s-sequence .reveal:not(.is-visible) > * { opacity: 1; transform: none; }
