@@ -27,3 +27,10 @@ Implements feature requests #3–#8 (homepage design exploration).
 **Files changed:**
 - `mcp/src/index.ts` — `createPageVariant` / `publishPageVariant` descriptions under 300 chars; `PresentationOptions` and `VariantList` response schemas with properties
 - `mcp/test/routes.test.ts` — test enforcing the Actions validator rules (description ≤ 300, object schemas have properties)
+
+## Feature request #9: six variants per page — 2026-09-28
+
+**Files changed:**
+- `mcp/src/variants.ts` — `MAX_VARIANTS_PER_BASE` 3 → 6 (tool and OpenAPI descriptions derive from it)
+- `mcp/test/routes.test.ts` — limit test covers six and refuses a seventh
+- `mcp/context/content-model.md`, `mcp/README.md` — limit wording

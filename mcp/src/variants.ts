@@ -17,8 +17,8 @@ export const ID_RE = /^[a-z][a-z0-9-]{0,63}$/;
 export const KEY_RE = /^[a-z][a-z0-9-]{0,39}$/;
 /** Preview tokens: 18 random bytes, base64url without padding = 24 chars. */
 export const TOKEN_RE = /^[A-Za-z0-9_-]{24}$/;
-/** Maximum number of variants per base page (feature request #6). */
-export const MAX_VARIANTS_PER_BASE = 3;
+/** Maximum number of variants per base page (feature requests #6, #9). */
+export const MAX_VARIANTS_PER_BASE = 6;
 
 export const isValidId = (s: unknown): s is string => typeof s === "string" && ID_RE.test(s);
 

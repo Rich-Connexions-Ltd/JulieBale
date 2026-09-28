@@ -110,8 +110,9 @@ describe("variant lifecycle", () => {
   });
   it("enforces the limit, duplicate ids, missing base and id rules", async () => {
     const env = newEnv();
-    for (const id of ["v-a", "v-b", "v-c"]) expect((await create(env, id)).status).toBe(200);
-    expect((await create(env, "v-d")).json.error).toMatch(/limit is 3/);
+    const ids = ["v-a", "v-b", "v-c", "v-d", "v-e", "v-f"];
+    for (const id of ids) expect((await create(env, id)).status).toBe(200);
+    expect((await create(env, "v-g")).json.error).toMatch(/limit is 6/);
     expect((await create(env, "v-a", "about")).json.error).toMatch(/already exists/);
     expect((await create(env, "v-x", "missing")).json.error).toMatch(/no page/);
     for (const bad of ["V", "a/b", "a%2fb", "a?b", "a#b", "a b", "a\u0001", "a".repeat(65), "' OR 1=1 --"]) {

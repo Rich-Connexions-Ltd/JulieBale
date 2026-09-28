@@ -63,7 +63,7 @@ Writes to `pages` and `variants` return presentation `warnings` for any
 - **Section keys** — every write to `pages` gives sections a stable `key`
   (`hero-1`, ...), never changing an existing one.
 - **Variants** (`variants` collection, `src/variants.ts`) reference a base page's
-  sections by key; copy always comes from the live page. Max 3 per page.
+  sections by key; copy always comes from the live page. Max 6 per page.
 - **Preview** — `GET /preview/{id}/{token}`. Unauthenticated so Julie can open
   it in a browser, but guarded by a server-generated 144-bit token that clients
   cannot set or change; responses (including 404s) are `noindex`, `no-store`,

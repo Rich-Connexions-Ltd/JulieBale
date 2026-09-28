@@ -106,7 +106,7 @@ every variant picks them up.
 
 1. `create_page_variant` (base `home`, a new id such as `home-stage`, a label).
    It starts as the live page as-is and returns a **private preview link** for
-   Julie. Up to three variants per page.
+   Julie. Up to six variants per page.
 2. Edit it with `update_content` on collection `variants`:
    ```
    { "design": { "concept": "stage" },
