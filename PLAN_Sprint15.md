@@ -216,3 +216,30 @@ intact. Non-string html → empty.
 | R1 | 2026-09-28 | Initial draft |
 | R2 | 2026-09-28 | Narrowed allowlist to the landing need (no iframe/media/tables/data-*/srcset); scoped CSS allowlist with no url() at all, position/z-index limits; id namespacing and class token rule; per-attribute URL policies, http rejected, same-origin images/forms; form input/autocomplete limits; exact-hash CSP; extraction separated from filtering; warnings from a separate function, generic and capped; canonical docs + drift guard; bundle-size budget. |
 | R3 | 2026-09-28 | URL validation via new URL() with backslash/whitespace/protocol-relative rejection and parsed same-origin checks (R2-1); tags/attributes cut to baseline + named passive extension, role/lang/hidden/most aria dropped (R2-2, R2-6); CSS properties = baseline + named extension, centralised constants (R2-3); docs say what to use instead of blocked media (R2-4); images static paths only, no D1 lookups (R2-5); module split into policy units (R2-7). |
+
+---
+
+## Implementation Notes
+
+### Deviations from Plan
+- **`target`/`rel` dropped from links entirely** (instead of forcing `rel`):
+  landing links open in the same tab; simpler and removes the opener risk.
+- **Validated `https:` links keep the author's text** rather than the URL
+  parser's normalised form (which appended a trailing slash).
+- **Found by tests:** js-xss calls `onTagAttr` for every attribute, so the
+  first version re-emitted event handlers and `formaction`. Fixed by handing
+  non-allowlisted attributes to the removal hook; the XSS corpus covers it.
+- Tags removed with their content are noted by a pre-scan (the parser does not
+  report them).
+
+### Verification
+- `npm test`: 249 passed (41-payload XSS corpus + 14 CSS payloads with output
+  invariants; URL policy; real landing page: no warnings, identical text,
+  controls, links (fragments namespaced) and CSS declaration count, now scoped;
+  CSP header with recomputed guard hash; REST write warnings; docs drift guard).
+- Bundle: 1222.57 → 1284.21 KiB (gzip 238.82 → 251.48 KiB, +12.7 KiB; budget 40).
+- Headless Chrome on the real landing page under the CSP: motion guard and
+  app.js ran, **zero CSP violations**, `#l-step*` anchors resolve, site nav no
+  longer affected by the landing's `.nav` rule, no horizontal overflow.
+- Pre-existing content issue noted (not a regression): the landing's card
+  heading inherits the site's ink heading colour on a teal card.

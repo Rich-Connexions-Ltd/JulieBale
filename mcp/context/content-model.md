@@ -350,3 +350,45 @@ sections, moving decoration, vertical labels, per-line text animation, ghost
 text running off the page, magnetic buttons, custom cursors and other phone
 overrides. Please do not log these again; they are recorded.
 
+## Landing pages
+Landing pages (collection `landing`, served at `/l/<id>`) are standalone HTML:
+`{title, html}`. The site shows the contents of `<main>` (or `<body>`) and
+your `<style>` blocks inside its own header and footer, after **making them
+safe**. Anything outside the rules below is removed when the page is shown, and
+saving returns warnings that say what will be removed. Nothing can run scripts
+or load content from other websites.
+
+**Tags:** `section`, `header`, `footer`, `aside`, `div`, `span`, `p`, `h1`, `h2`, `h3`, `h4`, `strong`, `em`, `br`, `ul`, `ol`, `li`, `a`, `img`, `form`, `label`, `input`, `button`.
+Removed with their contents: scripts, styles inside the body, iframes, embeds,
+objects, SVG and MathML.
+
+**Attributes:** on any tag `class`, `id`, `title`, `lang`, `aria-label`, `aria-hidden`, `style`; plus
+`a`: `href`; `img`: `src`, `alt`, `width`, `height`, `loading`; `form`:
+`action`, `method`; `input`: `type`, `name`, `value`, `placeholder`,
+`required`, `checked`, `autocomplete`; `label`: `for`; `button`: `type`. No
+event handlers, `data-*`, `target` or other attributes.
+
+**Links and addresses:**
+- `href`: an in-page `#anchor`, a site path like `/about`, `mailto:`, `tel:`,
+  or a full `https:` address. `http:` addresses are removed (use `https:`).
+- Images (`src`): only site files under `/assets/` or `/media/` (upload media
+  first). No images from other websites, and no `asset:` references here.
+- Forms (`action`): an in-page `#anchor` or a site path only.
+- Input `type`: `text`, `email`, `tel`, `number`, `radio`, `checkbox`, `submit` (no passwords, files or
+  hidden fields). `autocomplete`: `name`, `given-name`, `family-name`, `email`, `tel`, `off`.
+
+**Ids:** every `id` is given an `l-` prefix (`step1` becomes `l-step1`), and
+`#step1` links and `label for` are rewritten to match, so they keep working and
+cannot clash with the site's own ids.
+
+**CSS:** only plain rules and `@media` blocks. Every selector is scoped to the
+landing content (`.landing`); `:root`, `html` and `body` mean the landing area,
+so landing styles never change the site header or footer. No url() of any kind
+(use gradients for backgrounds), no `@import` or fonts, no `\` escapes,
+`position` only `static`, `relative`, `absolute` or `sticky` (no `fixed`), and
+`z-index` 0–50. Allowed properties: `align-items`, `backdrop-filter`, `background`, `border`, `border-bottom`, `border-color`, `border-left`, `border-radius`, `border-top`, `bottom`, `box-shadow`, `box-sizing`, `color`, `content`, `cursor`, `display`, `filter`, `flex-wrap`, `font`, `font-family`, `font-size`, `font-weight`, `gap`, `grid-template-columns`, `height`, `justify-content`, `letter-spacing`, `line-height`, `margin`, `margin-bottom`, `margin-right`, `margin-top`, `max-width`, `min-height`, `outline`, `overflow`, `padding`, `padding-bottom`, `padding-top`, `position`, `right`, `scroll-behavior`, `scroll-margin-top`, `text-decoration`, `text-transform`, `top`, `transform`, `transition`, `width`, `z-index`, `text-align`, `font-style`, `opacity`, `left`, `margin-left`, `padding-left`, `padding-right`, `background-color`, `flex`, `flex-direction`, `list-style`, `white-space`, `min-width`, `grid-column`, and custom
+properties such as `--gold`.
+
+**Instead of blocked content:** for video, audio or embeds use a `media` block
+on a normal page (or link to one); for images upload them to `/media/` or use
+files in `/assets/`; for interactive widgets or scripts, request a feature.

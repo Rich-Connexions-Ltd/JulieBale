@@ -1,7 +1,8 @@
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { renderPage, render404, pageFromDoc, renderLanding } from "./render";
+import { renderPage, render404, pageFromDoc, renderLanding, MOTION_GUARD } from "./render";
+import { landingWarnings } from "./sanitize";
 import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
 import { ASSET_OPTIONS, CONSENT_MEANINGS, assetWarnings, testimonialWarnings, searchAssets, type AssetQuery } from "./assets";
 import {
@@ -102,6 +103,7 @@ function warningsFor(collection: string, data: string): string[] {
     collection === "pages" || collection === "variants" ? presentationWarnings
     : collection === "assets" ? assetWarnings
     : collection === "testimonials" ? testimonialWarnings
+    : collection === "landing" ? landingWarnings
     : null;
   if (!check) return [];
   try {
@@ -356,7 +358,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "update_content",
-      "PREFERRED WAY TO EDIT. Merge one or more fields into an existing document, keeping every field you do not mention. WHEN: almost all edits, such as changing a page's copy, an event's description or date, or a price. `data` is a JSON string of ONLY the fields to change (for example, just the description field). Safe: omitted fields are untouched and the previous state is kept for undo. DO NOT paste the whole document here unless you intend to. Descriptive text fields (body, description, details, excerpt) support Markdown, so write them in Markdown (headings, bold, lists, links). Layout and motion go in a section's `style` object and a page's `design` object, using ONLY values from presentation_options; anything else is ignored and reported back as a warning. When replacing a page's `sections` array, keep each section's `key`. Headings accept two marks only: | for a line break and *a word or phrase* (paired asterisks, no | inside) for display italic. A feature, showcase or statement may carry `images` (2-4 asset refs or plain filenames) for a collage.",
+      "PREFERRED WAY TO EDIT. Merge one or more fields into an existing document, keeping every field you do not mention. WHEN: almost all edits, such as changing a page's copy, an event's description or date, or a price. `data` is a JSON string of ONLY the fields to change (for example, just the description field). Safe: omitted fields are untouched and the previous state is kept for undo. DO NOT paste the whole document here unless you intend to. Descriptive text fields (body, description, details, excerpt) support Markdown, so write them in Markdown (headings, bold, lists, links). Layout and motion go in a section's `style` object and a page's `design` object, using ONLY values from presentation_options; anything else is ignored and reported back as a warning. When replacing a page's `sections` array, keep each section's `key`. Headings accept two marks only: | for a line break and *a word or phrase* (paired asterisks, no | inside) for display italic. Landing pages (collection landing) are sanitised: see the content model's Landing pages rules; warnings list what will be removed. A feature, showcase or statement may carry `images` (2-4 asset refs or plain filenames) for a collage.",
       { collection: z.string(), id: z.string(), data: z.string() },
       async ({ collection, id, data }) => {
         let patch: Record<string, unknown>;
@@ -842,18 +844,43 @@ async function handlePreview(env: Env, pathname: string): Promise<Response> {
   return new Response(await renderPage(env, page, site, { preview: { label } }), { headers: PREVIEW_HEADERS });
 }
 
-async function handleSite(env: Env, pathname: string): Promise<Response> {
+// The only inline script a landing page may run is the motion guard, by hash.
+let guardHash: Promise<string> | null = null;
+export function motionGuardHash(): Promise<string> {
+  const body = MOTION_GUARD.replace(/^<script>/, "").replace(/<\/script>$/, "");
+  guardHash ??= crypto.subtle.digest("SHA-256", new TextEncoder().encode(body)).then((d) => btoa(String.fromCharCode(...new Uint8Array(d))));
+  return guardHash;
+}
+export async function landingCsp(origin: string): Promise<string> {
+  return [
+    "default-src 'none'",
+    `script-src 'sha256-${await motionGuardHash()}' ${origin}/app.js`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src https://fonts.gstatic.com",
+    "img-src 'self'",
+    "form-action 'self'",
+    "base-uri 'none'",
+    "frame-ancestors 'self'",
+    "connect-src 'none'",
+    "frame-src 'none'",
+    "object-src 'none'",
+  ].join("; ");
+}
+
+async function handleSite(env: Env, pathname: string, origin = SITE_BASE): Promise<Response> {
   const siteRaw = await readDoc(env, "site", "config");
   const site = siteRaw ? JSON.parse(siteRaw) : {};
 
-  // Landing pages at /l/{slug} — raw HTML wrapped in the site header/footer.
+  // Landing pages at /l/{slug}: sanitised HTML inside the site header/footer,
+  // served with a strict CSP as a second layer of defence.
   if (pathname.startsWith("/l/")) {
-    const slug = decodeURIComponent(pathname.slice(3).replace(/\/+$/, ""));
+    const slug = safeDecode(pathname.slice(3).replace(/\/+$/, "")) ?? "";
     const raw = await readDoc(env, "landing", slug);
-    if (raw) {
-      const doc = JSON.parse(raw);
-      if (typeof doc.html === "string") return htmlResponse(renderLanding(doc, site));
-    }
+    const doc = parse(raw);
+    if (doc && typeof doc.html === "string")
+      return new Response(renderLanding(doc, site), {
+        headers: { "content-type": "text/html; charset=utf-8", "content-security-policy": await landingCsp(origin) },
+      });
     return htmlResponse(await render404(site), 404);
   }
 
@@ -944,6 +971,6 @@ export default {
       return new Response(renderUploadPage(), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
     if (pathname.startsWith("/media/")) return handleMediaGet(env, pathname);
 
-    return handleSite(env, pathname);
+    return handleSite(env, pathname, url.origin);
   },
 } satisfies ExportedHandler<Env>;

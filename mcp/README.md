@@ -86,6 +86,10 @@ Writes to `pages` and `variants` return presentation `warnings` for any
   break) and `*word*` (display italic); `plainHeadline()` strips it.
 - **Phones**: `style.phone.focus` / `style.phone.crop` only.
 
+## Landing pages (Sprint 15)
+
+Landing HTML/CSS is sanitised on every render by `src/sanitize.ts` (allowlist, scoped CSS, no URLs in CSS, namespaced ids) and served with a strict CSP; the rules for authors live in `context/content-model.md` ("Landing pages").
+
 ## Tests
 
 ```bash

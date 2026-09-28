@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Who Told You You Couldn't Sing? | Julie Bale</title>
+<meta content="A 15-minute Singing Story Audit from Julie Bale to help you question the beliefs that may be standing between you and the voice you've always wanted to have." name="description"/>
+<style>
+    :root{
+      --ink:#2d241f;
+      --cream:#f7f0e5;
+      --paper:#fffaf3;
+      --rust:#a74b2a;
+      --ochre:#c9932f;
+      --teal:#1e3f4a;
+      --moss:#687345;
+      --gold:#c79a43;
+      --muted:#756b64;
+      --line:rgba(45,36,31,.12);
+      --shadow:0 20px 60px rgba(45,36,31,.12);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at top right, rgba(201,147,47,.16), transparent 34%),
+        linear-gradient(180deg,var(--cream),#f3eadc 55%,#efe4d4);
+      line-height:1.6;
+    }
+    h1,h2,h3,.serif{
+      font-family: Georgia, "Times New Roman", serif;
+      line-height:1.08;
+    }
+    a{color:inherit}
+    .wrap{width:min(1120px,92%);margin:0 auto}
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:22px 0;
+    }
+    .brand{
+      font-family:Georgia,serif;
+      font-size:1.25rem;
+      letter-spacing:.02em;
+      font-weight:700;
+    }
+    .brand span{color:var(--rust)}
+    .mini-link{
+      font-size:.92rem;
+      text-decoration:none;
+      border-bottom:1px solid var(--ink);
+      padding-bottom:2px;
+    }
+    .hero{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:46px;
+      align-items:center;
+      padding:54px 0 70px;
+    }
+    .eyebrow{
+      text-transform:uppercase;
+      letter-spacing:.14em;
+      font-weight:700;
+      font-size:.78rem;
+      color:var(--rust);
+      margin-bottom:16px;
+    }
+    h1{
+      font-size:clamp(3rem,7vw,6.2rem);
+      margin:0 0 22px;
+      max-width:820px;
+    }
+    .hero p{
+      font-size:1.18rem;
+      max-width:720px;
+      color:#493f39;
+    }
+    .hero-card{
+      background:linear-gradient(145deg,var(--teal),#294f5b);
+      color:white;
+      padding:34px;
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero-card:after{
+      content:"";
+      position:absolute;
+      width:180px;height:180px;border-radius:50%;
+      background:rgba(255,255,255,.06);
+      right:-60px;bottom:-60px;
+    }
+    .hero-card h3{font-size:2rem;margin:0 0 10px}
+    .hero-card p{color:rgba(255,255,255,.86);font-size:1rem}
+    .form{
+      display:grid;gap:12px;margin-top:22px;
+    }
+    input{
+      width:100%;
+      padding:15px 16px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.3);
+      font-size:1rem;
+      outline:none;
+    }
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:15px 20px;
+      border-radius:999px;
+      background:var(--gold);
+      color:#201b17;
+      text-decoration:none;
+      font-weight:800;
+      border:0;
+      cursor:pointer;
+      font-size:1rem;
+      transition:.2s ease;
+    }
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.04)}
+    .btn.secondary{
+      background:transparent;
+      color:var(--ink);
+      border:1px solid var(--ink);
+    }
+    .small{font-size:.86rem;color:rgba(255,255,255,.72)}
+    .section{
+      padding:82px 0;
+    }
+    .intro-grid{
+      display:grid;
+      grid-template-columns:.85fr 1.15fr;
+      gap:54px;
+      align-items:start;
+    }
+    h2{
+      font-size:clamp(2.3rem,5vw,4.1rem);
+      margin:0 0 18px;
+    }
+    .lead{
+      font-size:1.2rem;
+      color:#4b413a;
+    }
+    .quote{
+      background:var(--paper);
+      border-left:5px solid var(--rust);
+      border-radius:0 18px 18px 0;
+      padding:28px;
+      font-family:Georgia,serif;
+      font-size:1.35rem;
+      box-shadow:0 10px 28px rgba(45,36,31,.06);
+    }
+    .audit{
+      background:#fbf7f0;
+      border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+    }
+    .progress-wrap{
+      position:sticky;
+      top:0;
+      z-index:10;
+      background:rgba(251,247,240,.9);
+      backdrop-filter:blur(8px);
+      border-bottom:1px solid var(--line);
+    }
+    .progress-inner{
+      width:min(900px,92%);
+      margin:0 auto;
+      padding:12px 0;
+    }
+    .progress{
+      height:8px;background:#e6dccf;border-radius:99px;overflow:hidden;
+    }
+    .bar{height:100%;width:12.5%;background:var(--rust);transition:.25s ease}
+    .step{
+      width:min(900px,92%);
+      margin:34px auto;
+      background:white;
+      border-radius:var(--radius);
+      box-shadow:0 14px 40px rgba(45,36,31,.07);
+      padding:34px;
+      display:none;
+    }
+    .step.active{display:block}
+    .step h3{font-size:2rem;margin:0 0 12px}
+    .options{display:grid;gap:12px;margin:24px 0}
+    .option{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px 16px;
+      background:#fffdf9;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .option:hover{border-color:var(--rust);background:#fff8f1}
+    .option input{width:auto;margin-right:10px}
+    textarea{
+      width:100%;min-height:120px;padding:14px;border-radius:14px;
+      border:1px solid var(--line);font:inherit;
+    }
+    .nav{
+      display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:24px;
+    }
+    .insight{
+      padding:18px 20px;
+      background:#f2eadf;
+      border-radius:14px;
+      margin:18px 0;
+    }
+    .cta{
+      background:linear-gradient(135deg,#2f4f55,var(--teal));
+      color:white;
+      border-radius:30px;
+      padding:54px;
+      box-shadow:var(--shadow);
+    }
+    .cta h2{color:white}
+    .cta p{color:rgba(255,255,255,.86);font-size:1.1rem}
+    .cta .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+    .cta .secondary{color:white;border-color:rgba(255,255,255,.55)}
+    footer{
+      padding:34px 0 50px;
+      color:var(--muted);
+      font-size:.9rem;
+    }
+    .divider{height:1px;background:var(--line);margin:28px 0}
+    @media(max-width:800px){
+      .hero,.intro-grid{grid-template-columns:1fr}
+      .hero{padding-top:24px}
+      h1{font-size:3.55rem}
+      .section{padding:58px 0}
+      .step{padding:24px}
+      .cta{padding:34px 24px}
+      .topbar{padding:16px 0}
+    }
+  
+.step{
+  display:block !important;
+  scroll-margin-top:24px;
+}
+.progress-wrap{display:none !important;}
+</style>
+</head>
+<body>
+<header class="wrap topbar">
+<div class="brand">Julie Bale <span>· Diva Energy</span></div>
+<a class="mini-link" href="https://www.juliebale.com">JulieBale.com</a>
+</header>
+<main>
+<section class="wrap hero">
+<div>
+<div class="eyebrow">A free 15-minute Singing Story Audit</div>
+<h1>Who Told You You Couldn't Sing?</h1>
+<p>What if “I can't sing” isn't actually a fact about your voice — but a story you've been carrying for years?</p>
+<p>This short guided experience will help you uncover where that story came from, question whether it still belongs to you, and take one small, practical step towards discovering what your voice might actually be capable of.</p>
+</div>
+<aside class="hero-card">
+<h3>Start with curiosity.</h3>
+<p>No audition. No intimidating exercises. No assumption that you already know how to sing.</p>
+<form action="#step1" class="form" method="get">
+<input id="name" placeholder="First name" required="" type="text"/>
+<input id="email" placeholder="Email address" required="" type="email"/>
+<button class="btn" type="submit">Yes — I want to discover my voice</button>
+</form>
+<div class="small">By signing up, you'll receive the audit and a short follow-up series from Julie. You can unsubscribe at any time.</div>
+</aside>
+</section>
+<section class="section">
+<div class="wrap intro-grid">
+<div>
+<div class="eyebrow">Before technique comes story</div>
+<h2>You may have decided something about your voice a very long time ago.</h2>
+</div>
+<div>
+<p class="lead">Perhaps a teacher told you to mime. Perhaps someone laughed. Perhaps you simply stopped singing and somewhere along the way decided that singers were other people.</p>
+<div class="quote">“I can't sing” can sound like a fact. Very often, it is simply the conclusion we reached before we ever had the chance to learn.</div>
+<p>I'm Julie Bale, a dramatic soprano, Vocal Transformation Specialist and Mentor. I've spent more than 35 years working with voices. What fascinates me is not only how a voice develops technically, but what happens when an adult begins to question the story they have been carrying about it.</p>
+</div>
+</div>
+</section>
+<section class="audit" id="audit">
+
+<div class="step" id="step1">
+<div class="eyebrow">1 of 8 · Your current story</div>
+<h3>When you think about your singing voice, which sentence feels closest?</h3>
+<div class="options">
+<label class="option"><input name="q1" type="radio"/>I can't sing.</label>
+<label class="option"><input name="q1" type="radio"/>I used to sing, but I've lost confidence.</label>
+<label class="option"><input name="q1" type="radio"/>I sing privately, but I'd hate anyone to hear me.</label>
+<label class="option"><input name="q1" type="radio"/>I've always wondered what I might sound like with proper help.</label>
+<label class="option"><input name="q1" type="radio"/>I think I've probably left it too late.</label>
+</div>
+<div class="nav"><span></span><span></span><a class="btn" href="#step2">Next</a></div>
+</div>
+<div class="step" id="step2">
+<div class="eyebrow">2 of 8 · Where did it begin?</div>
+<h3>Where do you think that belief came from?</h3>
+<div class="options">
+<label class="option"><input type="checkbox"/>School or a music teacher</label>
+<label class="option"><input type="checkbox"/>Family or friends</label>
+<label class="option"><input type="checkbox"/>Comparing myself with other singers</label>
+<label class="option"><input type="checkbox"/>One embarrassing or painful experience</label>
+<label class="option"><input type="checkbox"/>I don't really know — I've just always believed it</label>
+</div>
+<div class="nav"><a class="btn secondary" href="#step1">Back</a><a class="btn" href="#step3">Next</a></div>
+</div>
+<div class="step" id="step3">
+<div class="eyebrow">3 of 8 · The belief check</div>
+<h3>Which of these is actually the most accurate?</h3>
+<div class="options">
+<label class="option"><input name="q3" type="radio"/>I can't sing.</label>
+<label class="option"><input name="q3" type="radio"/>I've never really learnt how to use my singing voice.</label>
+<label class="option"><input name="q3" type="radio"/>I don't yet know what my voice could do.</label>
+</div>
+<div class="insight"><strong>Notice the difference.</strong> The first sentence closes a door. The other two leave room for discovery.</div>
+<div class="nav"><a class="btn secondary" href="#step2">Back</a><a class="btn" href="#step4">Next</a></div>
+</div>
+<div class="step" id="step4">
+<div class="eyebrow">4 of 8 · The desire underneath</div>
+<h3>Which of these would secretly delight you?</h3>
+<div class="options">
+<label class="option"><input type="checkbox"/>Singing a favourite song and actually enjoying my voice</label>
+<label class="option"><input type="checkbox"/>Singing with a pianist or accompanist</label>
+<label class="option"><input type="checkbox"/>Having the confidence to sing in front of other people</label>
+<label class="option"><input type="checkbox"/>Rediscovering the part of me that used to sing</label>
+<label class="option"><input type="checkbox"/>Performing once in my life — just to know I could</label>
+</div>
+<div class="nav"><a class="btn secondary" href="#step3">Back</a><a class="btn" href="#step5">Next</a></div>
+</div>
+<div class="step" id="step5">
+<div class="eyebrow">5 of 8 · Your tiny experiment</div>
+<h3>Sing for 60 seconds.</h3>
+<p>Choose a song you know very well. Stand comfortably. Take an easy breath. Sing the first verse.</p>
+<div class="insight"><strong>One rule:</strong> you are not allowed to decide whether it was “good”.</div>
+<p>Instead, notice:</p>
+<div class="options">
+<label class="option"><input type="checkbox"/>Where did my voice feel easiest?</label>
+<label class="option"><input type="checkbox"/>Where did I tighten or hold back?</label>
+<label class="option"><input type="checkbox"/>What surprised me?</label>
+</div>
+<div class="nav"><a class="btn secondary" href="#step4">Back</a><a class="btn" href="#step6">I've tried it</a></div>
+</div>
+<div class="step" id="step6">
+<div class="eyebrow">6 of 8 · Reframe</div>
+<h3>What if the question isn't “Can I sing?”</h3>
+<p class="lead">What if the better question is:</p>
+<div class="quote">“What could my voice become if I learnt how to use it?”</div>
+<p>Adults can develop coordination, listening, breath, musical confidence and performance skill later in life. You are not trying to become the singer you might have been at 20. You are discovering the singer you can be now.</p>
+<div class="nav"><a class="btn secondary" href="#step5">Back</a><a class="btn" href="#step7">Continue</a></div>
+</div>
+<div class="step" id="step7">
+<div class="eyebrow">7 of 8 · One honest question</div>
+<h3>If you knew you would be supported rather than judged, would you like to discover what your voice could actually do?</h3>
+<div class="options">
+<label class="option"><input name="q7" type="radio"/>Yes.</label>
+<label class="option"><input name="q7" type="radio"/>Maybe — and that surprises me a little.</label>
+<label class="option"><input name="q7" type="radio"/>Not right now.</label>
+</div>
+<div class="nav"><a class="btn secondary" href="#step6">Back</a><a class="btn" href="#step8">See my final thought</a></div>
+</div>
+<div class="step" id="step8">
+<div class="eyebrow">8 of 8 · Your new starting point</div>
+<h3>Perhaps the problem was never that you couldn't sing.</h3>
+<div class="quote">Perhaps you simply never had the right opportunity to discover your voice.</div>
+<p>You do not need to decide today whether you are a singer. You do not need to know whether you are “good enough”. Curiosity is enough.</p>
+<p>If that curiosity has been stirred, the next step is simply to explore what happens when your voice is given proper attention, guidance and somewhere safe to grow.</p>
+<div class="nav"><a class="btn secondary" href="#step7">Back</a><a class="btn" href="#next">Explore the next step</a></div>
+</div>
+</section>
+<section class="section" id="next">
+<div class="wrap cta">
+<div class="eyebrow" style="color:#e6bf72">From curiosity to confidence</div>
+<h2>From First Note to Final Curtain</h2>
+<p>My six-month private singing mentorship is for adults who want more than an occasional lesson. We develop your voice individually, work with professional accompaniment, create opportunities to sing with others, and build towards the experience of standing up and performing with confidence.</p>
+<p>You do not need to arrive as a singer. You can arrive with curiosity.</p>
+<div class="actions">
+<a class="btn" href="https://www.juliebale.com/discoversinging">Discover the mentorship</a>
+<a class="btn secondary" href="https://www.juliebale.com">Book a conversation</a>
+</div>
+</div>
+</section>
+</main>
+<footer class="wrap">
+<div class="divider"></div>
+<strong>Julie Bale · Diva Energy</strong><br/>
+    Dramatic Soprano · Vocal Transformation Specialist &amp; Mentor<br/>
+    © 2026 JulieBale.com
+  </footer>
+
+</body>
+</html>

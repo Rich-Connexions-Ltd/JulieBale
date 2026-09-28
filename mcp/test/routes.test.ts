@@ -248,3 +248,25 @@ describe("Sprint 14 values are checked the same way on every write path", () => 
     expect(live.images).toEqual(["asset:a", "asset:b"]);
   });
 });
+
+describe("landing pages (Sprint 15)", () => {
+  it("serves sanitised HTML with a strict CSP whose script hash matches the motion guard", async () => {
+    const { MOTION_GUARD } = await import("../src/render");
+    const { createHash } = await import("node:crypto");
+    const env = fakeEnv({ "site/config": siteFixture(), "landing/t": { title: "T", html: "<style>.nav{color:red}</style><main><p onclick=x>Hi</p><script>alert(1)</script><a href='javascript:x'>l</a></main>" } });
+    const r = await call(env, anon("/l/t"));
+    expect(r.status).toBe(200);
+    const csp = r.headers.get("content-security-policy")!;
+    const hash = createHash("sha256").update(MOTION_GUARD.replace(/^<script>/, "").replace(/<\/script>$/, "")).digest("base64");
+    expect(csp).toContain(`script-src 'sha256-${hash}' https://x.test/app.js`);
+    for (const d of ["default-src 'none'", "object-src 'none'", "base-uri 'none'", "frame-src 'none'", "form-action 'self'"]) expect(csp).toContain(d);
+    const out = await r.text();
+    expect(out).toContain('<div class="landing"><p>Hi</p>');
+    expect(out).not.toMatch(/alert|javascript:|onclick/);
+    expect(out).toContain("<style>.landing .nav { color: red; }</style>");
+  });
+  it("returns write warnings via REST", async () => {
+    const r = await body(await call(newEnv(), authed("/api/landing/x", { method: "PUT", body: JSON.stringify({ title: "X", html: "<main><iframe src='https://e.x'></iframe></main>" }) })));
+    expect(r.warnings).toEqual(["landing: removed <iframe> element."]);
+  });
+});

@@ -8,6 +8,7 @@
  */
 import { resolveSection, resolveDesign, validCollageEntry, type ResolvedSection } from "./presentation";
 import { assetIdOf, consentOk, testimonialConsentOk } from "./assets";
+import { sanitizeLanding } from "./sanitize";
 
 interface Env {
   DB: D1Database;
@@ -825,14 +826,13 @@ export function pageFromDoc(collection: string, doc: any): any {
   return { title: doc.title || "", sections: [{ type: "richtext", heading: doc.title, body: "" }] };
 }
 
-// Serve a raw landing page inside the site header/footer, keeping its own <style>.
+// Serve a landing page inside the site header/footer. Its HTML and CSS are
+// sanitised on every render (src/sanitize.ts): CSS is scoped to .landing and
+// can only style the landing content, never the site chrome.
 export function renderLanding(doc: any, site: any): string {
-  const html = String(doc.html || "");
-  const style = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/i) || [])[1] || "";
-  const main =
-    (html.match(/<main[^>]*>([\s\S]*?)<\/main>/i) || [])[1] ||
-    (html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [])[1] ||
-    html;
+  const html = typeof doc.html === "string" ? doc.html : "";
+  const { css: style, body } = sanitizeLanding(html);
+  const main = `<div class="landing">${body}</div>`;
   const title = doc.title || (html.match(/<title>([^<]*)<\/title>/i) || [])[1] || "Julie Bale";
   return `<!doctype html>
 <html lang="en-GB">
