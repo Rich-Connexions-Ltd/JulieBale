@@ -117,3 +117,21 @@ describe("presentationJsonSchema", () => {
     expect(Object.keys(s.properties)).toEqual(Object.keys(PRESENTATION_OPTIONS.style));
   });
 });
+
+describe("collage entries (Sprint 14)", () => {
+  it("accepts asset references and plain image filenames only", async () => {
+    const { validCollageEntry } = await import("../src/presentation");
+    for (const ok of ["asset:julie-portrait", "photo.jpeg", "a.jpg", "x-1_2.png", "w.webp", "v.avif"]) expect(validCollageEntry(ok)).toBe(true);
+    for (const bad of ["../x.jpg", "/x.jpg", "https://x/y.jpg", "x.jpg?y", "x.jpg#y", "%2e%2e/x.jpg", "x.svg", "X.JPG", "a..jpg", "a b.jpg", "a\u0000.jpg",
+      "asset:", "asset:Bad", "asset:a/b", "", 5, null, {}, "x".repeat(90) + ".jpg"]) expect(validCollageEntry(bad)).toBe(false);
+  });
+  it("warns about count and each invalid entry, with its index", async () => {
+    const { presentationWarnings } = await import("../src/presentation");
+    expect(presentationWarnings({ sections: [{ type: "feature", images: "a.jpg" }] })).toEqual(["section 1: images must be a list of 2-4 images; ignored."]);
+    const w = presentationWarnings({ sections: [{ type: "feature", key: "feature-1", images: ["a.jpg", "../b.jpg", "c.jpg", "d.jpg", "e.jpg"] }] });
+    expect(w[0]).toMatch(/should hold 2-4 images \(has 5\)/);
+    expect(w[1]).toMatch(/images\[1\] = "\.\.\/b\.jpg" must be/);
+    expect(w).toHaveLength(2);
+    expect(presentationWarnings({ sections: [{ type: "feature", images: ["a.jpg", "asset:b"] }] })).toEqual([]);
+  });
+});
