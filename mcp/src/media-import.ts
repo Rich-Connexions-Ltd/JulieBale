@@ -172,12 +172,23 @@ export async function copyToR2(env: Env, src: ImportSource, key: string, kind: "
     break;
   }
   if (!res) return { ok: false, error: "too many redirects" };
-  if (!res.ok || !res.body) return { ok: false, error: res.status === 403 || res.status === 410 ? "the download link has expired: upload the file again and retry" : `could not download the file (HTTP ${res.status})` };
+  if (!res.ok || !res.body) {
+    const refused = res.status === 401 || res.status === 403 || res.status === 404 || res.status === 410;
+    return {
+      ok: false,
+      error: !refused
+        ? `could not download the file (HTTP ${res.status})`
+        : src.kind === "chatgpt"
+          ? "the chat file's download link has expired: attach the file again and retry straight away"
+          : `the link refused the download (HTTP ${res.status}): the file is private, moved or deleted; use a publicly downloadable link`,
+    };
+  }
   const contentType = (res.headers.get("content-type") || src.mime || "").split(";")[0].trim().toLowerCase();
   if (mediaKind(contentType, src.name) !== kind) return { ok: false, error: "the downloaded file's type does not match its name" };
   const length = Number(res.headers.get("content-length"));
   const cap = MEDIA_TYPES[kind].cap;
-  if (!Number.isFinite(length) || length <= 0) return { ok: false, error: "the file size is unknown, so it cannot be imported safely" };
+  if (!Number.isFinite(length) || length <= 0)
+    return { ok: false, error: "the server did not say how big the file is (no Content-Length), so it cannot be imported safely; try another link or attach the file in the chat" };
   if (length > cap) return { ok: false, error: `the file is too large (limit ${cap / MB} MB for ${kind})` };
   // Count bytes as they pass; abort if the body is longer than declared or the cap.
   let seen = 0;

@@ -136,7 +136,7 @@ describe("POST /api/media/import", () => {
     ["oversized", { [CHAT]: mp4(201 * 1024 * 1024) }, /too large/],
     ["no length", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "video/mp4" } }) }, /size is unknown/],
     ["wrong type", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "text/html", "content-length": "10" } }) }, /type does not match/],
-    ["expired link", { [CHAT]: () => new Response("x", { status: 403 }) }, /expired/],
+    ["expired chat link", { [CHAT]: () => new Response("x", { status: 403 }) }, /chat file's download link has expired/],
     ["off-host redirect", { [CHAT]: () => new Response(null, { status: 302, headers: { location: "https://evil.example/x.mp4" } }) }, /redirected to a link that is not allowed/],
     ["body longer than declared", { [CHAT]: () => new Response(bytes(2000), { headers: { "content-type": "video/mp4", "content-length": "1000" } }) }, /interrupted|incomplete/],
   ])("fails cleanly: %s", async (_name, routes, message) => {
@@ -287,3 +287,14 @@ describe("review round 3", () => {
     expect(r.results[0].asset).toBe("clip-3");
   });
 });
+
+describe("download refusal messages depend on the source", () => {
+  it("says a URL is private or gone, not expired", async () => {
+    const env = envWith();
+    stubFetch({ "https://storage.example.com/private.mp4": () => new Response("AccessDenied", { status: 403 }) });
+    const r = await body(await call(env, post("/api/media/import", { urls: ["https://storage.example.com/private.mp4"] })));
+    expect(r.results[0].error).toMatch(/refused the download \(HTTP 403\): the file is private/);
+    expect(r.results[0].error).not.toMatch(/expired/);
+  });
+});
+
