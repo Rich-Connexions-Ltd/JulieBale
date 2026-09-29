@@ -263,3 +263,26 @@ describe("copyToR2 failure paths", () => {
     expect(r.results.map((x: any) => x.ok)).toEqual([true, false]);
   });
 });
+
+describe("review round 3", () => {
+  it("the media write API also fails closed without an API key", async () => {
+    const env = { ...envWith(), API_KEY: undefined };
+    for (const method of ["PUT", "POST", "DELETE"]) expect((await call(env, anon("/api/media/x.mp3", { method, body: method === "DELETE" ? undefined : "x" }))).status).toBe(503);
+    expect(env.MEDIA.objects.size).toBe(0);
+  });
+  it("slugForAsset handles awkward titles", () => {
+    expect(slugForAsset("")).toBe("media-file");
+    expect(slugForAsset("!!! ???")).toBe("media-file");
+    expect(slugForAsset("Chanson d'été.mp3")).toBe("chanson-d-ete");
+    expect(slugForAsset("Élan")).toBe("elan");
+    expect(slugForAsset("a".repeat(200))).toHaveLength(56);
+    expect(slugForAsset("clip.final.mov")).toBe("clip-final");
+    for (const t of ["", "x", "Ümlaut ÄÖ", "1234", "--a--"]) expect(slugForAsset(t)).toMatch(/^[a-z][a-z0-9-]{0,63}$/);
+  });
+  it("de-duplicates ids for repeated names", async () => {
+    const env = envWith({ "assets/clip": { type: "video", file: "x" }, "assets/clip-2": { type: "video", file: "y" } });
+    stubFetch({ "https://cdn.example.com/clip.mp4": mp4(10) });
+    const r = await body(await call(env, post("/api/media/import", { urls: ["https://cdn.example.com/clip.mp4"] })));
+    expect(r.results[0].asset).toBe("clip-3");
+  });
+});

@@ -161,7 +161,10 @@ export function buildImportedAsset(media: ImportedMedia, meta: ImportMeta): { do
     warnings.push("consent kept as pending: granted needs a consent_note saying who agreed, when and how.");
   }
   const list = (v: unknown, allowed: readonly string[]) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && allowed.includes(x)) : undefined);
-  // Accessibility: say what is missing (the import still succeeds).
+  // Accessibility (same rule as content-model.md "Importing video and audio"):
+  //   alt        - videos: what the poster shows (recommended; warning if missing)
+  //   caption    - visible text under the player (optional)
+  //   transcript - speech or lyrics, video or audio (recommended; warning if missing)
   if (media.type === "video" && !cleanText(meta.alt, 300)) warnings.push("add alt: describe what the video's poster shows (used as its alternative text).");
   if (!cleanText(meta.transcript, 20000)) warnings.push(`add a transcript if the ${media.type} has speech or lyrics.`);
   const doc: Record<string, unknown> = {

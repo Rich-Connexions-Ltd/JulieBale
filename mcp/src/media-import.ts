@@ -112,7 +112,9 @@ export function safeName(name: string): string {
 
 /** Asset id from a title or file name: [a-z][a-z0-9-]{0,63}. */
 export function slugForAsset(text: string): string {
-  const s = text.toLowerCase().replace(/\.[a-z0-9]{2,5}$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 56);
+  // accents transliterated (été -> ete) before anything non-alphanumeric becomes "-"
+  const plain = text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const s = plain.replace(/\.[a-z0-9]{2,5}$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 56);
   return /^[a-z]/.test(s) ? s : `media-${s || "file"}`.slice(0, 56);
 }
 

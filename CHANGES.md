@@ -118,5 +118,6 @@ Feature request #24. Council review (external fetches, secrets, consent).
 - `mcp/src/media-import.ts` — new: source normalising (ChatGPT `openaiFileIdRefs` / https urls), fetch policy (every redirect hop), type and size checks, streamed copy of the original into R2, signed private master URLs, Cloudflare Stream copy/details/poster
 - `mcp/src/assets.ts` — `buildImportedAsset`, `replaceAssetMedia`, `applyStreamDetails`, text cleaning
 - `mcp/src/index.ts` — `POST /api/media/import`, `POST /api/media/refresh/{id}`, MCP `import_media_from_url` / `refresh_media_asset`; `/media/masters/*` signature-only and `/media/imports/*` consent-only, uncached; OpenAPI 0.10.0
-- `mcp/context/content-model.md`, `mcp/README.md` — import workflow, terms, consent, replacement
+- `mcp/context/content-model.md`, `mcp/README.md` — import workflow, terms, consent, replacement; accessibility: video `alt` (poster) and `transcript` recommended with warnings, `caption` optional
+- Fix: `/api` and `/mcp` now fail closed when `API_KEY` is not configured (previously open)
 - `mcp/test/media-import.test.ts`, `assets.test.ts`, `docs.test.ts`, `helpers.ts` (fake R2)
