@@ -1,0 +1,1855 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Julie Bale content API",
+    "description": "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
+    "version": "0.10.0"
+  },
+  "servers": [
+    {
+      "url": "https://juliebale-mcp.singing-bridge.workers.dev"
+    }
+  ],
+  "paths": {
+    "/api/{collection}": {
+      "get": {
+        "operationId": "listContent",
+        "summary": "List document ids in a collection",
+        "description": "Use first to discover what already exists before creating or editing. Returns the ids in a collection; read a specific one with readContent.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "Collection name, e.g. 'pages'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The ids",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/{collection}/{id}": {
+      "get": {
+        "operationId": "readContent",
+        "summary": "Read one document",
+        "description": "ALWAYS read a document before changing it, and read the context collection (ids voice, brand, offers, content-model) before writing copy. Returns the full JSON.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "Collection name, e.g. 'pages'",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Document id / slug, e.g. 'home'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "put": {
+        "operationId": "writeContent",
+        "summary": "Replace a whole document.",
+        "description": "REPLACES the entire document with the JSON you send; any field you omit is DELETED. Use only to create a new document or deliberately rewrite one in full (send EVERY field). To change or add a field on an existing document, use updateContent instead, never this.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "Collection name, e.g. 'pages'",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Document id / slug, e.g. 'home'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "examples": {
+                "restyleSection": {
+                  "summary": "Restyle a variant (updateContent on variants/home-stage)",
+                  "value": {
+                    "data": "{\"design\":{\"concept\":\"stage\"},\"sections\":[{\"from\":\"hero-1\",\"style\":{\"hero\":\"split\",\"theme\":\"night\"}},{\"from\":\"statement-1\",\"style\":{\"theme\":\"teal\",\"rule\":true}}]}"
+                  }
+                },
+                "caption": {
+                  "summary": "A page section with its key kept and a caption",
+                  "value": {
+                    "data": "{\"sections\":[{\"key\":\"feature-1\",\"type\":\"feature\",\"heading\":\"I'm a singer first.\",\"image\":\"about-julie.jpeg\",\"caption\":\"On stage in 2024\",\"style\":{\"image_side\":\"left\"}}]}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateContent",
+        "summary": "Merge fields into a document (preferred for editing).",
+        "description": "PREFERRED for edits. Merges only the fields you send; nothing else is lost. Headings accept | (line break) and *word* (display italic). Feature/showcase/statement may take images (2-4, asset:<id> or photo.jpeg) for a collage. Returns warnings for disallowed values.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "Collection name, e.g. 'pages'",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Document id / slug, e.g. 'home'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentBody"
+              },
+              "examples": {
+                "restyleSection": {
+                  "summary": "Restyle a variant (updateContent on variants/home-stage)",
+                  "value": {
+                    "data": "{\"design\":{\"concept\":\"stage\"},\"sections\":[{\"from\":\"hero-1\",\"style\":{\"hero\":\"split\",\"theme\":\"night\"}},{\"from\":\"statement-1\",\"style\":{\"theme\":\"teal\",\"rule\":true}}]}"
+                  }
+                },
+                "caption": {
+                  "summary": "A page section with its key kept and a caption",
+                  "value": {
+                    "data": "{\"sections\":[{\"key\":\"feature-1\",\"type\":\"feature\",\"heading\":\"I'm a singer first.\",\"image\":\"about-julie.jpeg\",\"caption\":\"On stage in 2024\",\"style\":{\"image_side\":\"left\"}}]}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteContent",
+        "summary": "Delete a document.",
+        "description": "Permanently removes a document (undoable). Only when it should genuinely no longer exist; confirm first for pages/client-facing content. To clear a field, use updateContent, not delete.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "Collection name, e.g. 'pages'",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Document id / slug, e.g. 'home'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/undo/{collection}/{id}": {
+      "post": {
+        "operationId": "undoContent",
+        "summary": "Undo the last change to a document",
+        "description": "Reverts a document to its state before the last change. Call again to step further back. Use when asked to undo or put something back.",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "description": "Collection name, e.g. 'pages'",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Document id / slug, e.g. 'home'",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reverted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dates/{id}/convert-to-event": {
+      "post": {
+        "operationId": "convertDateToEvent",
+        "summary": "Convert a date into a full event.",
+        "description": "Promotes a calendar date into an event with its own page (description, location, details). Creates the event from the date's title and date, then removes the date (both undoable). After converting, edit the event to add its description, location and details.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The date id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Converted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets/search": {
+      "get": {
+        "operationId": "searchAssets",
+        "summary": "Search the photo/video/audio library",
+        "description": "Find assets by words and filters. Use a result's ref (asset:<id>) in image, image_2, poster, video or audio fields or as a testimonial portrait. Only assets with usable: true are shown on the site (consent granted or not needed).",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orientation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "consent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "usable",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching assets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/media/import": {
+      "post": {
+        "operationId": "importMedia",
+        "summary": "Import chat-uploaded video/audio as assets",
+        "description": "Attach video (mp4/mov/webm, 200 MB) or audio (mp3/m4a/wav/ogg, 50 MB) in the chat and call this. Returns asset:<id> per file. Consent defaults to pending. Give asset to replace a placeholder. Videos process: call refreshMedia later.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "openaiFileIdRefs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Files uploaded in the chat (filled in by ChatGPT)."
+                  },
+                  "urls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Public https links (instead of chat files)."
+                  },
+                  "asset": {
+                    "type": "string",
+                    "description": "Existing asset id to replace, or the id to create (one file only)."
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "alt": {
+                    "type": "string",
+                    "description": "What the video poster shows (recommended; a warning is returned if missing). Images require alt."
+                  },
+                  "transcript": {
+                    "type": "string",
+                    "description": "Speech or lyrics (recommended)."
+                  },
+                  "caption": {
+                    "type": "string"
+                  },
+                  "consent": {
+                    "type": "string",
+                    "enum": [
+                      "granted",
+                      "not-needed",
+                      "pending",
+                      "refused"
+                    ]
+                  },
+                  "consent_note": {
+                    "type": "string"
+                  },
+                  "usage": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "poster_at": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Poster frame, percent through the video (default 10)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-file results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResults"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Nothing to import or invalid request"
+          }
+        }
+      }
+    },
+    "/api/media/refresh/{id}": {
+      "post": {
+        "operationId": "refreshMedia",
+        "summary": "Update an imported video's details",
+        "description": "Fill in Stream's details for an imported video (ready/processing, duration, size, dimensions, orientation). Call after importMedia until status is ready. Optional poster_at (percent 0-100) moves the poster frame.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "poster_at": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asset summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/presentation-options": {
+      "get": {
+        "operationId": "presentationOptions",
+        "summary": "List allowed style/design values",
+        "description": "Every allowed layout, theme and motion value for a section's `style` and a page's `design`, with meanings and a worked example per homepage concept. Call before setting any style/design value; never guess.",
+        "responses": {
+          "200": {
+            "description": "The vocabulary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationOptions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pages/{base}/variants": {
+      "get": {
+        "operationId": "listPageVariants",
+        "summary": "List a page's unpublished variants",
+        "description": "Variants of a page with their private preview links, the live page's section keys (what a variant's `from` can refer to), and per-variant unresolved references and presentation warnings.",
+        "parameters": [
+          {
+            "name": "base",
+            "in": "path",
+            "required": true,
+            "description": "Page id, e.g. 'home'",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,63}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Variants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariantList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or unknown base page"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPageVariant",
+        "summary": "Create an unpublished variant of a page",
+        "description": "Create an unpublished variant of a page, sharing its copy. Then updateContent on variants/{id}: reorder/remove `sections` ({from: section key, style}) and set `design`. A variant style replaces the live style. Returns a private preview link. Max 6 per page.",
+        "parameters": [
+          {
+            "name": "base",
+            "in": "path",
+            "required": true,
+            "description": "Page id, e.g. 'home'",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,63}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "label"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,63}$",
+                    "description": "New variant id"
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              },
+              "example": {
+                "id": "home-stage",
+                "label": "Stage",
+                "note": "Concert-programme feel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id, unknown base, duplicate id or variant limit reached"
+          }
+        }
+      }
+    },
+    "/api/variants/{id}/publish": {
+      "post": {
+        "operationId": "publishPageVariant",
+        "summary": "Make a variant live",
+        "description": "Write the variant's order, styles and design into the live page. Sections it omits are REMOVED (see `dropped`); disallowed values are dropped (`stripped`). Refused if any reference is unresolved. Undo with undoContent on pages/{base}. Only after Julie confirms.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Variant id, e.g. 'home-stage'",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,63}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown variant or unresolved references"
+          }
+        }
+      }
+    },
+    "/api/feature-requests": {
+      "get": {
+        "operationId": "listFeatureRequests",
+        "summary": "List feature/element requests",
+        "description": "Check what has already been requested before logging a new one, or when asked what is outstanding.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureRequestList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createFeatureRequest",
+        "summary": "Raise a feature/element request.",
+        "description": "Log something the site cannot do yet (new block/section, layout, content type, or bug) INSTEAD of improvising a workaround that breaks the design. Include a clear title, what it should do (detail) and where (context).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeatureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WriteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ContentDocument": {
+        "type": "object",
+        "description": "A content document. Any JSON fields are allowed.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Optional title"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ContentBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "string",
+            "description": "The content as a JSON string. For writeContent, the COMPLETE document. For updateContent, ONLY the fields to change. Put every field you want inside this one string, e.g. a JSON object with a description field. This is a string, not an object. Descriptive text fields (body, description, details, excerpt) support Markdown, so use Markdown for headings, bold, lists and links."
+          }
+        }
+      },
+      "IdList": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "type": "string"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "WriteResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "saved": {
+            "type": "string"
+          },
+          "merged": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "restored": {
+            "type": "string"
+          },
+          "created": {
+            "type": "boolean"
+          },
+          "existed": {
+            "type": "boolean"
+          },
+          "event": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "removedDate": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Presentation values that are not allowed and were ignored"
+          },
+          "variant": {
+            "type": "string"
+          },
+          "previewUrl": {
+            "type": "string",
+            "description": "Private preview link to give Julie"
+          },
+          "published": {
+            "type": "string"
+          },
+          "unresolved": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Variant `from` keys that match no live section"
+          },
+          "dropped": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Section keys removed from the live page by publishing"
+          },
+          "stripped": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Values not kept when publishing"
+          },
+          "undo": {
+            "type": "string"
+          }
+        }
+      },
+      "Section": {
+        "type": "object",
+        "description": "One page section (block). `type` picks the block; other fields are its copy. Headings accept | (line break) and *word* (display italic).",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "string"
+            },
+            "description": "Collage (feature, showcase, statement): asset:<id> or a plain filename like photo.jpeg."
+          },
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,39}$",
+            "description": "Stable section id assigned by the server (e.g. hero-1). KEEP IT UNCHANGED when editing; variants refer to sections by key."
+          },
+          "caption": {
+            "type": "string",
+            "description": "Optional image caption (showcase, feature; duo items take `caption` per item)."
+          },
+          "style": {
+            "$ref": "#/components/schemas/SectionStyle"
+          }
+        },
+        "additionalProperties": true
+      },
+      "SectionStyle": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "theme": {
+            "type": "string",
+            "enum": [
+              "cream",
+              "ivory",
+              "teal",
+              "night"
+            ],
+            "description": "cream: Warm cream ground. ivory: Light ivory ground. teal: Deep teal ground, ivory text. night: Near-black (ink) ground, ivory text, soft-gold accents."
+          },
+          "width": {
+            "type": "string",
+            "enum": [
+              "contained",
+              "full"
+            ],
+            "description": "contained: Content sits within the normal content width. full: Full-bleed: content runs edge to edge."
+          },
+          "spacing": {
+            "type": "string",
+            "enum": [
+              "compact",
+              "standard",
+              "generous"
+            ],
+            "description": "compact: Less space above and below. standard: Normal spacing. generous: More space above and below."
+          },
+          "rule": {
+            "type": "boolean",
+            "description": "Fine antique-gold hairline at the top of the section."
+          },
+          "chapter": {
+            "type": "boolean",
+            "description": "Section takes the next chapter number (01, 02, ...)."
+          },
+          "motion": {
+            "type": "string",
+            "enum": [
+              "none",
+              "fade",
+              "rise",
+              "scale",
+              "mask",
+              "drift"
+            ],
+            "description": "none: No entrance animation; content shows immediately. fade: Fades in. rise: Fades in while rising slightly. scale: Fades in from very slightly smaller. mask: Images are revealed by a wiping mask. drift: Images drift gently as the page scrolls."
+          },
+          "speed": {
+            "type": "string",
+            "enum": [
+              "gentle",
+              "standard"
+            ],
+            "description": "gentle: Slower, smaller movements. standard: Normal speed."
+          },
+          "hero": {
+            "type": "string",
+            "enum": [
+              "cinematic",
+              "split",
+              "portrait"
+            ],
+            "description": "cinematic: Full-height photograph with copy over it (the default). split: Photograph and copy side by side. portrait: Tall portrait crop beside the copy. Applies to: hero."
+          },
+          "align": {
+            "type": "string",
+            "enum": [
+              "left",
+              "centre"
+            ],
+            "description": "left: Copy aligned left. centre: Copy centred. Applies to: hero."
+          },
+          "measure": {
+            "type": "string",
+            "enum": [
+              "narrow",
+              "wide"
+            ],
+            "description": "narrow: Narrow copy column. wide: Wide copy column. Applies to: hero."
+          },
+          "treatment": {
+            "type": "string",
+            "enum": [
+              "teal",
+              "cream",
+              "none"
+            ],
+            "description": "teal: Teal overlay on the photograph (the default); on split/portrait, a teal copy panel. cream: Cream field behind the copy. none: No overlay on split/portrait (ivory copy panel); on cinematic a lighter overlay is kept so text stays readable. Applies to: hero."
+          },
+          "focus": {
+            "type": "string",
+            "pattern": "^(\\d{1,3})% (\\d{1,3})%$",
+            "description": "Focal point of the photograph, e.g. \"60% 20%\" (whole numbers 0-100). Applies to: hero, showcase, feature."
+          },
+          "focus_end": {
+            "type": "string",
+            "pattern": "^(\\d{1,3})% (\\d{1,3})%$",
+            "description": "Where the focal point ends up with scene_image \"reframe\", e.g. \"30% 60%\". Applies to: hero, showcase, feature."
+          },
+          "sequence": {
+            "type": "boolean",
+            "description": "Kicker, heading, intro and button appear one after another. Applies to: hero."
+          },
+          "image_side": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "left: Image on the left (wide screens). right: Image on the right (wide screens). Applies to: showcase, feature, duo."
+          },
+          "crop": {
+            "type": "string",
+            "enum": [
+              "portrait",
+              "landscape",
+              "bleed"
+            ],
+            "description": "portrait: Tall crop. landscape: Wide crop. bleed: Image fills its side to the edges. Applies to: showcase, feature, duo."
+          },
+          "overlap": {
+            "type": "boolean",
+            "description": "Copy panel overlaps the image on wide screens. Applies to: showcase, feature."
+          },
+          "grid": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "asymmetric"
+            ],
+            "description": "balanced: Equal columns. asymmetric: Large image, narrower copy. Applies to: showcase, feature."
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "oversized"
+            ],
+            "description": "standard: Normal quote size. oversized: Very large editorial quote. Applies to: pullquote."
+          },
+          "image_escape": {
+            "type": "string",
+            "enum": [
+              "side",
+              "up",
+              "down",
+              "both",
+              "side-up",
+              "side-down"
+            ],
+            "description": "side: Image breaks out toward its outer page edge. up: Image rises into the section above. down: Image drops into the section below. both: Image grows past its frame above and below. side-up: Out to the side and up into the section above. side-down: Out to the side and down into the section below. Applies to: showcase, feature, duo."
+          },
+          "overshoot": {
+            "type": "string",
+            "enum": [
+              "subtle",
+              "medium",
+              "bold"
+            ],
+            "description": "subtle: Small escape. medium: Clear escape (the default). bold: Large escape. Applies to: showcase, feature, duo."
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "above",
+              "below"
+            ],
+            "description": "above: Escaping image sits over neighbouring sections (the default). below: Neighbouring sections sit over the escaping image. Applies to: showcase, feature, duo."
+          },
+          "shape": {
+            "type": "string",
+            "enum": [
+              "arch",
+              "circle",
+              "soft",
+              "slant"
+            ],
+            "description": "arch: Arched top. circle: Circular crop. soft: Softly rounded corners. slant: Slanted top and bottom edges. Applies to: showcase, feature, duo."
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "overlap",
+              "wipe",
+              "crossfade",
+              "depth",
+              "hold",
+              "carry",
+              "divider",
+              "settle"
+            ],
+            "description": "overlap: Section slides up over the end of the previous one. wipe: Section is revealed by a top-to-bottom wipe. crossfade: Section's background colour fades in. depth: Section settles from slightly smaller as it scrolls in. hold: Section holds in place for a moment while you keep scrolling (native scrolling, no hijack). carry: Section's image is carried up into the previous section. divider: A full-width gold line draws across the boundary. settle: Scrolling gently settles at the start of this section when close to it (wide screens)."
+          },
+          "intensity": {
+            "type": "string",
+            "enum": [
+              "gentle",
+              "standard",
+              "strong"
+            ],
+            "description": "gentle: Lighter transition. standard: Normal transition. strong: Stronger transition."
+          },
+          "testimonial_layout": {
+            "type": "string",
+            "enum": [
+              "quote",
+              "portrait",
+              "cards",
+              "before-after",
+              "carousel"
+            ],
+            "description": "quote: Large quotes, one after another. portrait: Portrait beside each quote. cards: Story cards: portrait, quote, and the longer story on request (the default). before-after: Before and after, side by side (only testimonials that have both). carousel: A restrained carousel: visitors move through stories themselves; it never advances on its own. Applies to: testimonials."
+          },
+          "media_ratio": {
+            "type": "string",
+            "enum": [
+              "landscape",
+              "portrait",
+              "cinematic",
+              "square"
+            ],
+            "description": "landscape: 3:2 frame (the default). portrait: 4:5 frame. cinematic: 16:9 frame. square: 1:1 frame. Applies to: media."
+          },
+          "edge": {
+            "type": "string",
+            "enum": [
+              "wave",
+              "curve"
+            ],
+            "description": "wave: Top edge is a gentle wave over the section above. curve: Top edge is a soft curve over the section above. Applies to: statement, showcase, pullquote, panels, feature, duo, cta, doorway, richtext, form, listing, accordion, lessons, calendar, testimonials, media."
+          },
+          "field": {
+            "type": "string",
+            "enum": [
+              "ellipse",
+              "halo",
+              "spotlight",
+              "blob",
+              "wash"
+            ],
+            "description": "ellipse: A large soft ellipse of colour behind the content. halo: A ring of colour, like a halo. spotlight: A soft pool of light. blob: An organic, cut-paper shape. wash: Soft washes of colour. Applies to: statement, showcase, pullquote, panels, feature, duo, cta, doorway, richtext, form, listing, accordion, lessons, calendar, testimonials, media."
+          },
+          "field_colour": {
+            "type": "string",
+            "enum": [
+              "teal",
+              "gold",
+              "cream",
+              "ivory",
+              "night"
+            ],
+            "description": "teal: Brand teal. gold: Antique gold. cream: Cream. ivory: Ivory. night: Near-black. Applies to: statement, showcase, pullquote, panels, feature, duo, cta, doorway, richtext, form, listing, accordion, lessons, calendar, testimonials, media."
+          },
+          "field_position": {
+            "type": "string",
+            "enum": [
+              "left",
+              "centre",
+              "right"
+            ],
+            "description": "left: Towards the left. centre: Centred. right: Towards the right. Applies to: statement, showcase, pullquote, panels, feature, duo, cta, doorway, richtext, form, listing, accordion, lessons, calendar, testimonials, media."
+          },
+          "ornament": {
+            "type": "string",
+            "enum": [
+              "arc",
+              "contour",
+              "quote-mark",
+              "stave"
+            ],
+            "description": "arc: Fine gold arcs. contour: Flowing contour lines. quote-mark: An oversized quotation mark. stave: Five flowing lines, like a musical stave. Applies to: statement, showcase, pullquote, panels, feature, duo, cta, doorway, richtext, form, listing, accordion, lessons, calendar, testimonials, media."
+          },
+          "ornament_position": {
+            "type": "string",
+            "enum": [
+              "top-left",
+              "top-right",
+              "bottom-left",
+              "bottom-right"
+            ],
+            "description": "top-left: Top left. top-right: Top right. bottom-left: Bottom left. bottom-right: Bottom right. Applies to: statement, showcase, pullquote, panels, feature, duo, cta, doorway, richtext, form, listing, accordion, lessons, calendar, testimonials, media."
+          },
+          "collage": {
+            "type": "string",
+            "enum": [
+              "stack",
+              "scatter",
+              "mosaic"
+            ],
+            "description": "stack: The section's images overlap in a cascade. scatter: The images lie like prints on a table. mosaic: An asymmetric editorial grid. Applies to: feature, showcase, statement."
+          },
+          "type_scale": {
+            "type": "string",
+            "enum": [
+              "display",
+              "monumental"
+            ],
+            "description": "display: Very large heading. monumental: Monumental heading (short headings only). Applies to: hero, statement, showcase, feature, cta."
+          },
+          "ghost": {
+            "type": "boolean",
+            "description": "A huge outline echo of the heading sits behind the section (decorative only). Applies to: statement, showcase, feature, cta."
+          },
+          "hover": {
+            "type": "string",
+            "enum": [
+              "shift",
+              "draw"
+            ],
+            "description": "shift: Photographs ease gently closer when pointed at or focused. draw: Lines and link underlines draw across when pointed at or focused."
+          },
+          "phone": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "focus": {
+                "type": "string",
+                "pattern": "^(\\d{1,3})% (\\d{1,3})%$",
+                "description": "Focal point on phones, e.g. \"50% 30%\" (whole numbers 0-100)."
+              },
+              "crop": {
+                "type": "string",
+                "enum": [
+                  "portrait",
+                  "landscape",
+                  "square"
+                ],
+                "description": "portrait: Tall crop on phones. landscape: Wide crop on phones. square: Square crop on phones."
+              }
+            },
+            "description": "Phone-only overrides (screens up to 48rem)."
+          },
+          "scene_length": {
+            "type": "string",
+            "enum": [
+              "short",
+              "medium",
+              "long"
+            ],
+            "description": "short: Section holds the screen for a short scene while scrolling continues. medium: A medium scene. long: A long scene (use at most once or twice per page)."
+          },
+          "scene_timing": {
+            "type": "string",
+            "enum": [
+              "enter",
+              "hold",
+              "release"
+            ],
+            "description": "enter: Scene effects play as the section arrives. hold: Effects play while it is held (the default). release: Effects play as it leaves."
+          },
+          "scene_text": {
+            "type": "string",
+            "enum": [
+              "fade",
+              "rise",
+              "stagger",
+              "spotlight"
+            ],
+            "description": "fade: Text fades in with scroll. rise: Text rises into place with scroll. stagger: Lines and elements appear one after another with scroll. spotlight: Text brightens from dim with scroll."
+          },
+          "scene_image": {
+            "type": "string",
+            "enum": [
+              "zoom",
+              "pan",
+              "reframe",
+              "dissolve",
+              "carry"
+            ],
+            "description": "zoom: Photograph slowly zooms in with scroll. pan: Photograph slowly drifts sideways with scroll. reframe: Focal point moves from focus to focus_end with scroll. dissolve: Photograph dissolves into image_2 with scroll. carry: Photograph travels on into the next section as the scene releases. Applies to: hero, showcase, feature."
+          },
+          "scene_background": {
+            "type": "string",
+            "enum": [
+              "deepen",
+              "warm",
+              "glow"
+            ],
+            "description": "deepen: Dark sections deepen toward near-black with scroll. warm: Light sections warm toward cream with scroll. glow: A soft gold glow gathers at the edges with scroll."
+          }
+        },
+        "description": "Presentation only. Values outside these enums are ignored and returned as warnings."
+      },
+      "PageDesign": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "concept": {
+            "type": "string",
+            "enum": [
+              "stage",
+              "editorial",
+              "journey"
+            ],
+            "description": "stage: Cinematic, concert-programme look. editorial: Magazine portrait look: fine rules, generous white space. journey: Transformation journey: chapters and a calm, forward rhythm."
+          },
+          "progress": {
+            "type": "boolean",
+            "description": "Slim reading-progress line at the top of the page."
+          },
+          "scene_nav": {
+            "type": "string",
+            "enum": [
+              "rail",
+              "label",
+              "both"
+            ],
+            "description": "rail: Slim chapter rail at the side (wide screens) linking the chapter sections. label: Small label naming the current chapter. both: Rail and label."
+          }
+        },
+        "description": "Page-level presentation (on a page or a variant)."
+      },
+      "PresentationOptions": {
+        "type": "object",
+        "description": "Allowed presentation values with meanings and examples.",
+        "properties": {
+          "style": {
+            "type": "object",
+            "description": "Section style keys: each has values (value -> meaning), optional blocks it applies to, or a pattern.",
+            "additionalProperties": true
+          },
+          "design": {
+            "type": "object",
+            "description": "Page design keys, same shape as style.",
+            "additionalProperties": true
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "examples": {
+            "type": "object",
+            "description": "One worked variant per concept (stage, editorial, journey).",
+            "additionalProperties": true
+          }
+        }
+      },
+      "VariantList": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "base": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "previewUrl": {
+                  "type": "string"
+                },
+                "unresolved": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "sections": {
+            "type": "array",
+            "description": "The live page's section keys",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "heading": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ImportResults": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "type": "boolean"
+                },
+                "asset": {
+                  "type": "string",
+                  "description": "Asset id"
+                },
+                "ref": {
+                  "type": "string",
+                  "description": "Use in pages, e.g. asset:aria-rehearsal"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "processing",
+                    "ready",
+                    "error"
+                  ]
+                },
+                "replaced": {
+                  "type": "boolean"
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "name": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "MediaSummary": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "orientation": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "thumbnail": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "AssetList": {
+        "type": "object",
+        "properties": {
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ref": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "file": {
+                  "type": "string"
+                },
+                "orientation": {
+                  "type": "string"
+                },
+                "usage": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "people": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "consent": {
+                  "type": "string"
+                },
+                "usable": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "vocabulary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "consent": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "Asset": {
+        "type": "object",
+        "description": "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Filename in /assets, media key, or Stream video id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "audio"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "setting": {
+            "type": "string"
+          },
+          "orientation": {
+            "type": "string",
+            "enum": [
+              "portrait",
+              "landscape",
+              "square"
+            ]
+          },
+          "focus": {
+            "type": "string",
+            "description": "Default focal point, e.g. 60% 20%"
+          },
+          "tone": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usage": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "julie-portrait",
+                "julie-singing",
+                "teaching",
+                "singer",
+                "community",
+                "backstage",
+                "concert",
+                "venue",
+                "atmosphere"
+              ]
+            }
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "hero",
+                "background",
+                "collage",
+                "testimonial-portrait",
+                "poster",
+                "tile"
+              ]
+            }
+          },
+          "suits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "desktop",
+                "mobile"
+              ]
+            }
+          },
+          "consent": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "not-needed",
+              "pending",
+              "refused"
+            ]
+          },
+          "consent_note": {
+            "type": "string"
+          },
+          "consent_expires": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "lighting": {
+            "type": "string"
+          },
+          "crop_zones": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "Testimonial": {
+        "type": "object",
+        "description": "Collection 'testimonials'. Shown only when consent is granted.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string"
+          },
+          "story": {
+            "type": "string",
+            "description": "Markdown"
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          },
+          "portrait": {
+            "type": "string",
+            "description": "asset:<id>"
+          },
+          "video": {
+            "type": "string",
+            "description": "asset:<id> or Stream id"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "consent": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "pending",
+              "refused"
+            ]
+          },
+          "consent_note": {
+            "type": "string"
+          },
+          "consent_expires": {
+            "type": "string"
+          }
+        }
+      },
+      "Variant": {
+        "type": "object",
+        "description": "An unpublished variant (collection 'variants'). Copy comes from the live base page; only order and presentation live here. `token` and `base` are managed by the server.",
+        "properties": {
+          "base": {
+            "type": "string",
+            "readOnly": true
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string",
+            "readOnly": true
+          },
+          "design": {
+            "$ref": "#/components/schemas/PageDesign"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "from"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "Section key on the live page"
+                },
+                "style": {
+                  "$ref": "#/components/schemas/SectionStyle"
+                }
+              }
+            }
+          }
+        }
+      },
+      "FeatureRequest": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "feature",
+              "element",
+              "content",
+              "bug"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "readOnly": true,
+            "enum": [
+              "open",
+              "planned",
+              "done",
+              "declined"
+            ]
+          },
+          "resolution": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Developer note: planned sprint, merged-into, or reason declined"
+          },
+          "created_at": {
+            "type": "string",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "readOnly": true
+          }
+        }
+      },
+      "FeatureRequestList": {
+        "type": "object",
+        "properties": {
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureRequest"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
