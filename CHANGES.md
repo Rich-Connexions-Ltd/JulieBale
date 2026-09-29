@@ -122,6 +122,13 @@ Feature request #24. Council review (external fetches, secrets, consent).
 - Fix: `/api` and `/mcp` now fail closed when `API_KEY` is not configured (previously open)
 - `mcp/test/media-import.test.ts`, `assets.test.ts`, `docs.test.ts`, `helpers.ts` (fake R2)
 
+## Sprint 19 follow-up: resolution advice in tool responses — 2026-09-29
+
+**Files changed:**
+- `mcp/src/assets.ts` — `resolutionAdvice`: warns when the crop (or whole video) is under 1000 px wide
+- `mcp/src/index.ts` — `derive_video` and `video_frames` return `warnings`; schemas updated (still 0.12.0)
+- `mcp/test/derive.test.ts` — advice tests
+
 ## Sprint 19: Video Derivatives (request #27, 0.12.0) — 2026-09-29
 
 Short, cropped, muted excerpts cut from master videos as their own assets,

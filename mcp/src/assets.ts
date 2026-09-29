@@ -353,3 +353,22 @@ export function buildDerivedAsset(master: Record<string, any>, masterId: string,
 /** A still frame of a Stream video at `t` seconds (the asset's own timeline). */
 export const streamFrame = (uid: string, t: number) =>
   STREAM_UID_RE.test(uid) && Number.isFinite(t) && t >= 0 ? `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg?time=${Math.round(t * 10) / 10}s&height=480` : undefined;
+
+/** Pixels needed across a crop before it looks sharp in a wide or full-width frame. */
+export const SHARP_WIDTH = 1000;
+
+/**
+ * Advice for the assistant about sharpness, from the real pixel size of what
+ * will be shown (the whole frame, or the crop of it).
+ */
+export function resolutionAdvice(width: unknown, height: unknown, crop?: Crop): string[] {
+  const px = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v > 0;
+  if (!px(width) || !px(height)) return [];
+  const w = Math.round(crop ? ((width as number) * crop.w) / 100 : (width as number));
+  const h = Math.round(crop ? ((height as number) * crop.h) / 100 : (height as number));
+  if (w >= SHARP_WIDTH) return [];
+  const what = crop ? `The cropped area is only ${w}×${h} pixels` : `This video is only ${w}×${h} pixels`;
+  return [
+    `${what}, so it will look soft in a wide or full-width frame (media_ratio wide/cinematic, width full, or playback background). It is fine in a small portrait frame. For anything prominent, ask Julie for the original, higher-resolution footage rather than cropping this one.`,
+  ];
+}

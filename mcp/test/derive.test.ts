@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import worker from "../src/index";
 import { renderPage } from "../src/render";
-import { parseEdit, parseCrop, consentOk, linkMasters, describeAsset, streamFrame, assetWarnings, MASTER_CONSENT } from "../src/assets";
+import { resolutionAdvice, parseEdit, parseCrop, consentOk, linkMasters, describeAsset, streamFrame, assetWarnings, MASTER_CONSENT } from "../src/assets";
 import { fakeEnv, fakeMedia, authed, siteFixture, pageWith } from "./helpers";
 
 const MASTER_UID = "0123456789abcdef0123456789abcdef";
@@ -265,5 +265,23 @@ describe("CSS and script", () => {
   });
   it("speed is allowlisted and only slows", () => {
     expect(appJs).toMatch(/if \(speed === 0\.5 \|\| speed === 0\.75\) \{ video\.defaultPlaybackRate = speed; video\.playbackRate = speed; \}/);
+  });
+});
+
+describe("resolution advice in the responses", () => {
+  it("warns from the real pixel size of the crop or the whole video", () => {
+    expect(resolutionAdvice(576, 1024, { x: 0, y: 30, w: 100, h: 40 })[0]).toMatch(/cropped area is only 576×410 pixels.*ask Julie for the original/);
+    expect(resolutionAdvice(576, 1024)[0]).toMatch(/This video is only 576×1024/);
+    expect(resolutionAdvice(1920, 1080, { x: 0, y: 0, w: 60, h: 60 })).toEqual([]);
+    expect(resolutionAdvice(1920, 1080, { x: 0, y: 0, w: 50, h: 50 })[0]).toMatch(/960×540/);
+    expect(resolutionAdvice(undefined, 1080)).toEqual([]);
+  });
+  it("derive_video and video_frames return the advice", async () => {
+    const env = envWith();
+    stubClip();
+    const r = await (await derive(env, { from: "master", start: 0, end: 5, crop: { x: 0, y: 30, w: 100, h: 40 } })).json<any>();
+    expect(r.warnings[0]).toMatch(/576×410/);
+    const f = await (await call(env, authed("/api/media/frames/master"))).json<any>();
+    expect(f.warnings[0]).toMatch(/576×1024/);
   });
 });
