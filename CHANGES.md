@@ -137,7 +137,7 @@ without touching the master. Council review: plan approved R2.
 - `mcp/context/content-model.md`, `mcp/README.md`, `mcp/openapi.json` — workflow, crop coordinates, consent inheritance, resolution caveat
 - `mcp/test/derive.test.ts` — 22 tests
 
-**Commit:** `(this commit)`
+**Commit:** `5afd2f3`
 
 ## Sprint 18: Editorial Video Modes (request #26, 0.11.0) — 2026-09-29
 
