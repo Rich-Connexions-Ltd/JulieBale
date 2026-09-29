@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding, MOTION_GUARD } from "./render";
 import { landingWarnings } from "./sanitize";
-import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, verifyMasterSig, posterPercent, slugForAsset } from "./media-import";
+import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, posterPercent, slugForAsset } from "./media-import";
 import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, consentOk as assetConsentOk } from "./assets";
 import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
 import { ASSET_OPTIONS, CONSENT_MEANINGS, assetWarnings, testimonialWarnings, searchAssets, type AssetQuery } from "./assets";
@@ -313,17 +313,20 @@ async function importMedia(env: Env, origin: string, body: any) {
   const posterAt = posterPercent(body?.poster_at);
   const results: unknown[] = [];
   for (const src of n.sources) {
-    let id: string = body?.asset;
-    if (!id) {
-      const base = slugForAsset(typeof body?.title === "string" && n.sources.length === 1 ? body.title : src.name);
-      id = base;
+    // Replace: the given id. Otherwise: from the title (single file) or the real file name.
+    const idFor = async (resolvedName: string) => {
+      if (body?.asset) return body.asset as string;
+      const base = slugForAsset(typeof body?.title === "string" && n.sources.length === 1 ? body.title : resolvedName);
+      let id = base;
       for (let i = 2; await readDoc(env, "assets", id); i++) id = `${base}-${i}`;
-    }
-    const stored = await storeSource(env, origin, src, id, posterAt);
+      return id;
+    };
+    const stored = await storeSource(env, src, idFor, posterAt);
     if ("error" in stored) {
       results.push({ ok: false, name: src.name.slice(0, 120), error: stored.error });
       continue;
     }
+    const id = stored.assetId;
     const prev = parse(await readDoc(env, "assets", id));
     let doc: Record<string, unknown>;
     let warnings: string[] = [];
@@ -922,7 +925,7 @@ const htmlResponse = (body: string, status = 200) =>
 
 /**
  * Public media, with two protected areas (Sprint 16):
- *   masters/<asset>/...  private originals: only with a valid 15-minute signature (for Stream)
+ *   masters/<asset>/...  private originals: never served
  *   imports/<asset>/...  imported audio: only while that asset's consent allows it
  * Protected responses are never cached (signatures expire, consent can be revoked).
  */
@@ -931,10 +934,9 @@ async function handleMediaGet(env: Env, url: URL): Promise<Response> {
   const notFound = () => new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
   if (!key || key.includes("..")) return notFound();
   let protectedArea = false;
-  if (key.startsWith("masters/")) {
-    if (!(await verifyMasterSig(key, url.searchParams.get("exp"), url.searchParams.get("sig"), env.API_KEY))) return notFound();
-    protectedArea = true;
-  } else if (key.startsWith("imports/")) {
+  // Originals are never served: video goes to Stream directly from the Worker.
+  if (key.startsWith("masters/")) return notFound();
+  if (key.startsWith("imports/")) {
     const assetId = key.split("/")[1];
     const asset = isValidId(assetId) ? parse(await readDoc(env, "assets", assetId)) : null;
     if (!asset || asset.file !== key || !assetConsentOk(asset)) return notFound();

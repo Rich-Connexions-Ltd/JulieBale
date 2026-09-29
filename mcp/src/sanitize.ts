@@ -257,10 +257,11 @@ export function sanitizeLandingHtml(body: string, notes = new NoteCollector()): 
   for (const t of ALL_TAGS) whiteList[t] = [...LANDING_GLOBAL_ATTRS, ...(LANDING_TAG_ATTRS[t] || [])];
   const filter = new FilterXSS({
     whiteList,
-    stripIgnoreTag: true,
+    // Disallowed tags are stripped (content kept) by returning "" from onIgnoreTag;
+    // js-xss ignores onIgnoreTag if stripIgnoreTag is also set, so it is not.
     stripIgnoreTagBody: LANDING_STRIPPED_WITH_CONTENT,
     allowCommentTag: false,
-    onIgnoreTag: (tag: string) => { notes.add(`removed <${tag.toLowerCase()}> element`); return undefined; },
+    onIgnoreTag: (tag: string) => { notes.add(`removed <${tag.toLowerCase()}> element`); return ""; },
     onIgnoreTagAttr: (tag: string, name: string) => {
       notes.add(/^on/i.test(name) ? `removed an event-handler attribute from <${tag}>` : `removed the ${name.toLowerCase().slice(0, 30)} attribute from <${tag}>`);
       return "";

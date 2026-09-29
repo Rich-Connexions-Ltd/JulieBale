@@ -243,6 +243,14 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 17 — Media import fixes (bug #25)
+**Status:** In progress (council code review)
+
+- **Goal:** chat-uploaded MP4s import reliably; URL imports work without a file extension.
+- **Scope:** direct upload to Stream from R2 (no copy-by-URL), type from response headers/stated type, id after resolution, clearer errors.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship

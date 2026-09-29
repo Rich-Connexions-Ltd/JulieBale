@@ -121,3 +121,11 @@ Feature request #24. Council review (external fetches, secrets, consent).
 - `mcp/context/content-model.md`, `mcp/README.md` — import workflow, terms, consent, replacement; accessibility: video `alt` (poster) and `transcript` recommended with warnings, `caption` optional
 - Fix: `/api` and `/mcp` now fail closed when `API_KEY` is not configured (previously open)
 - `mcp/test/media-import.test.ts`, `assets.test.ts`, `docs.test.ts`, `helpers.ts` (fake R2)
+
+## Sprint 17: Media Import Fixes (bug #25) — 2026-09-29
+
+**Files changed:**
+- `mcp/src/media-import.ts` — video goes to Stream by streamed direct upload from R2 (no copy-by-URL; signed master URLs removed); `resolveType` decides type from Content-Type / ChatGPT's stated type / Content-Disposition / extension; clearer errors with Stream's redacted message
+- `mcp/src/index.ts` — asset id chosen after the real file name is known; `/media/masters/*` never served
+- `mcp/src/sanitize.ts` — removal notes no longer dropped (js-xss option conflict)
+- `mcp/test/media-import.test.ts` — multipart/direct-upload, `raw` links, octet-stream, type resolution

@@ -126,38 +126,58 @@ const randomToken = () => {
   return btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "").toLowerCase();
 };
 
-/* ------------------------------ signed masters ----------------------------- */
+/* ------------------------------ open a source ------------------------------ */
 
-async function hmac(secret: string, message: string): Promise<string> {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(`masters:${secret}`), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
-  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const GENERIC_TYPES = new Set(["", "application/octet-stream", "binary/octet-stream", "application/binary"]);
+
+/** File name from Content-Disposition (filename*= or filename=), if any. */
+export function dispositionName(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const star = /filename\*\s*=\s*(?:UTF-8'')?([^;]+)/i.exec(header)?.[1];
+  const plain = /filename\s*=\s*"?([^";]+)"?/i.exec(header)?.[1];
+  const raw = (star || plain || "").trim();
+  if (!raw) return undefined;
+  try {
+    return decodeURIComponent(raw).split(/[\\/]/).pop();
+  } catch {
+    return raw.split(/[\\/]/).pop();
+  }
 }
 
-/** A 15-minute URL for a private master (only Stream uses it). */
-export async function signMasterUrl(origin: string, key: string, secret: string, nowMs = Date.now()): Promise<string> {
-  const exp = Math.floor(nowMs / 1000) + 15 * 60;
-  return `${origin}/media/${key}?exp=${exp}&sig=${await hmac(secret, `${key}:${exp}`)}`;
+/**
+ * Decide the file's type from everything we know, most specific first:
+ * the response Content-Type (unless generic), the type ChatGPT stated, then the
+ * file name's extension. A specific but disallowed response type (e.g.
+ * text/html) is refused, as is an extension that contradicts the chosen type.
+ * Returns the MIME type, kind and a file name that carries a matching extension.
+ */
+export function resolveType(responseType: string, statedMime: string | undefined, names: string[]):
+  | { mime: string; kind: "video" | "audio"; name: string }
+  | { error: string } {
+  const allowed = (m?: string) => {
+    const x = (m || "").split(";")[0].trim().toLowerCase();
+    for (const kind of ["video", "audio"] as const) if (MEDIA_TYPES[kind].mimes[x]) return { mime: x, kind };
+    return null;
+  };
+  const rt = responseType.split(";")[0].trim().toLowerCase();
+  if (rt && !GENERIC_TYPES.has(rt) && !allowed(rt)) return { error: "the file is not a supported video or audio type" };
+  const name = names.find((n) => n && extOf(n)) || names.find(Boolean) || "file";
+  const picked = allowed(GENERIC_TYPES.has(rt) ? undefined : rt) || allowed(statedMime) || allowed(guessMime(name));
+  if (!picked) return { error: "unsupported file type (video: mp4, mov, webm; audio: mp3, m4a, wav, ogg)" };
+  const ext = extOf(name);
+  const exts = MEDIA_TYPES[picked.kind].mimes[picked.mime];
+  if (ext && guessMime(name) && !exts.includes(ext)) return { error: "the file's type does not match its name" };
+  return { ...picked, name: ext && exts.includes(ext) ? name : `${name.replace(/\.[a-z0-9]{1,5}$/i, "")}.${exts[0]}` };
 }
-
-/** Valid, unexpired signature for this key? (Constant-time compare.) */
-export async function verifyMasterSig(key: string, exp: string | null, sig: string | null, secret: string | undefined, nowMs = Date.now()): Promise<boolean> {
-  if (!secret || !exp || !sig || !/^\d{9,11}$/.test(exp) || Number(exp) * 1000 < nowMs) return false;
-  const expected = await hmac(secret, `${key}:${exp}`);
-  if (expected.length !== sig.length) return false;
-  let diff = 0;
-  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
-  return diff === 0;
-}
-
-/* ------------------------------- copy to R2 -------------------------------- */
 
 /**
  * Fetch a source (redirects followed manually, each hop re-checked, at most 3)
- * and stream it into R2 under `key`, refusing anything over `cap` bytes or with
- * a mismatched content type. Partial objects are deleted on failure.
+ * and work out its type and size. Nothing is stored yet.
  */
-export async function copyToR2(env: Env, src: ImportSource, key: string, kind: "video" | "audio"): Promise<{ ok: true; size: number; contentType: string } | { ok: false; error: string }> {
+export async function openSource(src: ImportSource): Promise<
+  | { ok: true; res: Response; mime: string; kind: "video" | "audio"; name: string; length: number }
+  | { ok: false; error: string }
+> {
   let url = src.url;
   let res: Response | null = null;
   for (let hop = 0; hop <= 3; hop++) {
@@ -183,41 +203,53 @@ export async function copyToR2(env: Env, src: ImportSource, key: string, kind: "
           : `the link refused the download (HTTP ${res.status}): the file is private, moved or deleted; use a publicly downloadable link`,
     };
   }
-  const contentType = (res.headers.get("content-type") || src.mime || "").split(";")[0].trim().toLowerCase();
-  if (mediaKind(contentType, src.name) !== kind) return { ok: false, error: "the downloaded file's type does not match its name" };
+  const type = resolveType(res.headers.get("content-type") || "", src.mime, [src.name, dispositionName(res.headers.get("content-disposition")) || ""]);
+  if ("error" in type) return { ok: false, error: type.error };
   const length = Number(res.headers.get("content-length"));
-  const cap = MEDIA_TYPES[kind].cap;
+  const cap = MEDIA_TYPES[type.kind].cap;
   if (!Number.isFinite(length) || length <= 0)
     return { ok: false, error: "the server did not say how big the file is (no Content-Length), so it cannot be imported safely; try another link or attach the file in the chat" };
-  if (length > cap) return { ok: false, error: `the file is too large (limit ${cap / MB} MB for ${kind})` };
-  // Count bytes as they pass; abort if the body is longer than declared or the cap.
+  if (length > cap) return { ok: false, error: `the file is too large (limit ${cap / MB} MB for ${type.kind})` };
+  return { ok: true, res, ...type, length };
+}
+
+/** A stream that passes exactly `length` bytes (never more than `cap`) or errors. */
+function countedStream(body: ReadableStream<Uint8Array>, length: number, cap: number, onCount: (n: number) => void) {
   let seen = 0;
   const counter = new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, ctrl) {
       seen += chunk.byteLength;
+      onCount(seen);
       if (seen > length || seen > cap) ctrl.error(new Error("file larger than declared"));
       else ctrl.enqueue(chunk);
     },
   });
   const Fixed = (globalThis as any).FixedLengthStream;
-  const body = Fixed ? res.body.pipeThrough(counter).pipeThrough(new Fixed(length)) : res.body.pipeThrough(counter);
+  return Fixed ? body.pipeThrough(counter).pipeThrough(new Fixed(length)) : body.pipeThrough(counter);
+}
+
+/** Stream an opened source into R2 under `key`; partial objects are deleted on failure. */
+export async function putToR2(env: Env, opened: { res: Response; mime: string; kind: "video" | "audio"; length: number }, key: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  let seen = 0;
+  const body = countedStream(opened.res.body!, opened.length, MEDIA_TYPES[opened.kind].cap, (n) => (seen = n));
   try {
-    await env.MEDIA.put(key, body, { httpMetadata: { contentType } });
+    await env.MEDIA.put(key, body, { httpMetadata: { contentType: opened.mime } });
   } catch {
     await env.MEDIA.delete(key).catch(() => {});
     return { ok: false, error: "the upload was interrupted or larger than declared" };
   }
-  if (seen !== length) {
+  if (seen !== opened.length) {
     await env.MEDIA.delete(key).catch(() => {});
     return { ok: false, error: "the upload was incomplete" };
   }
-  return { ok: true, size: length, contentType };
+  return { ok: true };
 }
 
 /* --------------------------------- Stream ---------------------------------- */
 
 const streamApi = (env: Env, path: string) => `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/stream${path}`;
 const streamHeaders = (env: Env) => ({ authorization: `Bearer ${env.STREAM_TOKEN}`, "content-type": "application/json" });
+
 /**
  * Stream errors summarised: status, code and Stream's own message (which says
  * what was wrong), with anything token-like removed and length capped. Never
@@ -233,18 +265,60 @@ function streamError(j: any, status: number, token?: string): string {
 
 export const streamConfigured = (env: Env) => !!(env.STREAM_TOKEN && env.CF_ACCOUNT_ID);
 
-export async function streamCopy(env: Env, url: string, name: string, assetId: string, posterAt: number): Promise<{ uid: string } | { error: string }> {
-  const res = await fetch(streamApi(env, "/copy"), {
+/**
+ * Send the stored original to Stream ourselves: ask for a one-time direct-upload
+ * URL, then POST the R2 object to it as multipart form data, streamed (never
+ * buffered). Stream never has to fetch anything from us or from ChatGPT.
+ */
+export async function streamUploadFromR2(env: Env, key: string, size: number, mime: string, name: string, assetId: string, posterAt: number): Promise<{ uid: string } | { error: string }> {
+  const res = await fetch(streamApi(env, "/direct_upload"), {
     method: "POST",
     headers: streamHeaders(env),
-    body: JSON.stringify({ url, meta: { name, asset: assetId }, thumbnailTimestampPct: posterAt / 100 }),
+    body: JSON.stringify({ maxDurationSeconds: 21600, meta: { name: name.slice(0, 120), asset: assetId }, thumbnailTimestampPct: posterAt / 100 }),
   });
   const j = (await res.json().catch(() => ({}))) as any;
-  const uid = j?.result?.uid;
-  if (res.ok && j?.success && typeof uid === "string" && /^[a-f0-9]{32}$/.test(uid)) return { uid };
-  // Diagnostics for `wrangler tail`: the URL without its signature, and Stream's summarised reply.
-  console.log("stream copy refused", JSON.stringify({ url: url.replace(/\?.*$/, "?[signed]"), error: streamError(j, res.status, env.STREAM_TOKEN) }));
-  return { error: streamError(j, res.status, env.STREAM_TOKEN) };
+  const uid = j?.result?.uid, uploadURL = j?.result?.uploadURL;
+  if (!res.ok || !j?.success || typeof uid !== "string" || !/^[a-f0-9]{32}$/.test(uid) || typeof uploadURL !== "string" || !/^https:\/\/[a-z0-9.-]+\.(videodelivery\.net|cloudflarestream\.com)\//i.test(uploadURL)) {
+    const err = streamError(j, res.status, env.STREAM_TOKEN);
+    console.log("stream direct_upload refused", JSON.stringify({ error: err }));
+    return { error: err };
+  }
+  const obj = await env.MEDIA.get(key);
+  if (!obj) return { error: "the stored original could not be read back" };
+  const boundary = `----jb${crypto.randomUUID().replace(/-/g, "")}`;
+  const enc = new TextEncoder();
+  const headPart = enc.encode(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${safeName(name)}"\r\nContent-Type: ${mime}\r\n\r\n`);
+  const tailPart = enc.encode(`\r\n--${boundary}--\r\n`);
+  const total = headPart.byteLength + size + tailPart.byteLength;
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+  const pump = (async () => {
+    const w = writable.getWriter();
+    await w.write(headPart);
+    const r = obj.body.getReader();
+    for (;;) {
+      const { value, done } = await r.read();
+      if (done) break;
+      await w.write(value);
+    }
+    await w.write(tailPart);
+    await w.close();
+  })();
+  const Fixed = (globalThis as any).FixedLengthStream;
+  const up = await fetch(uploadURL, {
+    method: "POST",
+    headers: { "content-type": `multipart/form-data; boundary=${boundary}`, "content-length": String(total) },
+    body: Fixed ? readable.pipeThrough(new Fixed(total)) : readable,
+    // Node's fetch needs this for streamed bodies; Workers ignores it.
+    ...({ duplex: "half" } as any),
+  });
+  await pump.catch(() => {});
+  if (!up.ok) {
+    const uj = (await up.json().catch(() => ({}))) as any;
+    const err = streamError(uj, up.status, env.STREAM_TOKEN);
+    console.log("stream upload refused", JSON.stringify({ error: err }));
+    return { error: err };
+  }
+  return { uid };
 }
 
 export async function streamDetails(env: Env, uid: string): Promise<any | { error: string }> {
@@ -264,28 +338,35 @@ export const posterPercent = (v: unknown): number => (typeof v === "number" && N
 
 /* ------------------------------- import one -------------------------------- */
 
-/** Store one source; returns the media fields for the asset (see assets.ts). */
-export async function storeSource(env: Env, origin: string, src: ImportSource, assetId: string, posterAt: number) {
-  const k = mediaKind(src.mime || guessMime(src.name), src.name);
-  if (!k) return { error: "unsupported file type (video: mp4, mov, webm; audio: mp3, m4a, wav, ogg)" } as const;
-  if (k === "video" && !streamConfigured(env)) return { error: "video import needs Cloudflare Stream to be configured" } as const;
+/**
+ * Store one source; returns the media fields for the asset (see assets.ts).
+ * The type is settled from the response, so links without an extension work.
+ */
+export async function storeSource(env: Env, src: ImportSource, idFor: (resolvedName: string) => Promise<string>, posterAt: number) {
   if (!env.API_KEY) return { error: "imports are disabled until the API key is configured" } as const;
-  const prefix = k === "audio" ? "imports" : "masters";
-  const key = `${prefix}/${assetId}/${randomToken()}/${safeName(src.name)}`;
-  const copied = await copyToR2(env, src, key, k);
-  if (!copied.ok) return { error: copied.error } as const;
-  const source = { kind: src.kind, name: src.name.slice(0, 120) };
-  if (k === "audio") return { media: { type: "audio" as const, file: key, master: key, status: "ready" as const, size: copied.size, source } };
-  const signed = await signMasterUrl(origin, key, env.API_KEY);
-  const s = await streamCopy(env, signed, src.name, assetId, posterAt);
+  const opened = await openSource(src);
+  if (!opened.ok) return { error: opened.error } as const;
+  // The id is chosen once the real file name is known (links like ".../raw" name the file in their headers).
+  const assetId = await idFor(opened.name);
+  if (opened.kind === "video" && !streamConfigured(env)) {
+    await opened.res.body?.cancel().catch(() => {});
+    return { error: "video import needs Cloudflare Stream to be configured" } as const;
+  }
+  const prefix = opened.kind === "audio" ? "imports" : "masters";
+  const key = `${prefix}/${assetId}/${randomToken()}/${safeName(opened.name)}`;
+  const put = await putToR2(env, opened, key);
+  if (!put.ok) return { error: put.error } as const;
+  const source = { kind: src.kind, name: opened.name.slice(0, 120) };
+  if (opened.kind === "audio") return { assetId, media: { type: "audio" as const, file: key, master: key, status: "ready" as const, size: opened.length, source } };
+  const s = await streamUploadFromR2(env, key, opened.length, opened.mime, opened.name, assetId, posterAt);
   if ("error" in s) {
     await env.MEDIA.delete(key).catch(() => {});
     return { error: s.error } as const;
   }
-  return { media: { type: "video" as const, file: s.uid, master: key, status: "processing" as const, size: copied.size, source } };
+  return { assetId, media: { type: "video" as const, file: s.uid, master: key, status: "processing" as const, size: opened.length, source } };
 }
 
-/** MIME from extension, for URL imports that give no type up front (the response type is still checked). */
+/** MIME from extension (used as the last resort in resolveType). */
 export function guessMime(name: string): string | undefined {
   const ext = extOf(name);
   for (const kind of ["video", "audio"] as const)

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import worker from "../src/index";
-import { checkFetchUrl, normaliseSources, mediaKind, safeName, slugForAsset, signMasterUrl, verifyMasterSig, MAX_SOURCES } from "../src/media-import";
-import { fakeEnv, fakeMedia, authed, anon, siteFixture, API_KEY } from "./helpers";
+import { checkFetchUrl, normaliseSources, mediaKind, safeName, slugForAsset, resolveType, dispositionName, MAX_SOURCES } from "../src/media-import";
+import { fakeEnv, fakeMedia, authed, anon, siteFixture } from "./helpers";
 
 const UID = "0123456789abcdef0123456789abcdef";
 const ctx = {} as any;
@@ -18,7 +18,12 @@ function stubFetch(routes: Record<string, () => Response>) {
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     calls.push({ url: String(url), init });
     const u = String(url);
-    if (u.endsWith("/stream/copy")) return Response.json({ success: true, result: { uid: UID } });
+    if (u.endsWith("/stream/direct_upload")) return Response.json({ success: true, result: { uid: UID, uploadURL: "https://upload.videodelivery.net/abc123" } });
+    if (u === "https://upload.videodelivery.net/abc123") {
+      (calls as any).uploaded = new Uint8Array(await new Response(init!.body as any).arrayBuffer());
+      (calls as any).uploadHeaders = init!.headers;
+      return new Response("", { status: 200 });
+    }
     if (u.includes(`/stream/${UID}`) && init?.method === "POST") return Response.json({ success: true, result: {} });
     if (u.includes(`/stream/${UID}`)) return Response.json({ success: true, result: { readyToStream: true, duration: 42.47, size: 123, input: { width: 1920, height: 1080 }, thumbnail: "javascript:evil", status: { state: "ready" } } });
     const h = routes[u];
@@ -68,21 +73,27 @@ describe("normalising and naming", () => {
   });
 });
 
-describe("signed master URLs", () => {
-  it("verify only when valid, unexpired and untampered", async () => {
-    const now = Date.UTC(2026, 8, 29);
-    const u = new URL(await signMasterUrl("https://x.test", "masters/a/r/f.mp4", API_KEY, now));
-    const exp = u.searchParams.get("exp"), sig = u.searchParams.get("sig");
-    expect(await verifyMasterSig("masters/a/r/f.mp4", exp, sig, API_KEY, now)).toBe(true);
-    expect(await verifyMasterSig("masters/a/r/g.mp4", exp, sig, API_KEY, now)).toBe(false);
-    expect(await verifyMasterSig("masters/a/r/f.mp4", exp, sig!.replace(/.$/, "A"), API_KEY, now)).toBe(false);
-    expect(await verifyMasterSig("masters/a/r/f.mp4", exp, sig, API_KEY, now + 16 * 60 * 1000)).toBe(false);
-    expect(await verifyMasterSig("masters/a/r/f.mp4", exp, sig, "other-key", now)).toBe(false);
+describe("type resolution (bug #25)", () => {
+  it("uses the response type, ChatGPT's stated type, or the extension, in that order", () => {
+    expect(resolveType("video/mp4", undefined, ["raw"])).toEqual({ mime: "video/mp4", kind: "video", name: "raw.mp4" });
+    expect(resolveType("application/octet-stream", "video/mp4", ["WhatsApp Video 2026-09-19 at 20.10.38.mp4"])).toMatchObject({ kind: "video", name: "WhatsApp Video 2026-09-19 at 20.10.38.mp4" });
+    expect(resolveType("", undefined, ["Chronicles of Hope - 018.mp4"])).toMatchObject({ mime: "video/mp4" });
+    expect(resolveType("audio/mpeg; charset=binary", undefined, ["download"])).toMatchObject({ kind: "audio", name: "download.mp3" });
+    expect(resolveType("text/html", "video/mp4", ["a.mp4"])).toHaveProperty("error");
+    expect(resolveType("video/mp4", undefined, ["song.mp3"])).toHaveProperty("error");
+    expect(resolveType("application/octet-stream", undefined, ["raw"])).toHaveProperty("error");
+    expect(resolveType("image/png", undefined, ["a.png"])).toHaveProperty("error");
+  });
+  it("reads Content-Disposition names", () => {
+    expect(dispositionName('attachment; filename="Chronicles of Hope - 018.mp4"')).toBe("Chronicles of Hope - 018.mp4");
+    expect(dispositionName("attachment; filename*=UTF-8''clip%20one.mov")).toBe("clip one.mov");
+    expect(dispositionName('attachment; filename="../../etc/x.mp4"')).toBe("x.mp4");
+    expect(dispositionName(null)).toBeUndefined();
   });
 });
 
 describe("POST /api/media/import", () => {
-  it("imports a chat video: private master in R2, Stream copies from a signed URL, pending consent", async () => {
+  it("imports a chat video: private master in R2, streamed to Stream by direct upload, pending consent", async () => {
     const env = envWith();
     const calls = stubFetch({ [CHAT]: mp4(1000) });
     const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()], title: "Aria rehearsal", alt: "Julie at the piano", poster_at: 30 })));
@@ -91,10 +102,18 @@ describe("POST /api/media/import", () => {
     expect(a).toMatchObject({ type: "video", file: UID, status: "processing", size: 1000, consent: "pending", title: "Aria rehearsal", alt: "Julie at the piano", source: { kind: "chatgpt", name: "Aria Rehearsal.mp4" } });
     expect(a.master).toMatch(/^masters\/aria-rehearsal\/[a-z0-9_-]{24}\/aria-rehearsal\.mp4$/);
     expect(env.MEDIA.objects.get(a.master).data.length).toBe(1000);
-    const copy = calls.find((c) => c.url.endsWith("/stream/copy"))!;
-    const sent = JSON.parse(String(copy.init!.body));
-    expect(sent.url).toMatch(new RegExp(`^https://x\\.test/media/${a.master}\\?exp=\\d+&sig=`));
-    expect(sent.thumbnailTimestampPct).toBe(0.3);
+    const req = calls.find((c) => c.url.endsWith("/stream/direct_upload"))!;
+    expect(JSON.parse(String(req.init!.body))).toMatchObject({ thumbnailTimestampPct: 0.3, meta: { asset: "aria-rehearsal" } });
+    // the upload is multipart form data carrying exactly the original bytes
+    const up = (calls as any).uploaded as Uint8Array;
+    const text = new TextDecoder("latin1").decode(up);
+    const boundary = /boundary=(\S+)/.exec((calls as any).uploadHeaders["content-type"])![1];
+    expect(text.startsWith(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="aria-rehearsal.mp4"\r\nContent-Type: video/mp4\r\n\r\n`)).toBe(true);
+    expect(text.endsWith(`\r\n--${boundary}--\r\n`)).toBe(true);
+    expect(up.length).toBe(Number((calls as any).uploadHeaders["content-length"]));
+    expect(text.split("\r\n\r\n")[1].length - `\r\n--${boundary}--\r\n`.length).toBe(1000);
+    // no URL is ever handed to Stream
+    expect(calls.some((c) => c.url.includes("/stream/copy"))).toBe(false);
     expect(env.DB.raw.prepare("SELECT count(*) n FROM versions WHERE collection='assets'").get().n).toBe(1);
   });
   it("imports audio as a consent-gated playable file", async () => {
@@ -114,14 +133,23 @@ describe("POST /api/media/import", () => {
     env.DB.raw.prepare("UPDATE documents SET data=json_set(data,'$.consent','granted','$.consent_expires','2020-01-01') WHERE collection='assets' AND id='song'").run();
     expect((await call(env, anon(`/media/${a.file}`))).status).toBe(404);
   });
-  it("serves masters only with a valid signature, uncached", async () => {
+  it("never serves originals, with or without query strings", async () => {
     const env = envWith();
     await env.MEDIA.put("masters/a/r/f.mp4", new Uint8Array([1, 2]));
-    expect((await call(env, anon("/media/masters/a/r/f.mp4"))).status).toBe(404);
-    const signed = new URL(await signMasterUrl("https://x.test", "masters/a/r/f.mp4", API_KEY));
-    const r = await call(env, anon(signed.pathname + signed.search));
-    expect(r.status).toBe(200);
-    expect(r.headers.get("cache-control")).toBe("no-store, private");
+    for (const q of ["", "?exp=9999999999&sig=x"]) expect((await call(env, anon("/media/masters/a/r/f.mp4" + q))).status).toBe(404);
+  });
+  it("imports a ChatGPT link whose path is 'raw' (bug #25)", async () => {
+    const env = envWith();
+    const RAW = "https://files.oaiusercontent.com/raw?se=2026&sig=abc";
+    stubFetch({ [RAW]: () => new Response(bytes(50), { headers: { "content-type": "application/octet-stream", "content-length": "50", "content-disposition": 'attachment; filename="Chronicles of Hope - 018.mp4"' } }) });
+    const r = await body(await call(env, post("/api/media/import", { urls: [RAW] })));
+    expect(r.results[0]).toMatchObject({ ok: true, type: "video", asset: "chronicles-of-hope-018" });
+  });
+  it("imports a chat file whose download is served as octet-stream (bug #25)", async () => {
+    const env = envWith();
+    stubFetch({ [CHAT]: () => new Response(bytes(40), { headers: { "content-type": "application/octet-stream", "content-length": "40" } }) });
+    const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref({ name: "WhatsApp Video 2026-09-19 at 20.10.38.mp4" })] })));
+    expect(r.results[0]).toMatchObject({ ok: true, type: "video", asset: "whatsapp-video-2026-09-19-at-20-10-38" });
   });
   it("replaces a placeholder keeping its details", async () => {
     const env = envWith({ "assets/aria": { type: "video", file: "f".repeat(32), master: "masters/aria/old/x.mp4", title: "Aria", alt: "Kept alt", consent: "not-needed", usage: ["concert"], caption: "Kept caption" } });
@@ -135,7 +163,7 @@ describe("POST /api/media/import", () => {
   it.each([
     ["oversized", { [CHAT]: mp4(201 * 1024 * 1024) }, /too large/],
     ["no length", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "video/mp4" } }) }, /did not say how big the file is/],
-    ["wrong type", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "text/html", "content-length": "10" } }) }, /type does not match/],
+    ["wrong type", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "text/html", "content-length": "10" } }) }, /not a supported video or audio type/],
     ["expired chat link", { [CHAT]: () => new Response("x", { status: 403 }) }, /chat file's download link has expired/],
     ["off-host redirect", { [CHAT]: () => new Response(null, { status: 302, headers: { location: "https://evil.example/x.mp4" } }) }, /redirected to a link that is not allowed/],
     ["body longer than declared", { [CHAT]: () => new Response(bytes(2000), { headers: { "content-type": "video/mp4", "content-length": "1000" } }) }, /interrupted|incomplete/],
@@ -251,7 +279,7 @@ describe("copyToR2 failure paths", () => {
   it("removes the master when Stream refuses the video", async () => {
     const env = envWith();
     vi.stubGlobal("fetch", async (url: string) =>
-      String(url).endsWith("/stream/copy") ? Response.json({ success: false, errors: [{ code: 10005, message: "quota exceeded token=secret-stream-token" }] }, { status: 400 }) : mp4(10)());
+      String(url).endsWith("/stream/direct_upload") ? Response.json({ success: false, errors: [{ code: 10005, message: "quota exceeded token=secret-stream-token" }] }, { status: 400 }) : mp4(10)());
     const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()] })));
     expect(r.results[0].error).toBe("Cloudflare Stream refused the request (400, code 10005): quota exceeded [redacted]");
     expect(r.results[0].error).not.toContain("secret-stream-token");
