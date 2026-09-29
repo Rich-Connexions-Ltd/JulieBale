@@ -228,3 +228,38 @@ describe("hardening from code review", () => {
     expect(r.results[0].warnings.join(" ")).toMatch(/add alt[\s\S]*transcript/);
   });
 });
+
+describe("copyToR2 failure paths", () => {
+  it("cleans up when R2 rejects the write", async () => {
+    const env = envWith();
+    env.MEDIA.put = async () => { throw new Error("R2 down"); };
+    stubFetch({ [CHAT]: mp4(10) });
+    const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()] })));
+    expect(r.results[0]).toMatchObject({ ok: false, error: expect.stringMatching(/interrupted/) });
+    expect(env.MEDIA.deleted.length).toBe(1);
+    expect(doc(env, "assets", "aria-rehearsal")).toBeUndefined();
+  });
+  it("cleans up when the source stream fails midway", async () => {
+    const env = envWith();
+    const failing = () => new Response(new ReadableStream({ pull(c) { c.enqueue(new Uint8Array(5)); c.error(new Error("connection reset")); } }), { headers: { "content-type": "video/mp4", "content-length": "100" } });
+    stubFetch({ [CHAT]: failing });
+    const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()] })));
+    expect(r.results[0].ok).toBe(false);
+    expect(env.MEDIA.objects.size).toBe(0);
+    expect(env.MEDIA.deleted.length).toBe(1);
+  });
+  it("removes the master when Stream refuses the video", async () => {
+    const env = envWith();
+    vi.stubGlobal("fetch", async (url: string) =>
+      String(url).endsWith("/stream/copy") ? Response.json({ success: false, errors: [{ code: 10005, message: "quota exceeded token=secret-stream-token" }] }, { status: 400 }) : mp4(10)());
+    const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()] })));
+    expect(r.results[0].error).toBe("Cloudflare Stream refused the request (400, code 10005)");
+    expect(env.MEDIA.objects.size).toBe(0);
+  });
+  it("one bad file does not fail the others", async () => {
+    const env = envWith();
+    stubFetch({ [CHAT]: mp4(10), "https://files.oaiusercontent.com/bad": () => new Response("x", { status: 403 }) });
+    const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref(), ref({ name: "b.mp4", download_link: "https://files.oaiusercontent.com/bad" })] })));
+    expect(r.results.map((x: any) => x.ok)).toEqual([true, false]);
+  });
+});

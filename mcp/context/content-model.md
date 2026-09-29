@@ -418,9 +418,11 @@ Limits: video mp4, mov or webm up to 200 MB; audio mp3, m4a, wav or ogg up to
 - `poster_at` — where the poster frame is taken, as a percent through the
   video (0–100, default 10).
 
-**Details to give:** `title`; `alt` — what the poster/video shows (used as the
-poster image's alternative text); optionally `caption` (shown under it) and
-`transcript` (speech or lyrics; strongly recommended), `usage`, `roles`.
+**Details to give:** `title`; `alt` for videos — what the poster/video shows,
+used as the poster image's alternative text (recommended: the import succeeds
+without it but returns a warning); `transcript` for anything with speech or
+lyrics (recommended, same warning); optionally `caption` (visible text shown
+under the player), `usage`, `roles`. Images, by contrast, *require* `alt`.
 
 **Consent:** new imports are `pending`, so they are **not shown or even
 downloadable** until consent is `granted` (with a `consent_note`: who agreed,
