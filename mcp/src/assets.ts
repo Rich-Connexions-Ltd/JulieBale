@@ -128,7 +128,7 @@ export function searchAssets(rows: Array<{ id: string; doc: any }>, query: Asset
 /* ---------------------- Imported media (Sprint 16) ----------------------- */
 
 /** Media fields an import may set or replace; everything else on an asset is kept. */
-export const MEDIA_FIELDS = ["file", "master", "status", "size", "duration", "width", "height", "orientation", "thumbnail", "source"] as const;
+export const MEDIA_FIELDS = ["file", "master", "status", "size", "duration", "width", "height", "orientation", "thumbnail", "source", "mp4", "mp4_status"] as const;
 export const MEDIA_STATUS = ["processing", "ready", "error"] as const;
 const STREAM_UID_RE = /^[a-f0-9]{32}$/;
 
@@ -198,6 +198,34 @@ export function replaceAssetMedia(prev: Record<string, any>, media: ImportedMedi
 
 export const orientationOf = (w: number, h: number) => (w > h ? "landscape" : w < h ? "portrait" : "square");
 export const streamThumbnail = (uid: string) => (STREAM_UID_RE.test(uid) ? `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg` : undefined);
+export const streamIframe = (uid: string) => (STREAM_UID_RE.test(uid) ? `https://iframe.videodelivery.net/${uid}` : undefined);
+
+// Stream's web MP4 for one video: exactly this shape, for this video's own uid.
+const STREAM_MP4_RE = /^https:\/\/customer-[a-z0-9]{1,64}\.cloudflarestream\.com\/([a-f0-9]{32})\/downloads\/default\.mp4$/;
+export function isStreamMp4(url: unknown, uid: unknown): url is string {
+  if (typeof url !== "string" || typeof uid !== "string" || !STREAM_UID_RE.test(uid)) return false;
+  const m = STREAM_MP4_RE.exec(url);
+  return !!m && m[1] === uid;
+}
+
+/**
+ * Fold Stream's download state into a video asset: `mp4_status` is
+ * processing | ready | error, and `mp4` is kept only when it is a valid web MP4
+ * for this asset's uid.
+ */
+export function applyStreamDownload(asset: Record<string, any>, d: any): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...asset };
+  delete out.mp4;
+  if (!d || d.error) {
+    out.mp4_status = "error";
+    return out;
+  }
+  if (d.status === "ready") {
+    if (isStreamMp4(d.url, asset.file)) Object.assign(out, { mp4: d.url, mp4_status: "ready" });
+    else out.mp4_status = "error";
+  } else out.mp4_status = d.status === "error" ? "error" : "processing";
+  return out;
+}
 
 /** Fold Stream's video details into an asset: validated numbers only; thumbnail derived from the uid. */
 export function applyStreamDetails(asset: Record<string, any>, d: any): Record<string, unknown> {

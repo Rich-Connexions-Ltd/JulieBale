@@ -87,7 +87,7 @@ Section `style`, particular blocks:
 | `align` | hero | `left`, `centre` |
 | `measure` | hero | `narrow`, `wide` |
 | `treatment` | hero | `teal` (default), `cream`, `none` (split/portrait: plain ivory copy panel; cinematic: lighter overlay kept for legibility) |
-| `focus` | hero, showcase, feature | focal point `"<x>% <y>%"`, e.g. `"60% 20%"` |
+| `focus` | hero, showcase, feature, media | focal point `"<x>% <y>%"`, e.g. `"60% 20%"` |
 | `focus_end` | hero, showcase, feature | where the focal point ends up with `scene_image: "reframe"` |
 | `sequence` | hero | `true`: kicker, heading, intro, button appear in turn |
 | `image_side` | showcase, feature, duo | `left`, `right` (wide screens) |
@@ -96,11 +96,12 @@ Section `style`, particular blocks:
 | `grid` | showcase, feature | `balanced`, `asymmetric` |
 | `size` | pullquote | `standard`, `oversized` |
 | `testimonial_layout` | testimonials | `quote`, `portrait`, `cards` (default), `before-after`, `carousel` (visitors move through it themselves; it never advances on its own) |
-| `media_ratio` | media | `landscape` (default), `portrait`, `cinematic`, `square` |
+| `media_ratio` | media | `landscape` (default), `portrait` (4:5), `cinematic` (16:9), `square`, `wide` (21:9; 16:9 on phones) |
+| `playback` | media | `player` (default), `ambient`, `background`: how a video plays (see Performance media) |
 | `image_escape` | showcase, feature, duo | `side`, `up`, `down`, `both`, `side-up`, `side-down`: the image breaks out of its frame (sideways toward the page edge, and/or into the section above/below) |
 | `overshoot` | showcase, feature, duo | `subtle`, `medium` (default), `bold`: how far it escapes |
 | `layer` | showcase, feature, duo | `above` (default), `below`: over or under neighbouring sections |
-| `shape` | showcase, feature, duo | `arch`, `circle`, `soft`, `slant`: clip shape of the image |
+| `shape` | showcase, feature, duo, media | `arch`, `circle`, `soft`, `slant`: clip shape of the image (or video frame) |
 
 On narrow screens (phones) sideways escape is switched off and vertical escape
 is kept small, so nothing ever causes sideways scrolling. Escaping images never
@@ -295,6 +296,36 @@ starts when on screen (never for visitors who prefer reduced motion; the player
 can always be paused). Add a `caption`, and a `transcript` for anything with
 speech or lyrics. Audio plays with standard controls and only loads on demand.
 
+### Video as moving photography (`playback`)
+`style.playback` chooses how the block's video behaves:
+
+| `playback` | What it does |
+|---|---|
+| `player` (default) | Poster first; the player loads when the visitor presses play. Has sound. |
+| `ambient` | The video fills its frame like a photograph: cropped to the frame, never letterboxed or black-barred, muted, looping only while on screen, pausing when scrolled away. A small pause/play button sits in the corner. |
+| `background` | A full-bleed muted loop behind the heading and caption, which sit on a dark panel so they stay readable. |
+
+Framing uses the options you already know: `media_ratio`, `shape`, `focus`
+(where the subject sits in the crop) and `phone` `focus`/`crop`. Recipes:
+- **Moving portrait:** `{"playback": "ambient", "media_ratio": "portrait", "shape": "arch", "focus": "50% 30%"}`
+- **Cinematic band:** `{"playback": "ambient", "media_ratio": "wide", "width": "full"}`
+- **Atmospheric background:** `{"playback": "background"}` with a short `heading` and `caption`.
+
+Rules worth knowing:
+- `ambient` and `background` are **muted**. Use `player` for anything that
+  should be heard (a performance, a spoken message).
+- They need an **imported video asset** (`video: "asset:<id>"`) whose web
+  MP4 is ready: `refresh_media_asset` prepares it once the video is ready and
+  reports `mp4_status` (`processing` → `ready`; `error` means try refreshing
+  again later). Until then, or for a bare Stream id, the block quietly shows the
+  normal player, so nothing breaks.
+- Visitors who prefer reduced motion see the still poster (they can press
+  play); nothing ever plays off screen, and a visitor's pause is respected.
+- **Accessibility:** the asset's `alt` names the video (it is read out and
+  labels the pause button); `caption` is the visible text; add a `transcript`
+  if the video has speech or lyrics. A `background` video is decorative, so put
+  the meaning in the heading and caption.
+
 ## Composition and ornament (Sprint 14)
 
 ### Heading markup
@@ -431,11 +462,16 @@ placeholder clip). Never set `granted` without Julie's confirmation.
 
 **Video takes a while:** after importing, call `refresh_media_asset` (or
 `refreshMedia`) until `status` is `ready`; it fills in duration, size,
-dimensions and orientation. Pass `poster_at` to move the poster frame.
+dimensions and orientation. Pass `poster_at` to move the poster frame. Once the
+video is ready, refresh also prepares its web MP4 for `ambient`/`background`
+playback: the asset gains `mp4_status` (`processing`, `ready` or `error`) and,
+when ready, `mp4`. These are set by refresh; do not edit them (an edited or
+invalid `mp4` is ignored and the player is shown instead).
 
 **Replacing a placeholder:** import the new file with `asset` set to the
 placeholder's id. Only the media changes (file, master, status, size, duration,
-dimensions, orientation, thumbnail, source); the title, alt, consent, usage,
+dimensions, orientation, thumbnail, source, mp4, mp4_status); refresh the asset
+again afterwards; the title, alt, consent, usage,
 roles, caption, transcript and notes are kept, and every page using
 `asset:<id>` shows the new file. The old file is listed in `previous_files`, and
 `undo_content` on `assets/<id>` puts it back.

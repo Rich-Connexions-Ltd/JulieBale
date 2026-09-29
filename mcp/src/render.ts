@@ -7,7 +7,7 @@
  * with no `style` renders exactly as before.
  */
 import { resolveSection, resolveDesign, validCollageEntry, type ResolvedSection } from "./presentation";
-import { assetIdOf, consentOk, testimonialConsentOk } from "./assets";
+import { assetIdOf, consentOk, testimonialConsentOk, isStreamMp4, streamThumbnail } from "./assets";
 import { sanitizeLanding } from "./sanitize";
 
 interface Env {
@@ -21,13 +21,16 @@ const esc = (s: unknown): string =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
+// Link targets allowed in Markdown: web, mail, phone, site-relative and in-page.
+const SAFE_HREF = /^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i;
+
 // Inline Markdown: bold, italic, code, links (input is already HTML-escaped).
 function mdInline(t: string): string {
   return t
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>")
     .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text: string, href: string) => (SAFE_HREF.test(href) ? `<a href="${href}">${text}</a>` : text));
 }
 
 // Minimal, dependency-free Markdown -> HTML for body copy.
@@ -458,7 +461,7 @@ async function renderBlock(env: Env, b: any, i: number, p: ResolvedSection): Pro
       return renderTestimonials(env, b, p, ivory);
 
     case "media":
-      return renderMedia(b, ivory);
+      return renderMedia(b, p, ivory);
 
     default:
       return `<!-- unknown block type: ${esc(b.type)} -->`;
@@ -512,6 +515,10 @@ async function loadAssets(env: Env, ids: string[]): Promise<Map<string, any>> {
   return map;
 }
 
+/** Resolved web MP4 for a media section's video asset (internal; see resolveAssetRefs). */
+export const RESOLVED_VIDEO = Symbol("resolvedVideo");
+interface ResolvedVideo { mp4: string; alt: string }
+
 /**
  * Replace `asset:<id>` references with the asset's file (plus its alt text and
  * default focal point for the main image). An asset without consent (pending,
@@ -538,6 +545,11 @@ export async function resolveAssetRefs(env: Env, page: any): Promise<any> {
       const a = assets.get(id);
       if (!a || !consentOk(a)) { c[f] = ""; continue; }
       c[f] = a.file;
+      // Editorial playback data travels under a Symbol key: JSON content can
+      // never supply or spoof it. The stored MP4 is re-checked here because
+      // asset documents are editable.
+      if (f === "video" && withStyle && a.type === "video" && a.mp4_status === "ready" && isStreamMp4(a.mp4, a.file))
+        c[RESOLVED_VIDEO] = { mp4: a.mp4, alt: typeof a.alt === "string" ? a.alt : "" } satisfies ResolvedVideo;
       if (f === "image") {
         if (!c.image_alt && a.alt) c.image_alt = a.alt;
         if (withStyle && a.focus && !(isObj(c.style) && c.style.focus)) c.style = { ...(isObj(c.style) ? c.style : {}), focus: a.focus };
@@ -564,23 +576,54 @@ export async function resolveAssetRefs(env: Env, page: any): Promise<any> {
 const STREAM_RE = /^[a-f0-9]{32}$/;
 
 /** Poster-first video: nothing heavy loads until the visitor presses play (app.js swaps in the player). */
-function mediaButton(uid: string, label: string, poster: string, loop = false): string {
-  const src = poster ? assetUrl(poster) : `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg`;
-  return `<button type="button" class="media-play" data-stream="${uid}"${loop ? ` data-loop="1"` : ""} aria-label="${esc(label)}"><img src="${esc(src)}" alt="" loading="lazy"><span class="media-play__icon" aria-hidden="true"></span></button>`;
+function mediaButton(uid: string, label: string, poster: string, loop = false, style = ""): string {
+  const src = poster ? assetUrl(poster) : streamThumbnail(uid);
+  return `<button type="button" class="media-play" data-stream="${uid}"${loop ? ` data-loop="1"` : ""} aria-label="${esc(label)}"><img src="${esc(src)}" alt="" loading="lazy"${style ? ` style="${esc(style)}"` : ""}><span class="media-play__icon" aria-hidden="true"></span></button>`;
 }
 
-function renderMedia(b: any, ivory: string): string {
+/**
+ * Editorial video (#26): a real <video> cropped to its frame. Muted, looping,
+ * no preload; app.js plays it only while on screen (never under reduced
+ * motion) and swaps the native controls for a pause/play toggle. Without
+ * JavaScript an ambient video keeps native controls; a background one stays a
+ * still poster.
+ */
+function editorialVideo(uid: string, v: ResolvedVideo, poster: string, style: string, name: string, background: boolean): string {
+  const posterUrl = poster ? assetUrl(poster) : streamThumbnail(uid);
+  const attrs = background ? ` aria-hidden="true" tabindex="-1"` : ` controls aria-label="${esc(name)}"`;
+  return `<video class="media-video" muted playsinline loop preload="none" poster="${esc(posterUrl)}"${attrs}${style ? ` style="${esc(style)}"` : ""}><source src="${esc(v.mp4)}" type="video/mp4"></video>`;
+}
+const videoToggle = (label: string) =>
+  `<button type="button" class="media-toggle" data-video-toggle data-label="${esc(label)}" aria-label="Play ${esc(label)}" hidden><span aria-hidden="true"></span></button>`;
+
+function renderMedia(b: any, p: ResolvedSection, ivory: string): string {
   const uid = typeof b.video === "string" && STREAM_RE.test(b.video) ? b.video : "";
   const what = b.caption || plainHeadline(b.heading) || "performance";
-  const visual = uid
-    ? mediaButton(uid, `${b.loop ? "Play atmospheric video" : "Play video"}: ${what}`, b.poster || "", !!b.loop)
-    : b.poster ? img(b.poster, b.image_alt || what) : "";
+  const v: ResolvedVideo | undefined = uid ? b[RESOLVED_VIDEO] : undefined;
+  const mode = v && p.classes.includes("s-playback-background") ? "background" : v && p.classes.includes("s-playback-ambient") ? "ambient" : "player";
+  const transcript = b.transcript ? `<details class="transcript"><summary>Transcript</summary>${md(b.transcript)}</details>` : "";
+  if (mode === "background") {
+    // Heading and caption render once, on the overlay panel; the video is decorative.
+    return `<section class="section media-scene media-scene--bg${ivory}">
+    <div class="media-bg">${editorialVideo(uid, v!, b.poster || "", p.imgStyle || "", "", true)}</div>
+    <div class="container"><div class="media-overlay">
+      ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}${b.caption ? `<p class="caption">${esc(b.caption)}</p>` : ""}${transcript}
+    </div></div>
+    ${videoToggle("background video")}
+  </section>`;
+  }
+  const visual =
+    mode === "ambient"
+      ? editorialVideo(uid, v!, b.poster || "", p.imgStyle || "", v!.alt || what, false) + videoToggle(`video: ${v!.alt || what}`)
+      : uid
+        ? mediaButton(uid, `${b.loop ? "Play atmospheric video" : "Play video"}: ${what}`, b.poster || "", !!b.loop, p.imgStyle || "")
+        : b.poster ? img(b.poster, b.image_alt || what, "", p.imgStyle || "") : "";
   const audio = b.audio ? `<audio class="media-audio" controls preload="none" src="${esc(mediaUrl(b.audio))}"></audio>` : "";
   if (!visual && !audio) return "";
   return `<section class="section media-scene${ivory}"><div class="container">
     ${b.heading ? `<h2 class="section-title">${headline(b.heading)}</h2>` : ""}
     <figure class="media-frame">${visual ? `<div class="media-frame__visual">${visual}</div>` : ""}${audio}${b.caption ? `<figcaption class="caption">${esc(b.caption)}</figcaption>` : ""}</figure>
-    ${b.transcript ? `<details class="transcript"><summary>Transcript</summary>${md(b.transcript)}</details>` : ""}
+    ${transcript}
   </div></section>`;
 }
 

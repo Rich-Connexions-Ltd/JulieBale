@@ -3,8 +3,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding, MOTION_GUARD } from "./render";
 import { landingWarnings } from "./sanitize";
-import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, posterPercent, slugForAsset } from "./media-import";
-import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, consentOk as assetConsentOk } from "./assets";
+import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, streamEnableDownload, posterPercent, slugForAsset } from "./media-import";
+import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, applyStreamDownload, isStreamMp4, consentOk as assetConsentOk } from "./assets";
 import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
 import { ASSET_OPTIONS, CONSENT_MEANINGS, assetWarnings, testimonialWarnings, searchAssets, type AssetQuery } from "./assets";
 import {
@@ -344,6 +344,9 @@ async function refreshMedia(env: Env, id: unknown, posterAt: unknown) {
   const asset = parse(await readDoc(env, "assets", id));
   if (!asset) return { status: 404, body: { ok: false, error: `no asset at assets/${id}` } };
   if (asset.type !== "video" || !/^[a-f0-9]{32}$/.test(String(asset.file || ""))) return { status: 400, body: { ok: false, error: "only imported videos can be refreshed" } };
+  if (posterAt === null) posterAt = undefined;
+  if (posterAt !== undefined && (typeof posterAt !== "number" || !Number.isFinite(posterAt) || posterAt < 0 || posterAt > 100))
+    return { status: 400, body: { ok: false, error: "poster_at must be a number from 0 to 100 (percent through the video)" } };
   if (!streamConfigured(env)) return { status: 501, body: { ok: false, error: "Cloudflare Stream is not configured" } };
   if (posterAt !== undefined) {
     const r = await streamSetPoster(env, asset.file, posterPercent(posterAt));
@@ -351,10 +354,19 @@ async function refreshMedia(env: Env, id: unknown, posterAt: unknown) {
   }
   const d = await streamDetails(env, asset.file);
   if (d && "error" in d) return { status: 502, body: { ok: false, error: d.error } };
-  const updated = applyStreamDetails(asset, d);
+  let updated: any = applyStreamDetails(asset, d);
+  // Once the video is ready, prepare its web MP4 (for editorial playback). A
+  // failure here never fails the refresh: the video still works as a player.
+  let mp4_note: string | undefined;
+  if (updated.status === "ready" && !(updated.mp4_status === "ready" && isStreamMp4(updated.mp4, updated.file))) {
+    const dl = await streamEnableDownload(env, updated.file);
+    updated = applyStreamDownload(updated, dl);
+    if ("error" in dl) mp4_note = `The web MP4 could not be prepared (${dl.error}); the video still plays in the player. Try refreshing again later.`;
+  }
   await writeDoc(env, "assets", id, JSON.stringify(updated));
-  const { status, duration, width, height, orientation, size, thumbnail } = updated as any;
-  return { status: 200, body: { ok: true, asset: id, ref: `asset:${id}`, status, duration, width, height, orientation, size, thumbnail } };
+  const { status, duration, width, height, orientation, size, thumbnail, mp4_status } = updated;
+  if (!mp4_note && status === "ready" && mp4_status === "processing") mp4_note = "The web MP4 for editorial playback is still being prepared: refresh again in a minute.";
+  return { status: 200, body: { ok: true, asset: id, ref: `asset:${id}`, status, duration, width, height, orientation, size, thumbnail, mp4_status, ...(mp4_note ? { note: mp4_note } : {}) } };
 }
 
 /* --------------------------- Feature requests ----------------------------- */
@@ -383,7 +395,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.10.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.11.0" });
 
   async init() {
     this.server.tool(
@@ -515,7 +527,7 @@ export class ContentMCP extends McpAgent<Env> {
 
     this.server.tool(
       "refresh_media_asset",
-      "Update an imported video asset with Cloudflare Stream's details (ready/processing, duration, size, dimensions, orientation, poster). WHEN: after importing a video, until status is ready. Optionally move the poster frame with poster_at (percent 0-100).",
+      "Update an imported video asset with Cloudflare Stream's details (ready/processing, duration, size, dimensions, orientation, poster). Once ready it also prepares the web MP4 that style.playback ambient/background needs (mp4_status: processing, ready or error). WHEN: after importing a video, until status and mp4_status are ready. Optionally move the poster frame with poster_at (percent 0-100).",
       { id: z.string(), poster_at: z.number().optional() },
       async ({ id, poster_at }) => {
         const r = await refreshMedia(this.env, id, poster_at);
@@ -814,7 +826,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-      version: "0.10.0",
+      version: "0.11.0",
     },
     servers: [{ url: origin }],
     paths: {
@@ -860,7 +872,7 @@ function openApiSchema(origin: string) {
       "/api/media/refresh/{id}": {
         post: {
           operationId: "refreshMedia", summary: "Update an imported video's details",
-          description: "Fill in Stream's details for an imported video (ready/processing, duration, size, dimensions, orientation). Call after importMedia until status is ready. Optional poster_at (percent 0-100) moves the poster frame.",
+          description: "Fill in Stream's details for an imported video (status, duration, size, dimensions, orientation) and, once ready, prepare its web MP4 for style.playback ambient/background. Call after importMedia until status and mp4_status are ready. Optional poster_at (0-100) moves the poster.",
           parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
           requestBody: { required: false, content: { "application/json": { schema: { type: "object", properties: { poster_at: { type: "integer", minimum: 0, maximum: 100 } } } } } },
           responses: { "200": { description: "Asset summary", content: { "application/json": { schema: { $ref: "#/components/schemas/MediaSummary" } } } } },
@@ -904,9 +916,9 @@ function openApiSchema(origin: string) {
         PresentationOptions: { type: "object", description: "Allowed presentation values with meanings and examples.", properties: { style: { type: "object", description: "Section style keys: each has values (value -> meaning), optional blocks it applies to, or a pattern.", additionalProperties: true }, design: { type: "object", description: "Page design keys, same shape as style.", additionalProperties: true }, rules: { type: "array", items: { type: "string" } }, examples: { type: "object", description: "One worked variant per concept (stage, editorial, journey).", additionalProperties: true } } },
         VariantList: { type: "object", properties: { ok: { type: "boolean" }, base: { type: "string" }, limit: { type: "integer" }, error: { type: "string" }, variants: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, previewUrl: { type: "string" }, unresolved: { type: "array", items: { type: "string" } }, warnings: { type: "array", items: { type: "string" } } } } }, sections: { type: "array", description: "The live page's section keys", items: { type: "object", properties: { key: { type: "string" }, type: { type: "string" }, heading: { type: "string" } } } } } },
         ImportResults: { type: "object", properties: { results: { type: "array", items: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string", description: "Asset id" }, ref: { type: "string", description: "Use in pages, e.g. asset:aria-rehearsal" }, type: { type: "string" }, status: { type: "string", enum: ["processing", "ready", "error"] }, replaced: { type: "boolean" }, warnings: { type: "array", items: { type: "string" }, description: "Things to fix on the new asset (it was still saved): missing alt text or transcript, consent kept as pending because granted had no consent_note, or values outside the asset vocabulary." }, name: { type: "string" }, error: { type: "string", description: "Why this file was not imported (type, size, link, or Stream's reason)." } } } }, ok: { type: "boolean" }, error: { type: "string" } } },
-        MediaSummary: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, duration: { type: "number" }, width: { type: "integer" }, height: { type: "integer" }, orientation: { type: "string" }, size: { type: "integer" }, thumbnail: { type: "string" }, error: { type: "string" } } },
+        MediaSummary: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, duration: { type: "number" }, width: { type: "integer" }, height: { type: "integer" }, orientation: { type: "string" }, size: { type: "integer" }, thumbnail: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], description: "Web MP4 for ambient/background playback" }, note: { type: "string" }, error: { type: "string" } } },
         AssetList: { type: "object", properties: { assets: { type: "array", items: { type: "object", properties: { ref: { type: "string" }, title: { type: "string" }, type: { type: "string" }, file: { type: "string" }, orientation: { type: "string" }, usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } }, people: { type: "array", items: { type: "string" } }, consent: { type: "string" }, usable: { type: "boolean" } } } }, vocabulary: { type: "object", additionalProperties: true }, consent: { type: "object", additionalProperties: true } } },
-        Asset: { type: "object", description: "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).", properties: { file: { type: "string", description: "Filename in /assets, media key, or Stream video id" }, type: { type: "string", enum: [...ASSET_OPTIONS.type] }, title: { type: "string" }, alt: { type: "string" }, people: { type: "array", items: { type: "string" } }, setting: { type: "string" }, orientation: { type: "string", enum: [...ASSET_OPTIONS.orientation] }, focus: { type: "string", description: "Default focal point, e.g. 60% 20%" }, tone: { type: "array", items: { type: "string" } }, usage: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.usage] } }, roles: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.roles] } }, suits: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.suits] } }, consent: { type: "string", enum: [...ASSET_OPTIONS.consent] }, consent_note: { type: "string" }, consent_expires: { type: "string" }, date: { type: "string" }, lighting: { type: "string" }, crop_zones: { type: "string" }, notes: { type: "string" } } },
+        Asset: { type: "object", description: "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).", properties: { file: { type: "string", description: "Filename in /assets, media key, or Stream video id" }, type: { type: "string", enum: [...ASSET_OPTIONS.type] }, title: { type: "string" }, alt: { type: "string" }, people: { type: "array", items: { type: "string" } }, setting: { type: "string" }, orientation: { type: "string", enum: [...ASSET_OPTIONS.orientation] }, focus: { type: "string", description: "Default focal point, e.g. 60% 20%" }, tone: { type: "array", items: { type: "string" } }, usage: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.usage] } }, roles: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.roles] } }, suits: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.suits] } }, consent: { type: "string", enum: [...ASSET_OPTIONS.consent] }, consent_note: { type: "string" }, consent_expires: { type: "string" }, date: { type: "string" }, lighting: { type: "string" }, crop_zones: { type: "string" }, notes: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], readOnly: true, description: "Video only: web MP4 for style.playback ambient/background; set by refresh" }, mp4: { type: "string", readOnly: true, description: "Video only: web MP4 URL, set by refresh; do not edit" } } },
         Testimonial: { type: "object", description: "Collection 'testimonials'. Shown only when consent is granted.", properties: { name: { type: "string" }, role: { type: "string" }, quote: { type: "string" }, story: { type: "string", description: "Markdown" }, before: { type: "string" }, after: { type: "string" }, portrait: { type: "string", description: "asset:<id>" }, video: { type: "string", description: "asset:<id> or Stream id" }, tags: { type: "array", items: { type: "string" } }, consent: { type: "string", enum: ["granted", "pending", "refused"] }, consent_note: { type: "string" }, consent_expires: { type: "string" } } },
         Variant: { type: "object", description: "An unpublished variant (collection 'variants'). Copy comes from the live base page; only order and presentation live here. `token` and `base` are managed by the server.", properties: { base: { type: "string", readOnly: true }, label: { type: "string" }, note: { type: "string" }, token: { type: "string", readOnly: true }, design: { $ref: "#/components/schemas/PageDesign" }, sections: { type: "array", items: { type: "object", required: ["from"], properties: { from: { type: "string", description: "Section key on the live page" }, style: { $ref: "#/components/schemas/SectionStyle" } } } } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { id: { type: "integer", readOnly: true }, title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] }, status: { type: "string", readOnly: true, enum: ["open", "planned", "done", "declined"] }, resolution: { type: "string", readOnly: true, description: "Developer note: planned sprint, merged-into, or reason declined" }, created_at: { type: "string", readOnly: true }, updated_at: { type: "string", readOnly: true } } },

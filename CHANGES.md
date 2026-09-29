@@ -122,6 +122,25 @@ Feature request #24. Council review (external fetches, secrets, consent).
 - Fix: `/api` and `/mcp` now fail closed when `API_KEY` is not configured (previously open)
 - `mcp/test/media-import.test.ts`, `assets.test.ts`, `docs.test.ts`, `helpers.ts` (fake R2)
 
+## Sprint 18: Editorial Video Modes (request #26, 0.11.0) — 2026-09-29
+
+Video as moving photography: cropped to the frame (never letterboxed), muted,
+playing only on screen, with an accessible pause. Council review: plan R5
+(max rounds, closing notes in the plan), code approved R3.
+
+**Files changed:**
+- `mcp/src/presentation.ts` — `style.playback` (`player` default, `ambient`, `background`); `media_ratio: wide`; `shape` and `focus` now apply to media
+- `mcp/src/render.ts` — ambient/background `<video>` markup (server-rendered focal point, native controls without JS, toggle); resolved MP4 travels under a Symbol key and is re-validated at render; falls back to the player; Markdown links limited to http(s)/mailto/tel/site-relative/#
+- `mcp/src/assets.ts` — `isStreamMp4`, `streamIframe`, `applyStreamDownload`; placeholder replacement drops `mp4`/`mp4_status`
+- `mcp/src/media-import.ts` — `streamEnableDownload` (Stream web MP4)
+- `mcp/src/index.ts` — refresh prepares the web MP4 once ready (`mp4_status` processing/ready/error; failures never fail the refresh); `poster_at` validated; descriptions; OpenAPI 0.11.0
+- `mcp/public/app.js` — in-view play/pause, sticky visitor pause, no autoplay under reduced motion, nothing plays off screen
+- `mcp/public/styles.css` — cover-cropped video, toggle, background panel (ink 85%), wide ratio, media shapes, phone focus for video
+- `mcp/context/content-model.md`, `mcp/README.md`, `mcp/openapi.json` — playback modes, recipes, mp4 fields, accessibility definitions
+- `mcp/test/video.test.ts` — URL validation, refresh flow, markup, fallbacks, CSS/script guards, contrast (26 tests)
+
+**Commit:** `(this commit)`
+
 ## Sprint 17: Media Import Fixes (bug #25) — 2026-09-29
 
 **Files changed:**

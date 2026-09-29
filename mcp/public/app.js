@@ -72,6 +72,48 @@
     }
   });
 
+  // Editorial video (#26): muted loops that play only while on screen and
+  // never under reduced motion. The toggle replaces the native controls; a
+  // visitor's pause sticks.
+  var editorial = [];
+  document.querySelectorAll("video.media-video").forEach(function (video) {
+    var scene = video.closest(".media-scene");
+    var toggle = scene && scene.querySelector("[data-video-toggle]");
+    if (!toggle) return;
+    var label = toggle.getAttribute("data-label") || "video";
+    var paused = prefersReduced;
+    var show = function (playing) {
+      toggle.classList.toggle("is-playing", playing);
+      toggle.setAttribute("aria-label", (playing ? "Pause " : "Play ") + label);
+    };
+    var play = function () {
+      var p = video.play();
+      if (p && p.catch) p.catch(function () { show(false); });
+    };
+    video.removeAttribute("controls");
+    toggle.hidden = false;
+    video.addEventListener("play", function () { show(true); });
+    video.addEventListener("pause", function () { show(false); });
+    toggle.addEventListener("click", function () {
+      if (video.paused) { paused = false; play(); } else { paused = true; video.pause(); }
+    });
+    editorial.push({ video: video, play: play, isPaused: function () { return paused; } });
+  });
+  // Always observed, so nothing plays off screen, even a video the visitor
+  // started under reduced motion; it only starts by itself when motion is allowed.
+  if (editorial.length && "IntersectionObserver" in window) {
+    var videoIo = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        editorial.forEach(function (e) {
+          if (e.video !== entry.target) return;
+          if (entry.isIntersecting && !prefersReduced && !e.isPaused()) e.play();
+          else if (!entry.isIntersecting && !e.video.paused) e.video.pause();
+        });
+      });
+    }, { threshold: 0.35 });
+    editorial.forEach(function (e) { videoIo.observe(e.video); });
+  }
+
   /* ---- Testimonial carousel: visitor-driven, never auto-advances -- */
   document.querySelectorAll("[data-carousel]").forEach(function (root) {
     var track = root.querySelector(".carousel__track");

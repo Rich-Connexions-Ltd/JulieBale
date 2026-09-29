@@ -1423,10 +1423,10 @@ main { overflow-x: clip; }
 .s-layer-below { z-index: 0; }
 .s-layer-below + section, section:has(+ .s-layer-below) { position: relative; z-index: 4; }
 /* clip shapes */
-.s-shape-arch :is(.feature__media .frame, .showcase__media, .duo__media) { border-radius: 999px 999px 0 0; overflow: hidden; }
-.s-shape-circle :is(.feature__media .frame, .showcase__media, .duo__media) { clip-path: circle(48% at 50% 50%); aspect-ratio: 1 / 1; }
-.s-shape-soft :is(.feature__media .frame, .showcase__media, .duo__media) { border-radius: 1.5rem; overflow: hidden; }
-.s-shape-slant :is(.feature__media .frame, .showcase__media, .duo__media) { clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%); }
+.s-shape-arch :is(.feature__media .frame, .showcase__media, .duo__media, .media-frame__visual) { border-radius: 999px 999px 0 0; overflow: hidden; }
+.s-shape-circle :is(.feature__media .frame, .showcase__media, .duo__media, .media-frame__visual) { clip-path: circle(48% at 50% 50%); aspect-ratio: 1 / 1; }
+.s-shape-soft :is(.feature__media .frame, .showcase__media, .duo__media, .media-frame__visual) { border-radius: 1.5rem; overflow: hidden; }
+.s-shape-slant :is(.feature__media .frame, .showcase__media, .duo__media, .media-frame__visual) { clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%); }
 
 /* --- Section transitions (#11) -------------------------------- */
 :root { --t-overlap: 3.5rem; --t-hold: 50vh; --t-depth: 0.96; --t-wipe: 1100ms; --header-clear: 9.5rem; }
@@ -1665,6 +1665,33 @@ html.js .carousel__controls { display: flex; justify-content: center; align-item
 .media-audio { width: 100%; margin-top: var(--space-4); }
 .transcript { margin-top: var(--space-4); }
 .transcript summary { cursor: pointer; font-size: var(--text-sm); color: var(--colour-primary); }
+.s-media-ratio-wide .media-frame__visual { aspect-ratio: 21 / 9; }
+@media (max-width: 48rem) { .s-media-ratio-wide .media-frame__visual { aspect-ratio: 16 / 9; } }
+
+/* editorial video (#26): moving photography, cropped to the frame, never letterboxed */
+.media-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: var(--colour-primary-dark); }
+.media-toggle {
+  position: absolute; right: var(--space-3); bottom: var(--space-3); z-index: 2; width: 2.75rem; height: 2.75rem; padding: 0;
+  border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--colour-ink) 90%, transparent); color: var(--colour-ivory);
+}
+.media-toggle[hidden] { display: none; }
+.media-toggle:focus-visible { outline: 3px solid var(--colour-gold-soft); outline-offset: 2px; }
+.media-toggle > span { width: 0; height: 0; border-style: solid; border-width: 0.5rem 0 0.5rem 0.8rem; border-color: transparent transparent transparent currentColor; margin-left: 0.2rem; }
+.media-toggle.is-playing > span { width: 0.7rem; height: 0.9rem; border: 0; margin: 0; border-inline: 0.22rem solid currentColor; }
+/* background: a full-bleed loop behind the words, which sit on a dark panel */
+.media-scene--bg { position: relative; min-height: 70vh; display: grid; align-items: center; overflow: hidden; background: var(--colour-primary-dark); }
+.media-bg { position: absolute; inset: 0; }
+.media-scene--bg > .container { position: relative; z-index: 1; }
+.media-overlay {
+  max-width: 38rem; padding: var(--space-5); border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--colour-ink) 85%, transparent); color: var(--colour-ivory);
+}
+.media-overlay .section-title { color: var(--colour-ivory); margin-bottom: var(--space-3); }
+.media-overlay .caption { color: color-mix(in srgb, var(--colour-ivory) 86%, transparent); margin: 0; }
+.media-overlay .transcript summary, .media-overlay a { color: var(--colour-gold-soft); }
+@media (max-width: 48rem) { .media-scene--bg { min-height: 60vh; } .media-overlay { padding: var(--space-4); } }
+
 /* testimonial video button sits inline in cards */
 .testimonial .media-play { position: relative; aspect-ratio: 16 / 9; height: auto; margin-top: var(--space-3); overflow: hidden; }
 
@@ -1782,7 +1809,7 @@ html.js .carousel__controls { display: flex; justify-content: center; align-item
   .p-crop-portrait  :is(.feature__media .frame, .showcase__media, .media-frame__visual, .duo__media) { aspect-ratio: 4 / 5; }
   .p-crop-landscape :is(.feature__media .frame, .showcase__media, .media-frame__visual, .duo__media) { aspect-ratio: 3 / 2; }
   .p-crop-square    :is(.feature__media .frame, .showcase__media, .media-frame__visual, .duo__media) { aspect-ratio: 1 / 1; }
-  img[style*="--fp"] { object-position: var(--fp) !important; }
+  :is(img, video)[style*="--fp"] { object-position: var(--fp) !important; }
 }
 
 /* --- Hover (pointer devices; keyboard focus gets the same) --------- */

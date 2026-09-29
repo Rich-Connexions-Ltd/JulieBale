@@ -85,7 +85,7 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
       },
     },
     focus: {
-      blocks: ["hero", "showcase", "feature"],
+      blocks: ["hero", "showcase", "feature", "media"],
       pattern: { shape: "<x>% <y>%", meaning: "Focal point of the photograph, e.g. \"60% 20%\" (whole numbers 0-100)." },
     },
     focus_end: {
@@ -124,7 +124,7 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
       values: { above: "Escaping image sits over neighbouring sections (the default).", below: "Neighbouring sections sit over the escaping image." },
     },
     shape: {
-      blocks: ["showcase", "feature", "duo"],
+      blocks: ["showcase", "feature", "duo", "media"],
       values: { arch: "Arched top.", circle: "Circular crop.", soft: "Softly rounded corners.", slant: "Slanted top and bottom edges." },
     },
     transition: {
@@ -152,7 +152,15 @@ export const PRESENTATION_OPTIONS: { style: Record<string, Option>; design: Reco
     },
     media_ratio: {
       blocks: ["media"],
-      values: { landscape: "3:2 frame (the default).", portrait: "4:5 frame.", cinematic: "16:9 frame.", square: "1:1 frame." },
+      values: { landscape: "3:2 frame (the default).", portrait: "4:5 frame.", cinematic: "16:9 frame.", square: "1:1 frame.", wide: "21:9 band (16:9 on phones)." },
+    },
+    playback: {
+      blocks: ["media"],
+      values: {
+        player: "Poster first; plays with sound when pressed (the default).",
+        ambient: "Moving photography: fills its frame (never letterboxed), muted, loops only on screen, with a pause button. Frame it with media_ratio, shape and focus.",
+        background: "A full-bleed muted loop behind the heading and caption, on a dark panel. Decorative: put the meaning in the words.",
+      },
     },
     edge: {
       blocks: NON_HERO,

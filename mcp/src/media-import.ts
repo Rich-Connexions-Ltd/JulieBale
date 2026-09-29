@@ -333,6 +333,17 @@ export async function streamSetPoster(env: Env, uid: string, posterAt: number): 
   return res.ok && j?.success ? true : { error: streamError(j, res.status, env.STREAM_TOKEN) };
 }
 
+/**
+ * Ask Stream for the video's web MP4 (idempotent: an existing download is
+ * returned as-is). Returns Stream's `default` download ({status, url}).
+ */
+export async function streamEnableDownload(env: Env, uid: string): Promise<{ status?: string; url?: string } | { error: string }> {
+  const res = await fetch(streamApi(env, `/${uid}/downloads`), { method: "POST", headers: streamHeaders(env) });
+  const j = (await res.json().catch(() => ({}))) as any;
+  const d = j?.result?.default;
+  return res.ok && j?.success && d && typeof d === "object" ? { status: d.status, url: d.url } : { error: streamError(j, res.status, env.STREAM_TOKEN) };
+}
+
 /** poster_at: whole-number percent 0-100 (default 10). */
 export const posterPercent = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : 10);
 

@@ -3,7 +3,7 @@
   "info": {
     "title": "Julie Bale content API",
     "description": "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-    "version": "0.10.0"
+    "version": "0.11.0"
   },
   "servers": [
     {
@@ -492,7 +492,7 @@
       "post": {
         "operationId": "refreshMedia",
         "summary": "Update an imported video's details",
-        "description": "Fill in Stream's details for an imported video (ready/processing, duration, size, dimensions, orientation). Call after importMedia until status is ready. Optional poster_at (percent 0-100) moves the poster frame.",
+        "description": "Fill in Stream's details for an imported video (status, duration, size, dimensions, orientation) and, once ready, prepare its web MP4 for style.playback ambient/background. Call after importMedia until status and mp4_status are ready. Optional poster_at (0-100) moves the poster.",
         "parameters": [
           {
             "name": "id",
@@ -995,7 +995,7 @@
           "focus": {
             "type": "string",
             "pattern": "^(\\d{1,3})% (\\d{1,3})%$",
-            "description": "Focal point of the photograph, e.g. \"60% 20%\" (whole numbers 0-100). Applies to: hero, showcase, feature."
+            "description": "Focal point of the photograph, e.g. \"60% 20%\" (whole numbers 0-100). Applies to: hero, showcase, feature, media."
           },
           "focus_end": {
             "type": "string",
@@ -1080,7 +1080,7 @@
               "soft",
               "slant"
             ],
-            "description": "arch: Arched top. circle: Circular crop. soft: Softly rounded corners. slant: Slanted top and bottom edges. Applies to: showcase, feature, duo."
+            "description": "arch: Arched top. circle: Circular crop. soft: Softly rounded corners. slant: Slanted top and bottom edges. Applies to: showcase, feature, duo, media."
           },
           "transition": {
             "type": "string",
@@ -1122,9 +1122,19 @@
               "landscape",
               "portrait",
               "cinematic",
-              "square"
+              "square",
+              "wide"
             ],
-            "description": "landscape: 3:2 frame (the default). portrait: 4:5 frame. cinematic: 16:9 frame. square: 1:1 frame. Applies to: media."
+            "description": "landscape: 3:2 frame (the default). portrait: 4:5 frame. cinematic: 16:9 frame. square: 1:1 frame. wide: 21:9 band (16:9 on phones). Applies to: media."
+          },
+          "playback": {
+            "type": "string",
+            "enum": [
+              "player",
+              "ambient",
+              "background"
+            ],
+            "description": "player: Poster first; plays with sound when pressed (the default). ambient: Moving photography: fills its frame (never letterboxed), muted, loops only on screen, with a pause button. Frame it with media_ratio, shape and focus. background: A full-bleed muted loop behind the heading and caption, on a dark panel. Decorative: put the meaning in the words. Applies to: media."
           },
           "edge": {
             "type": "string",
@@ -1500,6 +1510,18 @@
           "thumbnail": {
             "type": "string"
           },
+          "mp4_status": {
+            "type": "string",
+            "enum": [
+              "processing",
+              "ready",
+              "error"
+            ],
+            "description": "Web MP4 for ambient/background playback"
+          },
+          "note": {
+            "type": "string"
+          },
           "error": {
             "type": "string"
           }
@@ -1681,6 +1703,21 @@
           },
           "notes": {
             "type": "string"
+          },
+          "mp4_status": {
+            "type": "string",
+            "enum": [
+              "processing",
+              "ready",
+              "error"
+            ],
+            "readOnly": true,
+            "description": "Video only: web MP4 for style.playback ambient/background; set by refresh"
+          },
+          "mp4": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Video only: web MP4 URL, set by refresh; do not edit"
           }
         }
       },

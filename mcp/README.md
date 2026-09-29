@@ -100,9 +100,13 @@ Landing HTML/CSS is sanitised on every render by `src/sanitize.ts` (allowlist, s
 `import_media_from_url` copy each file's original into R2 (`masters/…`, private;
 served only with a 15-minute HMAC signature derived from `API_KEY`), keep audio as
 the playable file (`imports/…`, served only while the asset's consent allows),
-and hand video to Cloudflare Stream (`STREAM_TOKEN`, `CF_ACCOUNT_ID`) from the
-signed master URL. `POST /api/media/refresh/{id}` / `refresh_media_asset` pulls
-Stream's details. Old Stream videos listed in an asset's `previous_files` are not
+and upload video to Cloudflare Stream (`STREAM_TOKEN`, `CF_ACCOUNT_ID`) directly
+from R2 (a one-time direct-upload URL). `POST /api/media/refresh/{id}` /
+`refresh_media_asset` pulls Stream's details and, once the video is ready,
+enables its web MP4 download (`mp4`, `mp4_status`), which `style.playback`
+`ambient`/`background` plays in a plain `<video>` (validated again at render
+time; otherwise the block falls back to the Stream player). Stream bills MP4
+downloads like streaming. Old Stream videos listed in an asset's `previous_files` are not
 deleted automatically: remove them in the Stream dashboard when no longer needed.
 
 ## Tests

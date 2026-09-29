@@ -251,6 +251,15 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 18 — Editorial video modes
+**Status:** Done (2026-09-29; council approved code R3). Needs each video refreshed once so its web MP4 is ready.
+
+- **Goal:** video as moving photography — no letterboxing, poster first, muted in-view playback, accessible pause.
+- **Source:** feature request #26.
+- **Scope:** web MP4 via Stream downloads on refresh; `video_mode` moving-portrait / cinematic-band / atmospheric with cover crop, focus, masks; in-view playback with toggle; reduced-motion poster; contrast-safe overlay.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship
