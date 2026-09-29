@@ -207,9 +207,18 @@ export async function copyToR2(env: Env, src: ImportSource, key: string, kind: "
 
 const streamApi = (env: Env, path: string) => `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/stream${path}`;
 const streamHeaders = (env: Env) => ({ authorization: `Bearer ${env.STREAM_TOKEN}`, "content-type": "application/json" });
-/** Stream errors summarised (codes/messages only), never echoing headers or tokens. */
-const streamError = (j: any, status: number) =>
-  `Cloudflare Stream refused the request (${status}${Array.isArray(j?.errors) && j.errors[0]?.code ? `, code ${j.errors[0].code}` : ""})`;
+/**
+ * Stream errors summarised: status, code and Stream's own message (which says
+ * what was wrong), with anything token-like removed and length capped. Never
+ * includes our request headers or the STREAM_TOKEN.
+ */
+function streamError(j: any, status: number, token?: string): string {
+  const e = Array.isArray(j?.errors) ? j.errors[0] : undefined;
+  let msg = typeof e?.message === "string" ? e.message : "";
+  if (token) msg = msg.split(token).join("[redacted]");
+  msg = msg.replace(/(token|key|secret|sig|authorization)=?\S*/gi, "[redacted]").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 200);
+  return `Cloudflare Stream refused the request (${status}${e?.code ? `, code ${e.code}` : ""})${msg ? `: ${msg}` : ""}`;
+}
 
 export const streamConfigured = (env: Env) => !!(env.STREAM_TOKEN && env.CF_ACCOUNT_ID);
 
@@ -221,19 +230,22 @@ export async function streamCopy(env: Env, url: string, name: string, assetId: s
   });
   const j = (await res.json().catch(() => ({}))) as any;
   const uid = j?.result?.uid;
-  return res.ok && j?.success && typeof uid === "string" && /^[a-f0-9]{32}$/.test(uid) ? { uid } : { error: streamError(j, res.status) };
+  if (res.ok && j?.success && typeof uid === "string" && /^[a-f0-9]{32}$/.test(uid)) return { uid };
+  // Diagnostics for `wrangler tail`: the URL without its signature, and Stream's summarised reply.
+  console.log("stream copy refused", JSON.stringify({ url: url.replace(/\?.*$/, "?[signed]"), error: streamError(j, res.status, env.STREAM_TOKEN) }));
+  return { error: streamError(j, res.status, env.STREAM_TOKEN) };
 }
 
 export async function streamDetails(env: Env, uid: string): Promise<any | { error: string }> {
   const res = await fetch(streamApi(env, `/${uid}`), { headers: streamHeaders(env) });
   const j = (await res.json().catch(() => ({}))) as any;
-  return res.ok && j?.success ? j.result : { error: streamError(j, res.status) };
+  return res.ok && j?.success ? j.result : { error: streamError(j, res.status, env.STREAM_TOKEN) };
 }
 
 export async function streamSetPoster(env: Env, uid: string, posterAt: number): Promise<true | { error: string }> {
   const res = await fetch(streamApi(env, `/${uid}`), { method: "POST", headers: streamHeaders(env), body: JSON.stringify({ thumbnailTimestampPct: posterAt / 100 }) });
   const j = (await res.json().catch(() => ({}))) as any;
-  return res.ok && j?.success ? true : { error: streamError(j, res.status) };
+  return res.ok && j?.success ? true : { error: streamError(j, res.status, env.STREAM_TOKEN) };
 }
 
 /** poster_at: whole-number percent 0-100 (default 10). */

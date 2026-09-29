@@ -253,7 +253,8 @@ describe("copyToR2 failure paths", () => {
     vi.stubGlobal("fetch", async (url: string) =>
       String(url).endsWith("/stream/copy") ? Response.json({ success: false, errors: [{ code: 10005, message: "quota exceeded token=secret-stream-token" }] }, { status: 400 }) : mp4(10)());
     const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()] })));
-    expect(r.results[0].error).toBe("Cloudflare Stream refused the request (400, code 10005)");
+    expect(r.results[0].error).toBe("Cloudflare Stream refused the request (400, code 10005): quota exceeded [redacted]");
+    expect(r.results[0].error).not.toContain("secret-stream-token");
     expect(env.MEDIA.objects.size).toBe(0);
   });
   it("one bad file does not fail the others", async () => {
