@@ -234,7 +234,7 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 ---
 
 ## Sprint 16 — Media import bridge
-**Status:** In progress (council review)
+**Status:** Done (2026-09-29; council approved R4). Live smoke import pending (workers.dev unreachable from the dev machine).
 
 - **Goal:** files uploaded in chat become site assets (`asset:<id>`) that media blocks can play.
 - **Source:** feature request #24.

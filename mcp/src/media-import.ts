@@ -115,7 +115,9 @@ export function slugForAsset(text: string): string {
   // accents transliterated (été -> ete) before anything non-alphanumeric becomes "-"
   const plain = text.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const s = plain.replace(/\.[a-z0-9]{2,5}$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 56);
-  return /^[a-z]/.test(s) ? s : `media-${s || "file"}`.slice(0, 56);
+  const id = /^[a-z]/.test(s) ? s : `media-${s || "file"}`.slice(0, 56).replace(/-+$/, "");
+  // Contract: always a valid asset id ([a-z][a-z0-9-]{0,63}), safe in paths, markup and selectors.
+  return /^[a-z][a-z0-9-]{0,63}$/.test(id) ? id : "media-file";
 }
 
 const randomToken = () => {

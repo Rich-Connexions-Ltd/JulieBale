@@ -846,7 +846,7 @@ function openApiSchema(origin: string) {
             openaiFileIdRefs: { type: "array", items: { type: "string" }, description: "Files uploaded in the chat (filled in by ChatGPT)." },
             urls: { type: "array", items: { type: "string" }, description: "Public https links (instead of chat files)." },
             asset: { type: "string", description: "Existing asset id to replace, or the id to create (one file only)." },
-            title: { type: "string" }, alt: { type: "string", description: "What the poster/video shows." },
+            title: { type: "string" }, alt: { type: "string", description: "What the video poster shows (recommended; a warning is returned if missing). Images require alt." }, transcript: { type: "string", description: "Speech or lyrics (recommended)." }, caption: { type: "string" },
             consent: { type: "string", enum: ["granted", "not-needed", "pending", "refused"] }, consent_note: { type: "string" },
             usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } },
             poster_at: { type: "integer", minimum: 0, maximum: 100, description: "Poster frame, percent through the video (default 10)." },
