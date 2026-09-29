@@ -90,6 +90,9 @@
       var p = video.play();
       if (p && p.catch) p.catch(function () { show(false); });
     };
+    // A derivative's speed only ever slows it (allowlisted values).
+    var speed = parseFloat(video.getAttribute("data-speed"));
+    if (speed === 0.5 || speed === 0.75) { video.defaultPlaybackRate = speed; video.playbackRate = speed; }
     video.removeAttribute("controls");
     toggle.hidden = false;
     video.addEventListener("play", function () { show(true); });
@@ -97,7 +100,9 @@
     toggle.addEventListener("click", function () {
       if (video.paused) { paused = false; play(); } else { paused = true; video.pause(); }
     });
-    editorial.push({ video: video, play: play, isPaused: function () { return paused; } });
+    // Observe the frame, not the video: a cropped video is scaled beyond its
+    // frame, so its own visible share would stay small even when fully on screen.
+    editorial.push({ video: video, frame: video.parentElement || video, play: play, isPaused: function () { return paused; } });
   });
   // Always observed, so nothing plays off screen, even a video the visitor
   // started under reduced motion; it only starts by itself when motion is allowed.
@@ -105,13 +110,13 @@
     var videoIo = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         editorial.forEach(function (e) {
-          if (e.video !== entry.target) return;
+          if (e.frame !== entry.target) return;
           if (entry.isIntersecting && !prefersReduced && !e.isPaused()) e.play();
           else if (!entry.isIntersecting && !e.video.paused) e.video.pause();
         });
       });
     }, { threshold: 0.35 });
-    editorial.forEach(function (e) { videoIo.observe(e.video); });
+    editorial.forEach(function (e) { videoIo.observe(e.frame); });
   }
 
   /* ---- Testimonial carousel: visitor-driven, never auto-advances -- */

@@ -27,7 +27,14 @@ export const CONSENT_MEANINGS: Record<string, string> = {
   "not-needed": "No identifiable people other than Julie (e.g. her own portraits, venues, details).",
   pending: "Not yet confirmed: the asset is NOT shown on the site until consent is granted.",
   refused: "Must not be used; never shown.",
+  inherit: "Derivatives only (derive_video): follows the master video's consent, live. If the master is not shown, neither is the derivative.",
 };
+
+/**
+ * Set by the loader (never by JSON) on a derivative: whether its master may be
+ * shown right now. consentOk honours `consent: "inherit"` only through this.
+ */
+export const MASTER_CONSENT = Symbol("masterConsent");
 
 export const ASSET_REF_RE = /^asset:([a-z][a-z0-9-]{0,63})$/;
 export const assetIdOf = (v: unknown): string | null => {
@@ -45,11 +52,25 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  */
 export function consentOk(asset: unknown, today: Date = new Date()): boolean {
   if (!isObject(asset)) return false;
-  if (asset.consent !== "granted" && asset.consent !== "not-needed") return false;
+  if (asset.consent === "inherit") {
+    if (typeof asset.derived_from !== "string" || (asset as any)[MASTER_CONSENT] !== true) return false;
+  } else if (asset.consent !== "granted" && asset.consent !== "not-needed") return false;
   if (typeof asset.consent_expires === "string" && DATE_RE.test(asset.consent_expires)) {
     if (new Date(asset.consent_expires + "T23:59:59Z").getTime() < today.getTime()) return false;
   }
   return true;
+}
+
+/**
+ * Attach each derivative's live master consent (depth 1: a master that is
+ * itself a derivative never counts). `masters` holds the loaded master docs.
+ */
+export function linkMasters(assets: Iterable<any>, masters: Map<string, any>, today: Date = new Date()): void {
+  for (const a of assets) {
+    if (!isObject(a) || a.consent !== "inherit" || typeof a.derived_from !== "string") continue;
+    const m = masters.get(a.derived_from);
+    (a as any)[MASTER_CONSENT] = isObject(m) && m.consent !== "inherit" && consentOk(m, today);
+  }
 }
 
 /** Testimonials need explicit agreement: only `granted` (and not expired). */
@@ -75,7 +96,12 @@ export function assetWarnings(doc: unknown): string[] {
   if (doc.consent === undefined) out.push("consent is required (granted | not-needed | pending | refused); until set, the asset is not shown.");
   enumWarnings(doc, "type", false, out);
   enumWarnings(doc, "orientation", false, out);
-  enumWarnings(doc, "consent", false, out);
+  if (doc.consent === "inherit") {
+    if (typeof doc.derived_from !== "string") out.push('consent "inherit" is only for derivatives made by derive_video; this asset will not be shown.');
+  } else enumWarnings(doc, "consent", false, out);
+  if (typeof doc.derived_from === "string" && doc.consent !== "inherit")
+    out.push('this is a derivative: keep consent "inherit" so it follows its master video.');
+  if (doc.edit !== undefined && !validEdit(doc.edit, doc.duration)) out.push("edit is not valid (start/end seconds, optional crop {x,y,w,h} percent, speed 0.5 | 0.75 | 1); crop and speed are ignored.");
   enumWarnings(doc, "usage", true, out);
   enumWarnings(doc, "roles", true, out);
   enumWarnings(doc, "suits", true, out);
@@ -122,7 +148,31 @@ export function searchAssets(rows: Array<{ id: string; doc: any }>, query: Asset
     .map(({ id, doc }) => ({
       ref: `asset:${id}`, title: doc.title, type: doc.type, file: doc.file, orientation: doc.orientation, focus: doc.focus,
       usage: doc.usage, roles: doc.roles, people: doc.people, consent: doc.consent, usable: consentOk(doc),
+      ...(typeof doc.derived_from === "string" ? { derived_from: doc.derived_from, edit: doc.edit } : {}),
     }));
+}
+
+/** Keep only allowed vocabulary values. */
+const list = (v: unknown, allowed: readonly string[]) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && allowed.includes(x)) : undefined);
+/** Free-text lists: at most 12 cleaned strings. */
+const textList = (v: unknown, max = 80) => (Array.isArray(v) ? (v.map((x) => cleanText(x, max)).filter(Boolean) as string[]).slice(0, 12) : undefined);
+
+/**
+ * The descriptive metadata of an asset, re-validated (shared by imports and
+ * derivatives): cleaned text, vocabulary arrays filtered, lists capped.
+ * Empty values are omitted.
+ */
+export function describeAsset(src: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const put = (k: string, v: unknown) => { if (v !== undefined && !(Array.isArray(v) && !v.length)) out[k] = v; };
+  put("alt", cleanText(src.alt, 300));
+  put("setting", cleanText(src.setting, 200));
+  put("people", textList(src.people));
+  put("tone", textList(src.tone, 40));
+  put("usage", list(src.usage, ASSET_OPTIONS.usage));
+  put("roles", list(src.roles, ASSET_OPTIONS.roles));
+  put("suits", list(src.suits, ASSET_OPTIONS.suits));
+  return out;
 }
 
 /* ---------------------- Imported media (Sprint 16) ----------------------- */
@@ -160,7 +210,6 @@ export function buildImportedAsset(media: ImportedMedia, meta: ImportMeta): { do
     consent = "pending";
     warnings.push("consent kept as pending: granted needs a consent_note saying who agreed, when and how.");
   }
-  const list = (v: unknown, allowed: readonly string[]) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && allowed.includes(x)) : undefined);
   // Accessibility (same rule as content-model.md "Importing video and audio"):
   //   alt        - videos: what the poster shows (recommended; warning if missing)
   //   caption    - visible text under the player (optional)
@@ -175,8 +224,7 @@ export function buildImportedAsset(media: ImportedMedia, meta: ImportMeta): { do
     ...(cleanText(meta.transcript, 20000) ? { transcript: cleanText(meta.transcript, 20000) } : {}),
     consent,
     ...(note ? { consent_note: note } : {}),
-    ...(list(meta.usage, ASSET_OPTIONS.usage)?.length ? { usage: list(meta.usage, ASSET_OPTIONS.usage) } : {}),
-    ...(list(meta.roles, ASSET_OPTIONS.roles)?.length ? { roles: list(meta.roles, ASSET_OPTIONS.roles) } : {}),
+    ...describeAsset({ usage: meta.usage, roles: meta.roles }),
   };
   return { doc, warnings };
 }
@@ -241,3 +289,67 @@ export function applyStreamDetails(asset: Record<string, any>, d: any): Record<s
   out.status = d?.status?.state === "error" ? "error" : d?.readyToStream === true ? "ready" : "processing";
   return out;
 }
+
+/* ---------------------- Video derivatives (Sprint 19) --------------------- */
+
+export const MAX_CLIP_SECONDS = 60;
+export const MAX_DERIVATIVES = 20;
+export const SPEEDS = [0.5, 0.75, 1] as const;
+
+export interface Crop { x: number; y: number; w: number; h: number }
+export interface Edit { start: number; end: number; crop?: Crop; speed?: number }
+
+const int = (v: unknown, lo: number, hi: number) => (typeof v === "number" && Number.isInteger(v) && v >= lo && v <= hi ? v : undefined);
+
+/** A crop rectangle in whole-number percent of the source frame, or an error. */
+export function parseCrop(c: unknown): Crop | string {
+  if (!isObject(c)) return "crop must be an object {x, y, w, h} in whole-number percent of the frame";
+  const x = int(c.x, 0, 90), y = int(c.y, 0, 90), w = int(c.w, 10, 100), h = int(c.h, 10, 100);
+  if (x === undefined || y === undefined || w === undefined || h === undefined) return "crop x and y must be whole numbers 0-90, w and h whole numbers 10-100";
+  if (x + w > 100 || y + h > 100) return "crop must stay inside the frame (x + w and y + h at most 100)";
+  return { x, y, w, h };
+}
+
+/** Validate derive_video's edit; returns the edit or a precise error. */
+export function parseEdit(e: { start?: unknown; end?: unknown; crop?: unknown; speed?: unknown }, duration?: unknown): Edit | string {
+  const { start, end } = e;
+  if (typeof start !== "number" || !Number.isFinite(start) || start < 0) return "start must be a number of seconds, 0 or more";
+  if (typeof end !== "number" || !Number.isFinite(end) || end <= start) return "end must be a number of seconds after start";
+  const len = end - start;
+  if (len < 1 || len > MAX_CLIP_SECONDS) return `the excerpt must be 1-${MAX_CLIP_SECONDS} seconds long (it is ${Math.round(len * 10) / 10})`;
+  if (typeof duration === "number" && Number.isFinite(duration) && end > duration + 0.5) return `end is after the end of the video (${duration} s)`;
+  const out: Edit = { start: Math.round(start * 10) / 10, end: Math.round(end * 10) / 10 };
+  if (e.crop !== undefined && e.crop !== null) {
+    const c = parseCrop(e.crop);
+    if (typeof c === "string") return c;
+    out.crop = c;
+  }
+  if (e.speed !== undefined && e.speed !== null) {
+    if (!(SPEEDS as readonly unknown[]).includes(e.speed)) return "speed must be 0.5, 0.75 or 1";
+    if (e.speed !== 1) out.speed = e.speed as number;
+  }
+  return out;
+}
+
+/** Is a stored edit still valid? (Assets are editable, so render re-checks.) */
+export const validEdit = (e: unknown, duration?: unknown) => isObject(e) && typeof parseEdit(e, duration) !== "string";
+
+/** A new derivative asset: descriptive metadata from the master, consent inherited. */
+export function buildDerivedAsset(master: Record<string, any>, masterId: string, uid: string, edit: Edit, title?: unknown): Record<string, unknown> {
+  const base = cleanText(master.title, 100) || masterId;
+  return {
+    type: "video",
+    file: uid,
+    status: "processing",
+    title: cleanText(title, 120) || `${base} (excerpt)`,
+    ...describeAsset(master),
+    derived_from: masterId,
+    edit,
+    muted: true,
+    consent: "inherit",
+  };
+}
+
+/** A still frame of a Stream video at `t` seconds (the asset's own timeline). */
+export const streamFrame = (uid: string, t: number) =>
+  STREAM_UID_RE.test(uid) && Number.isFinite(t) && t >= 0 ? `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg?time=${Math.round(t * 10) / 10}s&height=480` : undefined;

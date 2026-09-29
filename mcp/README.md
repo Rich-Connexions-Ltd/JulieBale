@@ -106,7 +106,12 @@ from R2 (a one-time direct-upload URL). `POST /api/media/refresh/{id}` /
 enables its web MP4 download (`mp4`, `mp4_status`), which `style.playback`
 `ambient`/`background` plays in a plain `<video>` (validated again at render
 time; otherwise the block falls back to the Stream player). Stream bills MP4
-downloads like streaming. Old Stream videos listed in an asset's `previous_files` are not
+downloads like streaming. `POST /api/media/derive` / `derive_video` cuts a 1–60 s excerpt of a
+ready video with Stream's clip API into a new asset (`derived_from`, `edit`,
+`consent: "inherit"`: shown only while the master's consent allows, checked
+live at render); crop and speed are applied at render (container-query CSS
+from integer custom properties). `GET /api/media/frames/{id}` /
+`video_frames` returns Stream thumbnail links for choosing moments. Old Stream videos listed in an asset's `previous_files` are not
 deleted automatically: remove them in the Stream dashboard when no longer needed.
 
 ## Tests

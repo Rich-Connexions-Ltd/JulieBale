@@ -344,6 +344,19 @@ export async function streamEnableDownload(env: Env, uid: string): Promise<{ sta
   return res.ok && j?.success && d && typeof d === "object" ? { status: d.status, url: d.url } : { error: streamError(j, res.status, env.STREAM_TOKEN) };
 }
 
+/** Cut a new Stream video from an existing one (#27). The source is untouched. */
+export async function streamClip(env: Env, uid: string, start: number, end: number, posterAt: number, name: string, assetId: string): Promise<{ uid: string } | { error: string }> {
+  const res = await fetch(streamApi(env, "/clip"), {
+    method: "POST",
+    headers: streamHeaders(env),
+    body: JSON.stringify({ clippedFromVideoUID: uid, startTimeSeconds: start, endTimeSeconds: end, thumbnailTimestampPct: posterAt / 100, meta: { name: name.slice(0, 120), asset: assetId } }),
+  });
+  const j = (await res.json().catch(() => ({}))) as any;
+  const clip = j?.result?.uid;
+  if (!res.ok || !j?.success || typeof clip !== "string" || !/^[a-f0-9]{32}$/.test(clip)) return { error: streamError(j, res.status, env.STREAM_TOKEN) };
+  return { uid: clip };
+}
+
 /** poster_at: whole-number percent 0-100 (default 10). */
 export const posterPercent = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : 10);
 

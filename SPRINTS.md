@@ -260,6 +260,15 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 19 — Video derivatives
+**Status:** Done (2026-09-29; plan approved R2; code review hit max rounds, 4 remaining findings accepted as known debt by the user). Deferred: re-encoding (ffmpeg in a Container) and crossfade loops.
+
+- **Goal:** cut short, cropped, muted moving-photography assets from master videos without touching the master.
+- **Source:** feature request #27.
+- **Scope:** `derive_video` (Stream clip → new asset linked to its master, live consent inheritance), render-time crop and speed, `video_frames` for choosing moments and crops.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship

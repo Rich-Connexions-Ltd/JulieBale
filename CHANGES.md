@@ -122,6 +122,23 @@ Feature request #24. Council review (external fetches, secrets, consent).
 - Fix: `/api` and `/mcp` now fail closed when `API_KEY` is not configured (previously open)
 - `mcp/test/media-import.test.ts`, `assets.test.ts`, `docs.test.ts`, `helpers.ts` (fake R2)
 
+## Sprint 19: Video Derivatives (request #27, 0.12.0) — 2026-09-29
+
+Short, cropped, muted excerpts cut from master videos as their own assets,
+without touching the master. Council review: plan approved R2.
+
+**Files changed:**
+- `mcp/src/assets.ts` — `parseEdit`/`parseCrop`, `buildDerivedAsset`, `describeAsset` (shared metadata normaliser, also used by imports), `consent: "inherit"` honoured only through a loader-set Symbol (`linkMasters`), `streamFrame`, warnings
+- `mcp/src/media-import.ts` — `streamClip` (Stream clip API)
+- `mcp/src/index.ts` — `derive_video` / `POST /api/media/derive` (validated before any Stream call; re-derive; 20 per master), `video_frames` / `GET /api/media/frames/{id}`; search reports effective consent; OpenAPI 0.12.0
+- `mcp/src/render.ts` — masters loaded in one bound batch for live consent; crop (integer custom properties) and speed on editorial video
+- `mcp/public/styles.css` — container-query crop rule
+- `mcp/public/app.js` — speed (0.5/0.75 only); observe the frame rather than the video (a cropped video is larger than its frame)
+- `mcp/context/content-model.md`, `mcp/README.md`, `mcp/openapi.json` — workflow, crop coordinates, consent inheritance, resolution caveat
+- `mcp/test/derive.test.ts` — 22 tests
+
+**Commit:** `(this commit)`
+
 ## Sprint 18: Editorial Video Modes (request #26, 0.11.0) — 2026-09-29
 
 Video as moving photography: cropped to the frame (never letterboxed), muted,

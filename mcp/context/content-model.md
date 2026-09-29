@@ -430,6 +430,49 @@ replacement), and give every input a `label`.
 on a normal page (or link to one); for images upload them to `/media/` or use
 files in `/assets/`; for interactive widgets or scripts, request a feature.
 
+## Cutting a moving photograph from a longer video
+Terms: the **master** is an imported video asset; a **derivative** is a short
+excerpt cut from it with `derive_video` (REST `deriveVideo`). The master is
+never changed.
+
+1. **Look first:** `video_frames` (REST `videoFrames`) gives still-frame links
+   at the times you ask for (seconds in that asset's own timeline; for a
+   derivative, 0 is the start of the excerpt), or 8 evenly spaced. Look at them
+   to pick the moment and where the subject is.
+2. **Cut:** `derive_video` with `from` (the master's id), `start` and `end`
+   (seconds into the master; 1–60 s long), and optionally:
+   - `crop` `{x, y, w, h}`: a rectangle in whole-number percent of the full
+     frame (x, y = top-left corner; w, h at least 10; it must stay inside the
+     frame). The rectangle is scaled to fill the section's frame, centred on
+     it; if the frame's shape differs, the rectangle's edges are trimmed a
+     little rather than letterboxed.
+   - `speed`: `0.5`, `0.75` or `1` (it can only slow a clip).
+   - `poster_at` (percent through the excerpt), `title`, `id`.
+   The result is a new asset (`asset:<id>`, default `<master>-cut`).
+3. **Refresh** the new asset with `refresh_media_asset` until `status` and
+   `mp4_status` are `ready`.
+4. **Use** it in a media block with `style.playback` `ambient` or `background`.
+   Crop and speed apply only there; in `player` mode the whole clip plays with
+   the normal player. A crop replaces `focus`.
+
+Rules worth knowing:
+- Derivatives are **muted** moving photography (the sound is never heard).
+  There is no separate loop setting: ambient/background always loop, so
+  choose a start and end that look alike for a smooth loop.
+- **Consent is inherited, live:** a derivative's `consent` is `inherit`. It
+  is shown only while its master may be shown; if the master's consent
+  changes, every derivative follows at once. Do not set its consent yourself.
+- **Re-cut** by calling `derive_video` again with the derivative's `id`: its
+  title, alt and other details are kept and every page using it updates. To
+  change only the crop or speed, edit `edit.crop` / `edit.speed` on the asset
+  (changing `edit.start`/`end` there does nothing: re-cut instead).
+- Limits: up to 60 s per excerpt and 20 derivatives per master; a derivative
+  cannot be cut from another derivative (cut from its master).
+- **Resolution:** a crop can only be as sharp as the pixels it contains. A
+  tight crop of a small video (for example a landscape window inside a phone
+  clip) will look soft in a large frame: ask Julie for the original footage
+  for anything prominent.
+
 ## Importing video and audio (Sprint 16)
 Two doors, the same result: an asset you can use as `asset:<id>` in a `media`
 block (`video`, `audio` or `poster`) or a testimonial.

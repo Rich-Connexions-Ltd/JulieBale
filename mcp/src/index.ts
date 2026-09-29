@@ -3,8 +3,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding, MOTION_GUARD } from "./render";
 import { landingWarnings } from "./sanitize";
-import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, streamEnableDownload, posterPercent, slugForAsset } from "./media-import";
-import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, applyStreamDownload, isStreamMp4, consentOk as assetConsentOk } from "./assets";
+import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, streamEnableDownload, streamClip, posterPercent, slugForAsset } from "./media-import";
+import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, applyStreamDownload, isStreamMp4, consentOk as assetConsentOk, linkMasters, parseEdit, buildDerivedAsset, streamFrame, cleanText, MAX_DERIVATIVES } from "./assets";
 import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
 import { ASSET_OPTIONS, CONSENT_MEANINGS, assetWarnings, testimonialWarnings, searchAssets, type AssetQuery } from "./assets";
 import {
@@ -122,6 +122,7 @@ function warningsFor(collection: string, data: string): string[] {
 async function findAssets(env: Env, query: AssetQuery) {
   const { results } = await env.DB.prepare("SELECT id, data FROM documents WHERE collection=? ORDER BY id").bind("assets").all<{ id: string; data: string }>();
   const rows = results.map((r) => ({ id: r.id, doc: parse(r.data) }));
+  linkMasters(rows.map((r) => r.doc), new Map(rows.map((r) => [r.id, r.doc])));
   return { assets: searchAssets(rows, query), vocabulary: ASSET_OPTIONS, consent: CONSENT_MEANINGS };
 }
 
@@ -369,6 +370,72 @@ async function refreshMedia(env: Env, id: unknown, posterAt: unknown) {
   return { status: 200, body: { ok: true, asset: id, ref: `asset:${id}`, status, duration, width, height, orientation, size, thumbnail, mp4_status, ...(mp4_note ? { note: mp4_note } : {}) } };
 }
 
+/* --------------------------- Video derivatives (#27) ---------------------- */
+
+/**
+ * Cut a short excerpt from a master video as its own asset: a new Stream clip
+ * (the master is untouched), consent inherited live, crop/speed applied at
+ * render. Everything is validated before Stream is called.
+ */
+async function deriveVideo(env: Env, b: any) {
+  const bad = (error: string, status = 400) => ({ status, body: { ok: false, error } });
+  const from = b?.from;
+  if (!isValidId(from)) return bad("from must be the id of an imported video asset");
+  const master = parse(await readDoc(env, "assets", from));
+  if (!master) return bad(`no asset at assets/${from}`, 404);
+  if (master.type !== "video" || !/^[a-f0-9]{32}$/.test(String(master.file || ""))) return bad("from must be an imported video (a Stream video)");
+  if (typeof master.derived_from === "string") return bad(`${from} is itself a derivative: derive from its master, ${master.derived_from}`);
+  if (master.status !== "ready") return bad(`${from} is not ready yet: call refresh_media_asset until its status is ready`);
+  const edit = parseEdit(b, master.duration);
+  if (typeof edit === "string") return bad(edit);
+  if (b.poster_at !== undefined && b.poster_at !== null && (typeof b.poster_at !== "number" || !Number.isFinite(b.poster_at) || b.poster_at < 0 || b.poster_at > 100))
+    return bad("poster_at must be a number from 0 to 100 (percent through the excerpt)");
+  if (b.id !== undefined && !isValidId(b.id)) return bad("id must be lowercase letters, digits and hyphens, starting with a letter (max 64)");
+  if (!streamConfigured(env)) return bad("Cloudflare Stream is not configured", 501);
+
+  // Re-derive into an existing derivative of the same master, or pick a free id.
+  let id: string = b.id;
+  let prev: any = null;
+  if (id) {
+    prev = parse(await readDoc(env, "assets", id));
+    if (prev && prev.derived_from !== from) return bad(`assets/${id} exists and is not a derivative of ${from}; choose another id`, 409);
+  } else {
+    const base = `${from.slice(0, 59)}-cut`;
+    id = base;
+    for (let i = 2; await readDoc(env, "assets", id); i++) id = `${base}-${i}`;
+  }
+  if (!prev) {
+    const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM documents WHERE collection='assets' AND json_extract(data, '$.derived_from') = ?").bind(from).first<{ n: number }>();
+    if ((row?.n ?? 0) >= MAX_DERIVATIVES) return bad(`${from} already has ${MAX_DERIVATIVES} derivatives: re-derive into an existing one (give its id) instead`, 409);
+  }
+
+  if (b.title !== undefined && b.title !== null && typeof b.title !== "string") return bad("title must be text");
+  const clip = await streamClip(env, master.file, edit.start, edit.end, posterPercent(b.poster_at), cleanText(b.title, 120) || cleanText(master.title, 120) || id, id);
+  if ("error" in clip) return bad(clip.error, 502);
+  const doc = prev
+    ? { ...replaceAssetMedia(prev, { type: "video", file: clip.uid, status: "processing" } as any), edit }
+    : buildDerivedAsset(master, from, clip.uid, edit, b.title);
+  await writeDoc(env, "assets", id, JSON.stringify(doc));
+  return {
+    status: 200,
+    body: { ok: true, asset: id, ref: `asset:${id}`, status: "processing", derived_from: from, edit, replaced: !!prev, next: "Call refresh_media_asset on this asset until status and mp4_status are ready, then use it in a media block with style.playback ambient or background." },
+  };
+}
+
+/** Still frames of a video asset, for choosing moments and crops. Times are seconds in that asset's own timeline. */
+async function videoFrames(env: Env, id: unknown, times: unknown) {
+  if (!isValidId(id)) return { status: 400, body: { ok: false, error: "id must be an asset id" } };
+  const a = parse(await readDoc(env, "assets", id));
+  if (!a) return { status: 404, body: { ok: false, error: `no asset at assets/${id}` } };
+  if (a.type !== "video" || !/^[a-f0-9]{32}$/.test(String(a.file || ""))) return { status: 400, body: { ok: false, error: "only imported videos have frames" } };
+  const dur = typeof a.duration === "number" && a.duration > 0 ? a.duration : undefined;
+  let ts = (Array.isArray(times) ? times : []).filter((t): t is number => typeof t === "number" && Number.isFinite(t) && t >= 0).slice(0, 8);
+  if (!ts.length) ts = dur ? Array.from({ length: 8 }, (_, i) => (dur * (i + 0.5)) / 8) : [0, 2, 4, 6, 8, 10, 12, 14];
+  if (dur) ts = ts.map((t) => Math.min(t, Math.max(0, dur - 0.1)));
+  const frames = ts.map((t) => ({ time: Math.round(t * 10) / 10, url: streamFrame(a.file, t) }));
+  return { status: 200, body: { ok: true, asset: id, width: a.width, height: a.height, duration: a.duration, ...(a.derived_from ? { derived_from: a.derived_from, edit: a.edit } : {}), frames } };
+}
+
 /* --------------------------- Feature requests ----------------------------- */
 
 async function createFeatureRequest(
@@ -395,7 +462,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.11.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.12.0" });
 
   async init() {
     this.server.tool(
@@ -536,6 +603,30 @@ export class ContentMCP extends McpAgent<Env> {
     );
 
     this.server.tool(
+      "derive_video",
+      "Make a derivative: a 1-60 s excerpt of a master video as its own asset (the master is untouched): start/end seconds, optional crop {x,y,w,h} (% of the source frame) and speed (0.5 | 0.75 | 1). Muted; consent follows the master. WHEN: moving photography for style.playback ambient/background. Use video_frames first; then refresh_media_asset on the derivative.",
+      {
+        from: z.string(), start: z.number(), end: z.number(),
+        crop: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }).optional(),
+        speed: z.number().optional(), poster_at: z.number().optional(), id: z.string().optional(), title: z.string().optional(),
+      },
+      async (args) => {
+        const r = await deriveVideo(this.env, args);
+        return { content: [{ type: "text", text: JSON.stringify(r.body, null, 2) }], isError: r.status !== 200 };
+      }
+    );
+
+    this.server.tool(
+      "video_frames",
+      "Still frames of a video asset (master or derivative) at chosen times: seconds in that asset's own timeline (for a derivative, 0 is its first frame). Default: 8 evenly spaced. WHEN: look at them to choose start/end and a crop around the subject before derive_video.",
+      { id: z.string(), times: z.array(z.number()).optional() },
+      async ({ id, times }) => {
+        const r = await videoFrames(this.env, id, times);
+        return { content: [{ type: "text", text: JSON.stringify(r.body, null, 2) }], isError: r.status !== 200 };
+      }
+    );
+
+    this.server.tool(
       "presentation_options",
       "List every allowed layout, theme and motion option for a page section's `style` and a page's `design`, with what each does and a worked example for each homepage concept (stage, editorial, journey). WHEN: before setting any style or design value, so you never guess. Presentation never changes copy.",
       {},
@@ -660,6 +751,19 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
     if (method !== "POST") return json({ error: "method not allowed" }, 405);
     const b = (await request.json().catch(() => ({}))) as any;
     const r = await refreshMedia(env, safeDecode(parts[2]), b?.poster_at);
+    return json(r.body, r.status);
+  }
+
+  // Video derivatives (#27): POST /api/media/derive, GET /api/media/frames/{id}?times=1,2.5
+  if (parts[0] === "media" && parts[1] === "derive" && parts.length === 2) {
+    if (method !== "POST") return json({ error: "method not allowed" }, 405);
+    const r = await deriveVideo(env, await request.json().catch(() => ({})));
+    return json(r.body, r.status);
+  }
+  if (parts[0] === "media" && parts[1] === "frames" && parts.length === 3) {
+    if (method !== "GET") return json({ error: "method not allowed" }, 405);
+    const q = new URL(request.url).searchParams.get("times");
+    const r = await videoFrames(env, safeDecode(parts[2]), q ? q.split(",").map((x) => (x.trim() === "" ? NaN : Number(x))) : undefined);
     return json(r.body, r.status);
   }
 
@@ -826,7 +930,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-      version: "0.11.0",
+      version: "0.12.0",
     },
     servers: [{ url: origin }],
     paths: {
@@ -867,6 +971,31 @@ function openApiSchema(origin: string) {
             poster_at: { type: "integer", minimum: 0, maximum: 100, description: "Poster frame, percent through the video (default 10)." },
           } } } } },
           responses: { "200": { description: "Per-file results", content: { "application/json": { schema: { $ref: "#/components/schemas/ImportResults" } } } }, "400": { description: "Nothing to import or invalid request" } },
+        },
+      },
+      "/api/media/derive": {
+        post: {
+          operationId: "deriveVideo", summary: "Cut a derivative (short excerpt) from a master video",
+          description: "Make a derivative: a 1-60 s excerpt of a master video as its own asset (master untouched). start/end seconds, optional crop {x,y,w,h} (% of the source frame), speed 0.5|0.75|1. Muted; consent follows the master. Use videoFrames first; then refreshMedia on the derivative.",
+          requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["from", "start", "end"], properties: {
+            from: { type: "string", description: "Master video asset id" },
+            start: { type: "number", minimum: 0, description: "Seconds into the master" },
+            end: { type: "number", description: "Seconds into the master; 1-60 s after start" },
+            crop: { type: "object", description: "Crop rectangle in whole-number percent of the source frame (x,y = top-left); w,h >= 10; x+w and y+h <= 100. Applied with style.playback ambient/background.", properties: { x: { type: "integer", minimum: 0, maximum: 90 }, y: { type: "integer", minimum: 0, maximum: 90 }, w: { type: "integer", minimum: 10, maximum: 100 }, h: { type: "integer", minimum: 10, maximum: 100 } }, required: ["x", "y", "w", "h"] },
+            speed: { type: "number", enum: [0.5, 0.75, 1] },
+            poster_at: { type: "integer", minimum: 0, maximum: 100, description: "Poster frame, percent through the excerpt (default 10)" },
+            id: { type: "string", pattern: "^[a-z][a-z0-9-]{0,63}$", description: "Derivative asset id: new, or an existing derivative of the same master to re-cut it" },
+            title: { type: "string", maxLength: 120 },
+          } }, example: { from: "chronicles-of-hope-018", start: 12, end: 20, crop: { x: 20, y: 10, w: 50, h: 80 }, speed: 0.75 } } } },
+          responses: { "200": { description: "Derivative created", content: { "application/json": { schema: { $ref: "#/components/schemas/DeriveResult" } } } }, "400": { description: "Invalid request (nothing was created)" }, "409": { description: "id taken by another asset, or derivative limit reached" } },
+        },
+      },
+      "/api/media/frames/{id}": {
+        get: {
+          operationId: "videoFrames", summary: "Still frames of a video asset",
+          description: "Still frames of a video asset (master or derivative) at chosen times: seconds in that asset's own timeline (for a derivative, 0 is its first frame). Default 8 evenly spaced. Look at them to choose start/end and the crop before deriveVideo.",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }, { name: "times", in: "query", required: false, schema: { type: "string" }, description: "Comma-separated seconds, up to 8, e.g. 2,4.5,9" }],
+          responses: { "200": { description: "Frames", content: { "application/json": { schema: { $ref: "#/components/schemas/VideoFrames" } } } } },
         },
       },
       "/api/media/refresh/{id}": {
@@ -916,9 +1045,11 @@ function openApiSchema(origin: string) {
         PresentationOptions: { type: "object", description: "Allowed presentation values with meanings and examples.", properties: { style: { type: "object", description: "Section style keys: each has values (value -> meaning), optional blocks it applies to, or a pattern.", additionalProperties: true }, design: { type: "object", description: "Page design keys, same shape as style.", additionalProperties: true }, rules: { type: "array", items: { type: "string" } }, examples: { type: "object", description: "One worked variant per concept (stage, editorial, journey).", additionalProperties: true } } },
         VariantList: { type: "object", properties: { ok: { type: "boolean" }, base: { type: "string" }, limit: { type: "integer" }, error: { type: "string" }, variants: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, previewUrl: { type: "string" }, unresolved: { type: "array", items: { type: "string" } }, warnings: { type: "array", items: { type: "string" } } } } }, sections: { type: "array", description: "The live page's section keys", items: { type: "object", properties: { key: { type: "string" }, type: { type: "string" }, heading: { type: "string" } } } } } },
         ImportResults: { type: "object", properties: { results: { type: "array", items: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string", description: "Asset id" }, ref: { type: "string", description: "Use in pages, e.g. asset:aria-rehearsal" }, type: { type: "string" }, status: { type: "string", enum: ["processing", "ready", "error"] }, replaced: { type: "boolean" }, warnings: { type: "array", items: { type: "string" }, description: "Things to fix on the new asset (it was still saved): missing alt text or transcript, consent kept as pending because granted had no consent_note, or values outside the asset vocabulary." }, name: { type: "string" }, error: { type: "string", description: "Why this file was not imported (type, size, link, or Stream's reason)." } } } }, ok: { type: "boolean" }, error: { type: "string" } } },
+        DeriveResult: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, derived_from: { type: "string" }, edit: { type: "object", additionalProperties: true }, replaced: { type: "boolean" }, next: { type: "string" }, error: { type: "string" } } },
+        VideoFrames: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, width: { type: "integer" }, height: { type: "integer" }, duration: { type: "number" }, derived_from: { type: "string" }, frames: { type: "array", items: { type: "object", properties: { time: { type: "number" }, url: { type: "string" } } } }, error: { type: "string" } } },
         MediaSummary: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, duration: { type: "number" }, width: { type: "integer" }, height: { type: "integer" }, orientation: { type: "string" }, size: { type: "integer" }, thumbnail: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], description: "Web MP4 for ambient/background playback" }, note: { type: "string" }, error: { type: "string" } } },
         AssetList: { type: "object", properties: { assets: { type: "array", items: { type: "object", properties: { ref: { type: "string" }, title: { type: "string" }, type: { type: "string" }, file: { type: "string" }, orientation: { type: "string" }, usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } }, people: { type: "array", items: { type: "string" } }, consent: { type: "string" }, usable: { type: "boolean" } } } }, vocabulary: { type: "object", additionalProperties: true }, consent: { type: "object", additionalProperties: true } } },
-        Asset: { type: "object", description: "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).", properties: { file: { type: "string", description: "Filename in /assets, media key, or Stream video id" }, type: { type: "string", enum: [...ASSET_OPTIONS.type] }, title: { type: "string" }, alt: { type: "string" }, people: { type: "array", items: { type: "string" } }, setting: { type: "string" }, orientation: { type: "string", enum: [...ASSET_OPTIONS.orientation] }, focus: { type: "string", description: "Default focal point, e.g. 60% 20%" }, tone: { type: "array", items: { type: "string" } }, usage: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.usage] } }, roles: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.roles] } }, suits: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.suits] } }, consent: { type: "string", enum: [...ASSET_OPTIONS.consent] }, consent_note: { type: "string" }, consent_expires: { type: "string" }, date: { type: "string" }, lighting: { type: "string" }, crop_zones: { type: "string" }, notes: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], readOnly: true, description: "Video only: web MP4 for style.playback ambient/background; set by refresh" }, mp4: { type: "string", readOnly: true, description: "Video only: web MP4 URL, set by refresh; do not edit" } } },
+        Asset: { type: "object", description: "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).", properties: { file: { type: "string", description: "Filename in /assets, media key, or Stream video id" }, type: { type: "string", enum: [...ASSET_OPTIONS.type] }, title: { type: "string" }, alt: { type: "string" }, people: { type: "array", items: { type: "string" } }, setting: { type: "string" }, orientation: { type: "string", enum: [...ASSET_OPTIONS.orientation] }, focus: { type: "string", description: "Default focal point, e.g. 60% 20%" }, tone: { type: "array", items: { type: "string" } }, usage: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.usage] } }, roles: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.roles] } }, suits: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.suits] } }, consent: { type: "string", enum: [...ASSET_OPTIONS.consent, "inherit"], description: "inherit: derivatives only (follows the master)" }, consent_note: { type: "string" }, consent_expires: { type: "string" }, derived_from: { type: "string", readOnly: true, description: "Derivatives: the master video asset id" }, edit: { type: "object", description: "Derivatives: {start, end, crop?, speed?}; crop and speed may be changed here", properties: { start: { type: "number" }, end: { type: "number" }, crop: { type: "object", properties: { x: { type: "integer" }, y: { type: "integer" }, w: { type: "integer" }, h: { type: "integer" } } }, speed: { type: "number", enum: [0.5, 0.75, 1] } } }, muted: { type: "boolean", readOnly: true }, date: { type: "string" }, lighting: { type: "string" }, crop_zones: { type: "string" }, notes: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], readOnly: true, description: "Video only: web MP4 for style.playback ambient/background; set by refresh" }, mp4: { type: "string", readOnly: true, description: "Video only: web MP4 URL, set by refresh; do not edit" } } },
         Testimonial: { type: "object", description: "Collection 'testimonials'. Shown only when consent is granted.", properties: { name: { type: "string" }, role: { type: "string" }, quote: { type: "string" }, story: { type: "string", description: "Markdown" }, before: { type: "string" }, after: { type: "string" }, portrait: { type: "string", description: "asset:<id>" }, video: { type: "string", description: "asset:<id> or Stream id" }, tags: { type: "array", items: { type: "string" } }, consent: { type: "string", enum: ["granted", "pending", "refused"] }, consent_note: { type: "string" }, consent_expires: { type: "string" } } },
         Variant: { type: "object", description: "An unpublished variant (collection 'variants'). Copy comes from the live base page; only order and presentation live here. `token` and `base` are managed by the server.", properties: { base: { type: "string", readOnly: true }, label: { type: "string" }, note: { type: "string" }, token: { type: "string", readOnly: true }, design: { $ref: "#/components/schemas/PageDesign" }, sections: { type: "array", items: { type: "object", required: ["from"], properties: { from: { type: "string", description: "Section key on the live page" }, style: { $ref: "#/components/schemas/SectionStyle" } } } } } },
         FeatureRequest: { type: "object", required: ["title"], properties: { id: { type: "integer", readOnly: true }, title: { type: "string" }, detail: { type: "string" }, context: { type: "string" }, kind: { type: "string", enum: ["feature", "element", "content", "bug"] }, status: { type: "string", readOnly: true, enum: ["open", "planned", "done", "declined"] }, resolution: { type: "string", readOnly: true, description: "Developer note: planned sprint, merged-into, or reason declined" }, created_at: { type: "string", readOnly: true }, updated_at: { type: "string", readOnly: true } } },

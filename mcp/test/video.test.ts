@@ -247,7 +247,9 @@ describe("editorial video CSS and script guards", () => {
   it("stays within the CSS budget", () => {
     const start = css.indexOf(".s-media-ratio-wide");
     const end = css.indexOf("/* testimonial video button sits inline in cards */");
-    expect(end - start).toBeLessThanOrEqual(2560);
+    // Sprint 19's derivative-crop block sits inside this range and has its own budget.
+    const crop = css.indexOf("/* derivative crop"), cropEnd = css.indexOf("/* background: a full-bleed loop");
+    expect(end - start - (crop > 0 ? cropEnd - crop : 0)).toBeLessThanOrEqual(2560);
   });
   it("never autoplays under reduced motion; plays only in view; the visitor's pause sticks", () => {
     expect(appJs).toMatch(/var paused = prefersReduced;/);

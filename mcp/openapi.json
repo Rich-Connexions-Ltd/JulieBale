@@ -3,7 +3,7 @@
   "info": {
     "title": "Julie Bale content API",
     "description": "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-    "version": "0.11.0"
+    "version": "0.12.0"
   },
   "servers": [
     {
@@ -484,6 +484,166 @@
           },
           "400": {
             "description": "Nothing to import or invalid request"
+          }
+        }
+      }
+    },
+    "/api/media/derive": {
+      "post": {
+        "operationId": "deriveVideo",
+        "summary": "Cut a derivative (short excerpt) from a master video",
+        "description": "Make a derivative: a 1-60 s excerpt of a master video as its own asset (master untouched). start/end seconds, optional crop {x,y,w,h} (% of the source frame), speed 0.5|0.75|1. Muted; consent follows the master. Use videoFrames first; then refreshMedia on the derivative.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Master video asset id"
+                  },
+                  "start": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Seconds into the master"
+                  },
+                  "end": {
+                    "type": "number",
+                    "description": "Seconds into the master; 1-60 s after start"
+                  },
+                  "crop": {
+                    "type": "object",
+                    "description": "Crop rectangle in whole-number percent of the source frame (x,y = top-left); w,h >= 10; x+w and y+h <= 100. Applied with style.playback ambient/background.",
+                    "properties": {
+                      "x": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 90
+                      },
+                      "y": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 90
+                      },
+                      "w": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 100
+                      },
+                      "h": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 100
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y",
+                      "w",
+                      "h"
+                    ]
+                  },
+                  "speed": {
+                    "type": "number",
+                    "enum": [
+                      0.5,
+                      0.75,
+                      1
+                    ]
+                  },
+                  "poster_at": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "description": "Poster frame, percent through the excerpt (default 10)"
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,63}$",
+                    "description": "Derivative asset id: new, or an existing derivative of the same master to re-cut it"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 120
+                  }
+                }
+              },
+              "example": {
+                "from": "chronicles-of-hope-018",
+                "start": 12,
+                "end": 20,
+                "crop": {
+                  "x": 20,
+                  "y": 10,
+                  "w": 50,
+                  "h": 80
+                },
+                "speed": 0.75
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Derivative created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeriveResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (nothing was created)"
+          },
+          "409": {
+            "description": "id taken by another asset, or derivative limit reached"
+          }
+        }
+      }
+    },
+    "/api/media/frames/{id}": {
+      "get": {
+        "operationId": "videoFrames",
+        "summary": "Still frames of a video asset",
+        "description": "Still frames of a video asset (master or derivative) at chosen times: seconds in that asset's own timeline (for a derivative, 0 is its first frame). Default 8 evenly spaced. Look at them to choose start/end and the crop before deriveVideo.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "times",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated seconds, up to 8, e.g. 2,4.5,9"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Frames",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoFrames"
+                }
+              }
+            }
           }
         }
       }
@@ -1477,6 +1637,79 @@
           }
         }
       },
+      "DeriveResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "derived_from": {
+            "type": "string"
+          },
+          "edit": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "replaced": {
+            "type": "boolean"
+          },
+          "next": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "VideoFrames": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "asset": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "derived_from": {
+            "type": "string"
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "time": {
+                  "type": "number"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
       "MediaSummary": {
         "type": "object",
         "properties": {
@@ -1683,14 +1916,62 @@
               "granted",
               "not-needed",
               "pending",
-              "refused"
-            ]
+              "refused",
+              "inherit"
+            ],
+            "description": "inherit: derivatives only (follows the master)"
           },
           "consent_note": {
             "type": "string"
           },
           "consent_expires": {
             "type": "string"
+          },
+          "derived_from": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Derivatives: the master video asset id"
+          },
+          "edit": {
+            "type": "object",
+            "description": "Derivatives: {start, end, crop?, speed?}; crop and speed may be changed here",
+            "properties": {
+              "start": {
+                "type": "number"
+              },
+              "end": {
+                "type": "number"
+              },
+              "crop": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "integer"
+                  },
+                  "y": {
+                    "type": "integer"
+                  },
+                  "w": {
+                    "type": "integer"
+                  },
+                  "h": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "speed": {
+                "type": "number",
+                "enum": [
+                  0.5,
+                  0.75,
+                  1
+                ]
+              }
+            }
+          },
+          "muted": {
+            "type": "boolean",
+            "readOnly": true
           },
           "date": {
             "type": "string"

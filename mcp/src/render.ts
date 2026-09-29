@@ -7,7 +7,7 @@
  * with no `style` renders exactly as before.
  */
 import { resolveSection, resolveDesign, validCollageEntry, type ResolvedSection } from "./presentation";
-import { assetIdOf, consentOk, testimonialConsentOk, isStreamMp4, streamThumbnail } from "./assets";
+import { assetIdOf, consentOk, testimonialConsentOk, isStreamMp4, streamThumbnail, linkMasters, parseEdit } from "./assets";
 import { sanitizeLanding } from "./sanitize";
 
 interface Env {
@@ -512,12 +512,48 @@ async function loadAssets(env: Env, ids: string[]): Promise<Map<string, any>> {
       map.set(r.id, JSON.parse(r.data));
     } catch {}
   }
+  // Derivatives follow their master's consent: load the masters in one more
+  // bound query (depth 1) and attach their live consent.
+  const masterIds = [...new Set([...map.values()].map((a) => a?.derived_from).filter((m): m is string => typeof m === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(m)))];
+  if (masterIds.length) {
+    const masters = new Map<string, any>();
+    const { results: rows } = await env.DB.prepare(`SELECT id, data FROM documents WHERE collection='assets' AND id IN (${masterIds.map(() => "?").join(",")})`)
+      .bind(...masterIds)
+      .all<{ id: string; data: string }>();
+    for (const r of rows) {
+      try {
+        masters.set(r.id, JSON.parse(r.data));
+      } catch {}
+    }
+    linkMasters(map.values(), masters);
+  }
   return map;
 }
 
 /** Resolved web MP4 for a media section's video asset (internal; see resolveAssetRefs). */
 export const RESOLVED_VIDEO = Symbol("resolvedVideo");
-interface ResolvedVideo { mp4: string; alt: string }
+interface ResolvedVideo { mp4: string; alt: string; crop?: string; speed?: number }
+
+/**
+ * A derivative's crop and speed (#27), re-validated because assets are
+ * editable. The crop becomes integer custom properties in source pixels:
+ * --sw/--sh frame size, --cx/--cy crop centre, --cw/--ch crop size.
+ */
+function derivedPlayback(a: any): { crop?: string; speed?: number } {
+  if (typeof a.derived_from !== "string" || !a.edit || typeof a.edit !== "object") return {};
+  const e = parseEdit(a.edit);
+  if (typeof e === "string") return {};
+  const out: { crop?: string; speed?: number } = {};
+  if (e.speed) out.speed = e.speed;
+  const sw = a.width, sh = a.height;
+  const px = (v: unknown) => typeof v === "number" && Number.isInteger(v) && v >= 16 && v <= 8192;
+  if (e.crop && px(sw) && px(sh)) {
+    const { x, y, w, h } = e.crop;
+    const r = Math.round;
+    out.crop = `--sw:${sw};--sh:${sh};--cx:${r(((x + w / 2) * sw) / 100)};--cy:${r(((y + h / 2) * sh) / 100)};--cw:${r((w * sw) / 100)};--ch:${r((h * sh) / 100)}`;
+  }
+  return out;
+}
 
 /**
  * Replace `asset:<id>` references with the asset's file (plus its alt text and
@@ -549,7 +585,7 @@ export async function resolveAssetRefs(env: Env, page: any): Promise<any> {
       // never supply or spoof it. The stored MP4 is re-checked here because
       // asset documents are editable.
       if (f === "video" && withStyle && a.type === "video" && a.mp4_status === "ready" && isStreamMp4(a.mp4, a.file))
-        c[RESOLVED_VIDEO] = { mp4: a.mp4, alt: typeof a.alt === "string" ? a.alt : "" } satisfies ResolvedVideo;
+        c[RESOLVED_VIDEO] = { mp4: a.mp4, alt: typeof a.alt === "string" ? a.alt : "", ...derivedPlayback(a) } satisfies ResolvedVideo;
       if (f === "image") {
         if (!c.image_alt && a.alt) c.image_alt = a.alt;
         if (withStyle && a.focus && !(isObj(c.style) && c.style.focus)) c.style = { ...(isObj(c.style) ? c.style : {}), focus: a.focus };
@@ -590,7 +626,10 @@ function mediaButton(uid: string, label: string, poster: string, loop = false, s
  */
 function editorialVideo(uid: string, v: ResolvedVideo, poster: string, style: string, name: string, background: boolean): string {
   const posterUrl = poster ? assetUrl(poster) : streamThumbnail(uid);
-  const attrs = background ? ` aria-hidden="true" tabindex="-1"` : ` controls aria-label="${esc(name)}"`;
+  let attrs = background ? ` aria-hidden="true" tabindex="-1"` : ` controls aria-label="${esc(name)}"`;
+  // A derivative's crop replaces the focal point; speed only ever slows.
+  if (v.crop) style = v.crop;
+  if (v.speed) attrs += ` data-speed="${v.speed}"`;
   return `<video class="media-video" muted playsinline loop preload="none" poster="${esc(posterUrl)}"${attrs}${style ? ` style="${esc(style)}"` : ""}><source src="${esc(v.mp4)}" type="video/mp4"></video>`;
 }
 const videoToggle = (label: string) =>
