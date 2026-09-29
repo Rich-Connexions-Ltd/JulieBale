@@ -162,7 +162,7 @@ describe("site", () => {
   });
   it("OpenAPI exposes the new operations and generated enums", async () => {
     const r = await body(await call(newEnv(), anon("/openapi.json")));
-    expect(r.info.version).toBe("0.12.0");
+    expect(r.info.version).toBe("0.12.1");
     expect(r.paths["/api/pages/{base}/variants"].post.operationId).toBe("createPageVariant");
     expect(r.components.schemas.SectionStyle.properties.theme.enum).toEqual(["cream", "ivory", "teal", "night"]);
     expect(r.components.schemas.Section.properties.key.pattern).toBeTruthy();

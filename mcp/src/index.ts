@@ -4,11 +4,11 @@ import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding, MOTION_GUARD } from "./render";
 import { landingWarnings } from "./sanitize";
 import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, streamEnableDownload, streamClip, posterPercent, slugForAsset } from "./media-import";
-import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, applyStreamDownload, isStreamMp4, consentOk as assetConsentOk, linkMasters, parseEdit, buildDerivedAsset, streamFrame, cleanText, resolutionAdvice, MAX_DERIVATIVES } from "./assets";
+import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, applyStreamDownload, isStreamMp4, consentOk as assetConsentOk, linkMasters, parseEdit, buildDerivedAsset, streamFrame, cleanText, resolutionAdvice, cropInfo, MAX_DERIVATIVES } from "./assets";
 import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
 import { ASSET_OPTIONS, CONSENT_MEANINGS, assetWarnings, testimonialWarnings, searchAssets, type AssetQuery } from "./assets";
 import {
-  ensureSectionKeys, prepareVariantWrite, variantToPage, publishedPage, newVariant, sectionSummaries,
+  ensureSectionKeys, prepareVariantWrite, variantToPage, publishedPage, newVariant, sectionSummaries, unstyledWarnings,
   tokensEqual, isValidId, previewPath, TOKEN_RE, MAX_VARIANTS_PER_BASE,
 } from "./variants";
 import { renderEditorPage, editorResource } from "./editor";
@@ -136,7 +136,14 @@ async function writeDoc(env: Env, collection: string, id: string, data: string, 
   )
     .bind(collection, id, data, status, now())
     .run();
-  return { created: prev === null, warnings: warningsFor(collection, data) };
+  const warnings = warningsFor(collection, data);
+  // A variant section without a style shows unstyled: say so when the live page styles it.
+  if (collection === "variants") {
+    const v = parse(data);
+    const base = v && isValidId(v.base) ? parse(await readDoc(env, "pages", v.base)) : null;
+    if (base) warnings.push(...unstyledWarnings(variantToPage(ensureSectionKeys(base).page, v).unstyled, id));
+  }
+  return { created: prev === null, warnings };
 }
 
 // Merge fields into an existing document (never strips fields you don't send).
@@ -261,11 +268,11 @@ async function listVariants(env: Env, origin: string, base: unknown): Promise<Re
   // see them before any variant exists. Read-only: nothing is written here.
   const basePage = ensureSectionKeys(stored).page;
   const variants = (await variantsFor(env, base)).map(({ id, doc }) => {
-    const { unresolved } = variantToPage(basePage, doc);
+    const { unresolved, unstyled } = variantToPage(basePage, doc);
     return {
       id, label: doc.label, note: doc.note,
       previewUrl: typeof doc.token === "string" ? origin + previewPath(id, doc.token) : null,
-      unresolved, warnings: presentationWarnings(doc),
+      unresolved, warnings: [...presentationWarnings(doc), ...unstyledWarnings(unstyled, id)],
     };
   });
   return { ok: true, base, limit: MAX_VARIANTS_PER_BASE, variants, sections: sectionSummaries(basePage) };
@@ -367,7 +374,7 @@ async function refreshMedia(env: Env, id: unknown, posterAt: unknown) {
   await writeDoc(env, "assets", id, JSON.stringify(updated));
   const { status, duration, width, height, orientation, size, thumbnail, mp4_status } = updated;
   if (!mp4_note && status === "ready" && mp4_status === "processing") mp4_note = "The web MP4 for editorial playback is still being prepared: refresh again in a minute.";
-  return { status: 200, body: { ok: true, asset: id, ref: `asset:${id}`, status, duration, width, height, orientation, size, thumbnail, mp4_status, ...(mp4_note ? { note: mp4_note } : {}) } };
+  return { status: 200, body: { ok: true, asset: id, ref: `asset:${id}`, status, duration, width, height, orientation, size, thumbnail, mp4_status, ...cropInfo(updated), ...(mp4_note ? { note: mp4_note } : {}) } };
 }
 
 /* --------------------------- Video derivatives (#27) ---------------------- */
@@ -418,7 +425,7 @@ async function deriveVideo(env: Env, b: any) {
   await writeDoc(env, "assets", id, JSON.stringify(doc));
   return {
     status: 200,
-    body: { ok: true, asset: id, ref: `asset:${id}`, status: "processing", derived_from: from, edit, replaced: !!prev, warnings: resolutionAdvice(master.width, master.height, edit.crop), next: "Call refresh_media_asset on this asset until status and mp4_status are ready, then use it in a media block with style.playback ambient or background." },
+    body: { ok: true, asset: id, ref: `asset:${id}`, status: "processing", derived_from: from, edit, replaced: !!prev, ...cropInfo({ ...doc, width: master.width, height: master.height }), warnings: resolutionAdvice(master.width, master.height, edit.crop), next: "Call refresh_media_asset on this asset until status and mp4_status are ready, then use it in a media block with style.playback ambient or background." },
   };
 }
 
@@ -433,7 +440,7 @@ async function videoFrames(env: Env, id: unknown, times: unknown) {
   if (!ts.length) ts = dur ? Array.from({ length: 8 }, (_, i) => (dur * (i + 0.5)) / 8) : [0, 2, 4, 6, 8, 10, 12, 14];
   if (dur) ts = ts.map((t) => Math.min(t, Math.max(0, dur - 0.1)));
   const frames = ts.map((t) => ({ time: Math.round(t * 10) / 10, url: streamFrame(a.file, t) }));
-  return { status: 200, body: { ok: true, asset: id, width: a.width, height: a.height, duration: a.duration, warnings: resolutionAdvice(a.width, a.height), ...(a.derived_from ? { derived_from: a.derived_from, edit: a.edit } : {}), frames } };
+  return { status: 200, body: { ok: true, asset: id, width: a.width, height: a.height, duration: a.duration, warnings: resolutionAdvice(a.width, a.height), ...(a.derived_from ? { derived_from: a.derived_from, edit: a.edit, ...cropInfo(a) } : {}), frames } };
 }
 
 /* --------------------------- Feature requests ----------------------------- */
@@ -462,7 +469,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.12.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.12.1" });
 
   async init() {
     this.server.tool(
@@ -930,7 +937,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-      version: "0.12.0",
+      version: "0.12.1",
     },
     servers: [{ url: origin }],
     paths: {
@@ -1045,10 +1052,10 @@ function openApiSchema(origin: string) {
         PresentationOptions: { type: "object", description: "Allowed presentation values with meanings and examples.", properties: { style: { type: "object", description: "Section style keys: each has values (value -> meaning), optional blocks it applies to, or a pattern.", additionalProperties: true }, design: { type: "object", description: "Page design keys, same shape as style.", additionalProperties: true }, rules: { type: "array", items: { type: "string" } }, examples: { type: "object", description: "One worked variant per concept (stage, editorial, journey).", additionalProperties: true } } },
         VariantList: { type: "object", properties: { ok: { type: "boolean" }, base: { type: "string" }, limit: { type: "integer" }, error: { type: "string" }, variants: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, previewUrl: { type: "string" }, unresolved: { type: "array", items: { type: "string" } }, warnings: { type: "array", items: { type: "string" } } } } }, sections: { type: "array", description: "The live page's section keys", items: { type: "object", properties: { key: { type: "string" }, type: { type: "string" }, heading: { type: "string" } } } } } },
         ImportResults: { type: "object", properties: { results: { type: "array", items: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string", description: "Asset id" }, ref: { type: "string", description: "Use in pages, e.g. asset:aria-rehearsal" }, type: { type: "string" }, status: { type: "string", enum: ["processing", "ready", "error"] }, replaced: { type: "boolean" }, warnings: { type: "array", items: { type: "string" }, description: "Things to fix on the new asset (it was still saved): missing alt text or transcript, consent kept as pending because granted had no consent_note, or values outside the asset vocabulary." }, name: { type: "string" }, error: { type: "string", description: "Why this file was not imported (type, size, link, or Stream's reason)." } } } }, ok: { type: "boolean" }, error: { type: "string" } } },
-        DeriveResult: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, derived_from: { type: "string" }, edit: { type: "object", additionalProperties: true }, replaced: { type: "boolean" }, warnings: { type: "array", items: { type: "string" }, description: "Advice to act on, e.g. the crop is too small to look sharp in a large frame" }, next: { type: "string" }, error: { type: "string" } } },
-        VideoFrames: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, width: { type: "integer" }, height: { type: "integer" }, duration: { type: "number" }, warnings: { type: "array", items: { type: "string" } }, derived_from: { type: "string" }, frames: { type: "array", items: { type: "object", properties: { time: { type: "number" }, url: { type: "string" } } } }, error: { type: "string" } } },
-        MediaSummary: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, duration: { type: "number" }, width: { type: "integer" }, height: { type: "integer" }, orientation: { type: "string" }, size: { type: "integer" }, thumbnail: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], description: "Web MP4 for ambient/background playback" }, note: { type: "string" }, error: { type: "string" } } },
-        AssetList: { type: "object", properties: { assets: { type: "array", items: { type: "object", properties: { ref: { type: "string" }, title: { type: "string" }, type: { type: "string" }, file: { type: "string" }, orientation: { type: "string" }, usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } }, people: { type: "array", items: { type: "string" } }, consent: { type: "string" }, usable: { type: "boolean" } } } }, vocabulary: { type: "object", additionalProperties: true }, consent: { type: "object", additionalProperties: true } } },
+        DeriveResult: { type: "object", properties: { ok: { type: "boolean" }, crop_size: { type: "object", description: "Derivatives: pixel size of the crop shown on the page", properties: { width: { type: "integer" }, height: { type: "integer" } } }, crop_note: { type: "string" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, derived_from: { type: "string" }, edit: { type: "object", additionalProperties: true }, replaced: { type: "boolean" }, warnings: { type: "array", items: { type: "string" }, description: "Advice to act on, e.g. the crop is too small to look sharp in a large frame" }, next: { type: "string" }, error: { type: "string" } } },
+        VideoFrames: { type: "object", properties: { ok: { type: "boolean" }, crop_size: { type: "object", description: "Derivatives: pixel size of the crop shown on the page", properties: { width: { type: "integer" }, height: { type: "integer" } } }, crop_note: { type: "string" }, asset: { type: "string" }, width: { type: "integer" }, height: { type: "integer" }, duration: { type: "number" }, warnings: { type: "array", items: { type: "string" } }, derived_from: { type: "string" }, frames: { type: "array", items: { type: "object", properties: { time: { type: "number" }, url: { type: "string" } } } }, error: { type: "string" } } },
+        MediaSummary: { type: "object", properties: { ok: { type: "boolean" }, crop_size: { type: "object", description: "Derivatives: pixel size of the crop shown on the page", properties: { width: { type: "integer" }, height: { type: "integer" } } }, crop_note: { type: "string" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, duration: { type: "number" }, width: { type: "integer" }, height: { type: "integer" }, orientation: { type: "string" }, size: { type: "integer" }, thumbnail: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], description: "Web MP4 for ambient/background playback" }, note: { type: "string" }, error: { type: "string" } } },
+        AssetList: { type: "object", properties: { assets: { type: "array", items: { type: "object", properties: { ref: { type: "string" }, title: { type: "string" }, type: { type: "string" }, file: { type: "string" }, orientation: { type: "string" }, usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } }, people: { type: "array", items: { type: "string" } }, consent: { type: "string" }, usable: { type: "boolean" }, derived_from: { type: "string" }, crop_size: { type: "object", properties: { width: { type: "integer" }, height: { type: "integer" } } }, crop_note: { type: "string" } } } }, vocabulary: { type: "object", additionalProperties: true }, consent: { type: "object", additionalProperties: true } } },
         Asset: { type: "object", description: "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).", properties: { file: { type: "string", description: "Filename in /assets, media key, or Stream video id" }, type: { type: "string", enum: [...ASSET_OPTIONS.type] }, title: { type: "string" }, alt: { type: "string" }, people: { type: "array", items: { type: "string" } }, setting: { type: "string" }, orientation: { type: "string", enum: [...ASSET_OPTIONS.orientation] }, focus: { type: "string", description: "Default focal point, e.g. 60% 20%" }, tone: { type: "array", items: { type: "string" } }, usage: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.usage] } }, roles: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.roles] } }, suits: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.suits] } }, consent: { type: "string", enum: [...ASSET_OPTIONS.consent, "inherit"], description: "inherit: derivatives only (follows the master)" }, consent_note: { type: "string" }, consent_expires: { type: "string" }, derived_from: { type: "string", readOnly: true, description: "Derivatives: the master video asset id" }, edit: { type: "object", description: "Derivatives: {start, end, crop?, speed?}; crop and speed may be changed here", properties: { start: { type: "number" }, end: { type: "number" }, crop: { type: "object", properties: { x: { type: "integer" }, y: { type: "integer" }, w: { type: "integer" }, h: { type: "integer" } } }, speed: { type: "number", enum: [0.5, 0.75, 1] } } }, muted: { type: "boolean", readOnly: true }, date: { type: "string" }, lighting: { type: "string" }, crop_zones: { type: "string" }, notes: { type: "string" }, mp4_status: { type: "string", enum: ["processing", "ready", "error"], readOnly: true, description: "Video only: web MP4 for style.playback ambient/background; set by refresh" }, mp4: { type: "string", readOnly: true, description: "Video only: web MP4 URL, set by refresh; do not edit" } } },
         Testimonial: { type: "object", description: "Collection 'testimonials'. Shown only when consent is granted.", properties: { name: { type: "string" }, role: { type: "string" }, quote: { type: "string" }, story: { type: "string", description: "Markdown" }, before: { type: "string" }, after: { type: "string" }, portrait: { type: "string", description: "asset:<id>" }, video: { type: "string", description: "asset:<id> or Stream id" }, tags: { type: "array", items: { type: "string" } }, consent: { type: "string", enum: ["granted", "pending", "refused"] }, consent_note: { type: "string" }, consent_expires: { type: "string" } } },
         Variant: { type: "object", description: "An unpublished variant (collection 'variants'). Copy comes from the live base page; only order and presentation live here. `token` and `base` are managed by the server.", properties: { base: { type: "string", readOnly: true }, label: { type: "string" }, note: { type: "string" }, token: { type: "string", readOnly: true }, design: { $ref: "#/components/schemas/PageDesign" }, sections: { type: "array", items: { type: "object", required: ["from"], properties: { from: { type: "string", description: "Section key on the live page" }, style: { $ref: "#/components/schemas/SectionStyle" } } } } } },
@@ -1133,9 +1140,9 @@ async function handlePreview(env: Env, pathname: string): Promise<Response> {
   if (!variant || !tokensEqual(token, variant.token) || !isValidId(variant.base)) return notFound();
   const base = parse(await readDoc(env, "pages", variant.base));
   if (!base) return notFound();
-  const { page } = variantToPage(base, variant);
+  const { page, unstyled } = variantToPage(base, variant);
   const label = typeof variant.label === "string" ? variant.label.slice(0, 80) : id;
-  return new Response(await renderPage(env, page, site, { preview: { label } }), { headers: PREVIEW_HEADERS });
+  return new Response(await renderPage(env, page, site, { preview: { label, unstyled: unstyled.length } }), { headers: PREVIEW_HEADERS });
 }
 
 // The only inline script a landing page may run is the motion guard, by hash.

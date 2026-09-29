@@ -803,7 +803,7 @@ export const MOTION_GUARD =
 
 export interface RenderOptions {
   /** Render as an unlisted preview: noindex plus a "not live" banner. */
-  preview?: { label: string };
+  preview?: { label: string; unstyled?: number };
 }
 
 /** Short chapter label for scene navigation: the section's own words, trimmed. */
@@ -842,7 +842,8 @@ export async function renderPage(env: Env, page: any, site: any, opts: RenderOpt
   const progress =
     (design.progress ? `<div class="progress-line" aria-hidden="true"></div>` : "") +
     (design.sceneNav ? renderSceneNav(design.sceneNav, chapters) : "");
-  const banner = opts.preview ? `<div class="preview-banner" role="note">Preview · ${esc(opts.preview.label)} · not live</div>` : "";
+  const unstyledNote = opts.preview?.unstyled ? ` · ${opts.preview.unstyled} section${opts.preview.unstyled === 1 ? "" : "s"} shown without the live page's styling` : "";
+  const banner = opts.preview ? `<div class="preview-banner" role="note">Preview · ${esc(opts.preview.label)} · not live${unstyledNote}</div>` : "";
   return `<!doctype html>
 <html lang="en-GB">
 <head>

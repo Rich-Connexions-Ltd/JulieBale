@@ -130,3 +130,14 @@ describe("newVariant and ids", () => {
     expect(previewPath("home-stage", "ab_-")).toBe("/preview/home-stage/ab_-");
   });
 });
+
+describe("unstyled variant sections (bug #28)", () => {
+  it("flags sections the live page styles but the variant leaves unstyled", async () => {
+    const { variantToPage, unstyledWarnings } = await import("../src/variants");
+    const base = { sections: [{ key: "media-1", type: "media", style: { playback: "ambient" } }, { key: "text-1", type: "text" }, { key: "hero-1", type: "hero", style: {} }] };
+    const r = variantToPage(base, { sections: [{ from: "media-1" }, { from: "text-1" }, { from: "hero-1" }] });
+    expect(r.unstyled).toEqual(["media-1"]);
+    expect(variantToPage(base, { sections: [{ from: "media-1", style: {} }] }).unstyled).toEqual([]);
+    expect(unstyledWarnings(["media-1"], "v")[0]).toMatch(/media-1: this variant shows it unstyled.*variants\/v/);
+  });
+});

@@ -3,7 +3,7 @@
   "info": {
     "title": "Julie Bale content API",
     "description": "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-    "version": "0.12.0"
+    "version": "0.12.1"
   },
   "servers": [
     {
@@ -1643,6 +1643,21 @@
           "ok": {
             "type": "boolean"
           },
+          "crop_size": {
+            "type": "object",
+            "description": "Derivatives: pixel size of the crop shown on the page",
+            "properties": {
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              }
+            }
+          },
+          "crop_note": {
+            "type": "string"
+          },
           "asset": {
             "type": "string"
           },
@@ -1682,6 +1697,21 @@
         "properties": {
           "ok": {
             "type": "boolean"
+          },
+          "crop_size": {
+            "type": "object",
+            "description": "Derivatives: pixel size of the crop shown on the page",
+            "properties": {
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              }
+            }
+          },
+          "crop_note": {
+            "type": "string"
           },
           "asset": {
             "type": "string"
@@ -1728,6 +1758,21 @@
         "properties": {
           "ok": {
             "type": "boolean"
+          },
+          "crop_size": {
+            "type": "object",
+            "description": "Derivatives: pixel size of the crop shown on the page",
+            "properties": {
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              }
+            }
+          },
+          "crop_note": {
+            "type": "string"
           },
           "asset": {
             "type": "string"
@@ -1819,6 +1864,23 @@
                 },
                 "usable": {
                   "type": "boolean"
+                },
+                "derived_from": {
+                  "type": "string"
+                },
+                "crop_size": {
+                  "type": "object",
+                  "properties": {
+                    "width": {
+                      "type": "integer"
+                    },
+                    "height": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "crop_note": {
+                  "type": "string"
                 }
               }
             }

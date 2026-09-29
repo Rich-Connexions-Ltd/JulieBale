@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import worker from "../src/index";
 import { renderPage } from "../src/render";
-import { resolutionAdvice, parseEdit, parseCrop, consentOk, linkMasters, describeAsset, streamFrame, assetWarnings, MASTER_CONSENT } from "../src/assets";
+import { cropInfo, resolutionAdvice, parseEdit, parseCrop, consentOk, linkMasters, describeAsset, streamFrame, assetWarnings, MASTER_CONSENT } from "../src/assets";
 import { fakeEnv, fakeMedia, authed, siteFixture, pageWith } from "./helpers";
 
 const MASTER_UID = "0123456789abcdef0123456789abcdef";
@@ -283,5 +283,55 @@ describe("resolution advice in the responses", () => {
     expect(r.warnings[0]).toMatch(/576×410/);
     const f = await (await call(env, authed("/api/media/frames/master"))).json<any>();
     expect(f.warnings[0]).toMatch(/576×1024/);
+  });
+});
+
+describe("crop reporting (bug #28)", () => {
+  const d = { derived_from: "master", width: 576, height: 1024, edit: { start: 56, end: 64, crop: { x: 2, y: 30, w: 96, h: 30 } } };
+  it("reports the shown crop size and where the crop applies", () => {
+    const info = cropInfo(d);
+    expect(info.crop_size).toEqual({ width: 553, height: 307 });
+    expect(info.crop_note).toMatch(/file keeps the full 576×1024 frame; the crop \(553×307 px\) is applied on the page when the media block uses style\.playback ambient or background/);
+    expect(info.crop_note).toMatch(/variant previews without that style show the whole frame/);
+    expect(cropInfo({ ...d, width: undefined }).crop_size).toBeUndefined();
+    expect(cropInfo({ ...d, derived_from: undefined })).toEqual({});
+    expect(cropInfo({ ...d, edit: { start: 0, end: 5 } })).toEqual({});
+  });
+  it("derive, frames, refresh and search include it", async () => {
+    const env = envWith({ "assets/moment": { type: "video", file: CLIP_UID, status: "ready", consent: "inherit", ...d } });
+    stubClip();
+    const r = await (await derive(env, { from: "master", start: 0, end: 5, crop: { x: 2, y: 30, w: 96, h: 30 } })).json<any>();
+    expect(r.crop_size).toEqual({ width: 553, height: 307 });
+    const f = await (await call(env, authed("/api/media/frames/moment"))).json<any>();
+    expect(f.crop_note).toMatch(/applied on the page/);
+    const sr = await (await call(env, authed("/api/assets/search?q=moment"))).json<any>();
+    expect(sr.assets[0].crop_size).toEqual({ width: 553, height: 307 });
+    vi.stubGlobal("fetch", async (url: string) =>
+      String(url).endsWith("/downloads")
+        ? Response.json({ success: true, result: { default: { status: "inprogress" } } })
+        : Response.json({ success: true, result: { readyToStream: true, input: { width: 576, height: 1024 }, status: { state: "ready" } } }));
+    const rf = await (await call(env, authed("/api/media/refresh/moment", { method: "POST", body: "{}" }))).json<any>();
+    expect(rf.crop_size).toEqual({ width: 553, height: 307 });
+  });
+});
+
+describe("unstyled variant sections through the routes (bug #28)", () => {
+  it("list, write warnings and the preview banner all say so", async () => {
+    const token = "a".repeat(24);
+    const env = envWith({
+      "pages/new-home": { title: "New home", sections: [{ key: "media-1", type: "media", heading: "Moment", video: "asset:master", style: { playback: "ambient", theme: "night" } }] },
+      "variants/prev": { base: "new-home", label: "Preview", token, sections: [{ from: "media-1" }] },
+    });
+    const list = await (await call(env, authed("/api/pages/new-home/variants"))).json<any>();
+    expect(list.variants[0].warnings.join()).toMatch(/media-1: this variant shows it unstyled/);
+    const w = await (await call(env, authed("/api/variants/prev", { method: "PATCH", body: JSON.stringify({ label: "Preview 2" }) }))).json<any>();
+    expect(w.warnings.join()).toMatch(/media-1: this variant shows it unstyled/);
+    const styled = await (await call(env, authed("/api/variants/prev", { method: "PATCH", body: JSON.stringify({ sections: [{ from: "media-1", style: { playback: "ambient" } }] }) }))).json<any>();
+    expect((styled.warnings || []).join()).not.toMatch(/unstyled/);
+  });
+  it("preview banner counts unstyled sections", async () => {
+    const { renderPage } = await import("../src/render");
+    const html = await renderPage(fakeEnv({}), { title: "x", sections: [] }, siteFixture(), { preview: { label: "Preview", unstyled: 1 } });
+    expect(html).toContain("Preview · Preview · not live · 1 section shown without the live page&#39;s styling".replace("&#39;", "'"));
   });
 });

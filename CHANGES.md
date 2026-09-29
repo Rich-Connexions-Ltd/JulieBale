@@ -122,6 +122,19 @@ Feature request #24. Council review (external fetches, secrets, consent).
 - Fix: `/api` and `/mcp` now fail closed when `API_KEY` is not configured (previously open)
 - `mcp/test/media-import.test.ts`, `assets.test.ts`, `docs.test.ts`, `helpers.ts` (fake R2)
 
+## Bug #28: crop "not applied" — preview variant unstyled; clearer crop reporting (0.12.1) — 2026-09-29
+
+The live page applied the crop; the report came from a variant preview whose
+sections had no style (variant sections without style render unstyled).
+
+**Files changed:**
+- `mcp/src/variants.ts` — `variantToPage` reports `unstyled` sections; `unstyledWarnings`
+- `mcp/src/index.ts` — warnings in `list_page_variants` and variant writes; preview banner count; `crop_size`/`crop_note` in derive, frames, refresh and search responses; OpenAPI 0.12.1
+- `mcp/src/assets.ts` — `cropInfo`
+- `mcp/src/render.ts` — preview banner notes unstyled sections
+- `mcp/context/content-model.md` — variant style rule spelled out; judge crops on the page
+- `mcp/test/derive.test.ts`, `mcp/test/variants.test.ts` — tests
+
 ## Sprint 19 follow-up: resolution advice in tool responses — 2026-09-29
 
 **Files changed:**

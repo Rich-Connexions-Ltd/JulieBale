@@ -148,7 +148,7 @@ export function searchAssets(rows: Array<{ id: string; doc: any }>, query: Asset
     .map(({ id, doc }) => ({
       ref: `asset:${id}`, title: doc.title, type: doc.type, file: doc.file, orientation: doc.orientation, focus: doc.focus,
       usage: doc.usage, roles: doc.roles, people: doc.people, consent: doc.consent, usable: consentOk(doc),
-      ...(typeof doc.derived_from === "string" ? { derived_from: doc.derived_from, edit: doc.edit } : {}),
+      ...(typeof doc.derived_from === "string" ? { derived_from: doc.derived_from, edit: doc.edit, ...cropInfo(doc) } : {}),
     }));
 }
 
@@ -371,4 +371,23 @@ export function resolutionAdvice(width: unknown, height: unknown, crop?: Crop): 
   return [
     `${what}, so it will look soft in a wide or full-width frame (media_ratio wide/cinematic, width full, or playback background). It is fine in a small portrait frame. For anything prominent, ask Julie for the original, higher-resolution footage rather than cropping this one.`,
   ];
+}
+
+/**
+ * How a derivative's crop relates to its file, for assistants: the file keeps
+ * the full frame; the crop is applied on the page (ambient/background only).
+ */
+export function cropInfo(asset: Record<string, any>): { crop_size?: { width: number; height: number }; crop_note?: string } {
+  if (typeof asset?.derived_from !== "string" || !isObject(asset.edit)) return {};
+  const e = parseEdit(asset.edit);
+  if (typeof e === "string" || !e.crop) return {};
+  const w = asset.width, h = asset.height;
+  const known = typeof w === "number" && typeof h === "number" && w > 0 && h > 0;
+  const size = known ? { width: Math.round((w * e.crop.w) / 100), height: Math.round((h * e.crop.h) / 100) } : undefined;
+  return {
+    ...(size ? { crop_size: size } : {}),
+    crop_note:
+      `The file keeps the full ${known ? `${w}×${h} ` : ""}frame; the crop${size ? ` (${size.width}×${size.height} px)` : ""} is applied on the page when the media block uses style.playback ambient or background. ` +
+      "Thumbnails, video_frames, player mode and variant previews without that style show the whole frame.",
+  };
 }

@@ -90,11 +90,13 @@ export function sectionSummaries(page: any): Array<{ key: string; type: string; 
  * replaced by the variant's. Unresolved references are skipped and listed;
  * base sections the variant does not reference are listed as `dropped`.
  */
-export function variantToPage(base: any, variant: any): { page: any; unresolved: string[]; dropped: string[] } {
+export function variantToPage(base: any, variant: any): { page: any; unresolved: string[]; dropped: string[]; unstyled: string[] } {
   const byKey = new Map<string, any>();
   for (const s of sectionsOf(base)) if (isObject(s) && typeof s.key === "string") byKey.set(s.key, s);
   const referenced = new Set<string>();
   const unresolved: string[] = [];
+  // Sections the live page styles but this variant shows unstyled (no `style`).
+  const unstyled: string[] = [];
   const sections: any[] = [];
   for (const entry of Array.isArray(variant?.sections) ? variant.sections : []) {
     const from = isObject(entry) && typeof entry.from === "string" ? entry.from : null;
@@ -108,11 +110,20 @@ export function variantToPage(base: any, variant: any): { page: any; unresolved:
     // A variant may also choose different photographs/media (asset references only).
     const withMedia = { ...rest, ...mediaOverrides(entry.media) };
     sections.push(entry.style === undefined ? withMedia : { ...withMedia, style: entry.style });
+    if (entry.style === undefined && isObject(_baseStyle) && Object.keys(_baseStyle).length) unstyled.push(from!);
   }
   const dropped = [...byKey.keys()].filter((k) => !referenced.has(k));
   const { design: _baseDesign, ...baseRest } = isObject(base) ? base : ({} as any);
   const page = { ...baseRest, ...(variant?.design !== undefined ? { design: variant.design } : {}), sections };
-  return { page, unresolved, dropped };
+  return { page, unresolved, dropped, unstyled };
+}
+
+/** Advice for sections a variant shows without the live page's style. */
+export function unstyledWarnings(keys: string[], variantId?: string): string[] {
+  return keys.map(
+    (k) =>
+      `${k}: this variant shows it unstyled, but the live page styles it (a variant section without "style" does not inherit the live style). Copy the live section's style into ${variantId ? `variants/${variantId}` : "the variant"} if you want the same look.`
+  );
 }
 
 /**

@@ -169,7 +169,11 @@ every variant picks them up.
    ```
    `from` is a section key of the live page (`list_page_variants` shows them).
    Leave a section out to hide it. A variant section's `style` **replaces** the
-   live section's style (it is not merged). A section may also choose different
+   live section's style (it is not merged), and a variant section **without**
+   `style` is shown **unstyled**: it does not inherit the live style. If you
+   styled the live page after making a variant, copy those styles into the
+   variant (list_page_variants and write warnings name such sections, and the
+   preview banner counts them). A section may also choose different
    photographs or media with `"media": {"image": "asset:…", "image_2": "asset:…",
    "poster": "asset:…", "video": "asset:…", "audio": "asset:…"}` (asset references
    only), so a concept can use its own photography without touching the live page.
@@ -453,7 +457,10 @@ never changed.
    `mp4_status` are `ready`.
 4. **Use** it in a media block with `style.playback` `ambient` or `background`.
    Crop and speed apply only there; in `player` mode the whole clip plays with
-   the normal player. A crop replaces `focus`.
+   the normal player. A crop replaces `focus`. The file itself keeps the full
+   frame (its width/height and thumbnail are the whole picture); the tools
+   report the shown crop as `crop_size`. So judge a crop on the page, not from
+   the thumbnail, video_frames or a variant preview without that style.
 
 Rules worth knowing:
 - Derivatives are **muted** moving photography (the sound is never heard).
