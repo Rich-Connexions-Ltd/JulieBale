@@ -627,10 +627,10 @@ const safeDecode = (s: string): string | null => {
 };
 
 async function handleApi(request: Request, env: Env, pathname: string): Promise<Response> {
-  if (env.API_KEY) {
-    const auth = request.headers.get("authorization") || "";
-    if (auth !== `Bearer ${env.API_KEY}`) return json({ error: "unauthorized" }, 401);
-  }
+  // Fail closed: without a configured key, nothing under /api is reachable.
+  if (!env.API_KEY) return json({ error: "the API is not configured" }, 503);
+  const auth = request.headers.get("authorization") || "";
+  if (auth !== `Bearer ${env.API_KEY}`) return json({ error: "unauthorized" }, 401);
 
   const parts = pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean);
   const method = request.method.toUpperCase();
@@ -1099,15 +1099,13 @@ export default {
       });
     if (pathname.startsWith("/api")) return handleApi(request, env, pathname);
     if (pathname === "/mcp" || pathname === "/sse" || pathname === "/sse/message") {
-      // Gate the MCP door with the same bearer key as the REST API.
-      if (env.API_KEY) {
-        const auth = request.headers.get("authorization") || "";
-        if (auth !== `Bearer ${env.API_KEY}`)
-          return new Response(JSON.stringify({ error: "unauthorized" }), {
-            status: 401,
-            headers: { "content-type": "application/json", "www-authenticate": "Bearer" },
-          });
-      }
+      // Gate the MCP door with the same bearer key as the REST API (fail closed).
+      const auth = request.headers.get("authorization") || "";
+      if (!env.API_KEY || auth !== `Bearer ${env.API_KEY}`)
+        return new Response(JSON.stringify({ error: "unauthorized" }), {
+          status: env.API_KEY ? 401 : 503,
+          headers: { "content-type": "application/json", "www-authenticate": "Bearer" },
+        });
       if (pathname === "/mcp") return ContentMCP.serve("/mcp").fetch(request, env, ctx);
       return ContentMCP.serveSSE("/sse").fetch(request, env, ctx);
     }

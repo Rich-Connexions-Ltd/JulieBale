@@ -86,7 +86,7 @@ describe("POST /api/media/import", () => {
     const env = envWith();
     const calls = stubFetch({ [CHAT]: mp4(1000) });
     const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()], title: "Aria rehearsal", alt: "Julie at the piano", poster_at: 30 })));
-    expect(r.results).toEqual([{ ok: true, asset: "aria-rehearsal", ref: "asset:aria-rehearsal", type: "video", status: "processing", replaced: false, warnings: [] }]);
+    expect(r.results).toEqual([{ ok: true, asset: "aria-rehearsal", ref: "asset:aria-rehearsal", type: "video", status: "processing", replaced: false, warnings: ["add a transcript if the video has speech or lyrics."] }]);
     const a = doc(env, "assets", "aria-rehearsal");
     expect(a).toMatchObject({ type: "video", file: UID, status: "processing", size: 1000, consent: "pending", title: "Aria rehearsal", alt: "Julie at the piano", source: { kind: "chatgpt", name: "Aria Rehearsal.mp4" } });
     expect(a.master).toMatch(/^masters\/aria-rehearsal\/[a-z0-9_-]{24}\/aria-rehearsal\.mp4$/);
@@ -185,5 +185,46 @@ describe("POST /api/media/refresh", () => {
     const env = envWith({ "assets/song": { type: "audio", file: "imports/song/x/a.mp3" } });
     stubFetch({});
     expect((await call(env, post("/api/media/refresh/song", {}))).status).toBe(400);
+  });
+});
+
+describe("hardening from code review", () => {
+  it("fails closed when no API key is configured", async () => {
+    const env = { ...envWith(), API_KEY: undefined };
+    expect((await call(env, anon("/api/pages/home"))).status).toBe(503);
+    expect((await call(env, authed("/api/pages/home"))).status).toBe(503);
+    expect((await call(env, anon("/mcp", { method: "POST" }))).status).toBe(503);
+  });
+  it("protects the direct media write API", async () => {
+    const env = envWith();
+    expect((await call(env, anon("/api/media/x.mp3", { method: "PUT", body: "x" }))).status).toBe(401);
+    expect((await call(env, anon("/api/media/x.mp3", { method: "DELETE" }))).status).toBe(401);
+  });
+  it("rejects bodies shorter than declared and enforces the exact cap", async () => {
+    const { MEDIA_TYPES } = await import("../src/media-import");
+    const cap = MEDIA_TYPES.audio.cap;
+    MEDIA_TYPES.audio.cap = 100;
+    try {
+      const src = (n: number, declared = n) => () => new Response(bytes(n), { headers: { "content-type": "audio/mpeg", "content-length": String(declared) } });
+      const run = async (h: () => Response) => {
+        const env = envWith();
+        stubFetch({ "https://cdn.example.com/a.mp3": h });
+        return { r: (await body(await call(env, post("/api/media/import", { urls: ["https://cdn.example.com/a.mp3"] })))).results[0], env };
+      };
+      expect((await run(src(100))).r.ok).toBe(true); // exactly the cap
+      const over = await run(src(101));
+      expect(over.r.error).toMatch(/too large/);
+      const short = await run(src(50, 60));
+      expect(short.r.ok).toBe(false);
+      expect(short.env.MEDIA.objects.size).toBe(0);
+    } finally {
+      MEDIA_TYPES.audio.cap = cap;
+    }
+  });
+  it("warns about missing alt text and transcripts", async () => {
+    const env = envWith();
+    stubFetch({ [CHAT]: mp4(10) });
+    const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()] })));
+    expect(r.results[0].warnings.join(" ")).toMatch(/add alt[\s\S]*transcript/);
   });
 });

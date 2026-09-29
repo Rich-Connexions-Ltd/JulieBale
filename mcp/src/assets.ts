@@ -71,6 +71,7 @@ export function assetWarnings(doc: unknown): string[] {
   const out: string[] = [];
   if (typeof doc.file !== "string" || !doc.file) out.push("file is required (a filename in /assets, a media key, or a Stream video id).");
   if (doc.type === "image" && (typeof doc.alt !== "string" || !doc.alt.trim())) out.push("alt text is required for images (what the photograph shows).");
+  if (doc.type === "video" && (typeof doc.alt !== "string" || !doc.alt.trim())) out.push("alt text is recommended for videos (what the poster shows).");
   if (doc.consent === undefined) out.push("consent is required (granted | not-needed | pending | refused); until set, the asset is not shown.");
   enumWarnings(doc, "type", false, out);
   enumWarnings(doc, "orientation", false, out);
@@ -160,6 +161,9 @@ export function buildImportedAsset(media: ImportedMedia, meta: ImportMeta): { do
     warnings.push("consent kept as pending: granted needs a consent_note saying who agreed, when and how.");
   }
   const list = (v: unknown, allowed: readonly string[]) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && allowed.includes(x)) : undefined);
+  // Accessibility: say what is missing (the import still succeeds).
+  if (media.type === "video" && !cleanText(meta.alt, 300)) warnings.push("add alt: describe what the video's poster shows (used as its alternative text).");
+  if (!cleanText(meta.transcript, 20000)) warnings.push(`add a transcript if the ${media.type} has speech or lyrics.`);
   const doc: Record<string, unknown> = {
     ...media,
     title: cleanText(meta.title, 120) || media.source.name,

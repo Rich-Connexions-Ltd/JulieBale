@@ -1,13 +1,17 @@
 # Julie Bale — content MCP (test surface)
 
-A minimal remote **MCP server on Cloudflare Workers** to validate the read/write
-round-trip before we build the real thing. Storage is **KV** (throwaway); the
-real build moves to **D1** (see [`../ARCHITECTURE.md`](../ARCHITECTURE.md)).
+The **content backbone for juliebale.com** on Cloudflare Workers: it renders the
+site from **D1** documents, stores media in **R2** (`MEDIA`) and video in
+**Cloudflare Stream**, and exposes the same content to chat assistants through a
+REST/OpenAPI door (Julie's Custom GPT) and an MCP door (Claude and other MCP
+clients). Bindings and secrets: `DB` (D1), `MEDIA` (R2), `MCP_OBJECT` (Durable
+Object), `API_KEY` (required: bearer key for `/api` and `/mcp`, also the root of
+the media signing key), `STREAM_TOKEN` and `CF_ACCOUNT_ID` (video).
 
 > The REST API and the MCP endpoints are protected by a bearer API key (the
 > `API_KEY` Worker secret). Storage is D1 (documents + version history).
 
-## Two front doors (same KV store)
+## Two front doors (same D1 store)
 
 - **REST + OpenAPI** — for a **ChatGPT Custom GPT Action** (works on Plus).
   - `GET /api/{collection}` — list ids
@@ -113,50 +117,34 @@ D1 is simulated with Node's built-in SQLite using `schema.sql`. Golden files in
 regenerate them (`CAPTURE_GOLDEN=1 npx vitest run test/capture-golden.test.ts`)
 for an intentional change to unstyled rendering.
 
-## Deploy (one-time)
+## Deploy
 
-From `mcp/`:
+From `mcp/` (bindings are already in `wrangler.jsonc`: D1 `juliebale`, R2
+`juliebale-media`):
 
 ```bash
 npm install
-
-# Authenticate wrangler to the Cloudflare account (interactive, in your terminal):
-#   npx wrangler login
-
-# Create the KV namespace and copy the id into wrangler.jsonc (CONTENT binding):
-npx wrangler kv namespace create CONTENT
-
-# Deploy:
-npx wrangler deploy
+npx wrangler login                                  # interactive, once
+printf '%s' "<key>" | npx wrangler secret put API_KEY        # required
+printf '%s' "<token>" | npx wrangler secret put STREAM_TOKEN # video
+npm test && npx wrangler deploy
 ```
 
-`wrangler deploy` prints the public URL, e.g.
-`https://juliebale-mcp.<subdomain>.workers.dev`.
+After a schema change, apply it with `npx wrangler d1 execute juliebale --remote
+--file schema.sql` (statements are `IF NOT EXISTS`; column additions are run as
+one-off `ALTER TABLE`s and recorded in CHANGES.md). After changing
+`context/content-model.md`, update the D1 copy (`context/content-model`) too.
 
-- **Streamable HTTP endpoint:** `<url>/mcp`
-- **SSE endpoint:** `<url>/sse`
+`wrangler deploy` prints the public URL (`https://juliebale-mcp.<subdomain>.workers.dev`):
+Streamable HTTP MCP at `<url>/mcp`, SSE at `<url>/sse`, OpenAPI at
+`<url>/openapi.json` (re-import it in the Custom GPT after any version change).
 
 ## Test it
 
-**Fastest — MCP Inspector** (no ChatGPT/Claude needed):
-
 ```bash
-npx @modelcontextprotocol/inspector
+npm test          # unit and route tests (Node SQLite stands in for D1)
+npx wrangler dev --local --port 8799   # with API_KEY in .dev.vars
 ```
 
-Connect to `<url>/mcp` (Streamable HTTP), list tools, then call
-`write_content` then `read_content`.
-
-**Claude** (reliable custom-connector client): Settings -> Connectors -> add a
-custom connector with the `<url>/mcp` URL, then ask it to write and read a
-document.
-
-**ChatGPT** (Plus caveat): Settings -> Connectors / developer mode -> add the
-same URL. This is also the empirical check for whether Plus allows a
-write-capable custom connector (see ARCHITECTURE.md section 6).
-
-## Next
-
-- Swap KV for D1 with a real `pages` schema (Sprint 1).
-- Add auth (OAuth via `@cloudflare/workers-oauth-provider`) before production.
-- Replace generic tools with typed content tools (pages/posts/events/…).
+For MCP, `npx @modelcontextprotocol/inspector` against `<url>/mcp` with the
+bearer key.
