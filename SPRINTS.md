@@ -233,6 +233,16 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 
 ---
 
+## Sprint 16 — Media import bridge
+**Status:** In progress (council review)
+
+- **Goal:** files uploaded in chat become site assets (`asset:<id>`) that media blocks can play.
+- **Source:** feature request #24.
+- **Scope:** import endpoint for ChatGPT file refs and https URLs; exact original kept in R2; video via Cloudflare Stream (renditions, poster, metadata on refresh); audio stored as-is; consent defaults to pending; placeholder replacement.
+- **Exit criteria:** council approved; tests (policy, failures, consent, secrets); live smoke import; deployed; GPT schema re-import noted.
+
+---
+
 ## Ongoing tracks (run alongside)
 
 - **Photography** — integrate shoot assets as they arrive; fill the flagship
