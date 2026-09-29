@@ -134,7 +134,7 @@ describe("POST /api/media/import", () => {
   });
   it.each([
     ["oversized", { [CHAT]: mp4(201 * 1024 * 1024) }, /too large/],
-    ["no length", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "video/mp4" } }) }, /size is unknown/],
+    ["no length", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "video/mp4" } }) }, /did not say how big the file is/],
     ["wrong type", { [CHAT]: () => new Response(bytes(10), { headers: { "content-type": "text/html", "content-length": "10" } }) }, /type does not match/],
     ["expired chat link", { [CHAT]: () => new Response("x", { status: 403 }) }, /chat file's download link has expired/],
     ["off-host redirect", { [CHAT]: () => new Response(null, { status: 302, headers: { location: "https://evil.example/x.mp4" } }) }, /redirected to a link that is not allowed/],
