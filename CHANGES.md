@@ -139,7 +139,7 @@ playing only on screen, with an accessible pause. Council review: plan R5
 - `mcp/context/content-model.md`, `mcp/README.md`, `mcp/openapi.json` — playback modes, recipes, mp4 fields, accessibility definitions
 - `mcp/test/video.test.ts` — URL validation, refresh flow, markup, fallbacks, CSS/script guards, contrast (26 tests)
 
-**Commit:** `(this commit)`
+**Commit:** `dd5c270`
 
 ## Sprint 17: Media Import Fixes (bug #25) — 2026-09-29
 
