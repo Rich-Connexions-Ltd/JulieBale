@@ -848,7 +848,7 @@ function openApiSchema(origin: string) {
           requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: {
             openaiFileIdRefs: { type: "array", items: { type: "string" }, description: "Files uploaded in the chat (filled in by ChatGPT)." },
             urls: { type: "array", items: { type: "string" }, description: "Public https links (instead of chat files)." },
-            asset: { type: "string", description: "Existing asset id to replace, or the id to create (one file only)." },
+            asset: { type: "string", pattern: "^[a-z][a-z0-9-]{0,63}$", description: "Asset id (the part after asset: — e.g. aria-rehearsal for asset:aria-rehearsal). An existing id replaces that asset's media; a new id names the new asset. One file only." },
             title: { type: "string" }, alt: { type: "string", description: "What the video poster shows (recommended; a warning is returned if missing). Images require alt." }, transcript: { type: "string", description: "Speech or lyrics (recommended)." }, caption: { type: "string" },
             consent: { type: "string", enum: ["granted", "not-needed", "pending", "refused"] }, consent_note: { type: "string" },
             usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } },

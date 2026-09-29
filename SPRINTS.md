@@ -244,7 +244,7 @@ and the create/edit tools running, then hand to Julie to populate via chat.
 ---
 
 ## Sprint 17 — Media import fixes (bug #25)
-**Status:** In progress (council code review)
+**Status:** Done (2026-09-29; council approved R2). Live import pending the GPT's retry.
 
 - **Goal:** chat-uploaded MP4s import reliably; URL imports work without a file extension.
 - **Scope:** direct upload to Stream from R2 (no copy-by-URL), type from response headers/stated type, id after resolution, clearer errors.

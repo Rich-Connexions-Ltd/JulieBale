@@ -326,3 +326,26 @@ describe("download refusal messages depend on the source", () => {
   });
 });
 
+
+describe("Workers FixedLengthStream path", () => {
+  it("wraps both the R2 write and the Stream upload in a FixedLengthStream of the exact length", async () => {
+    const lengths: number[] = [];
+    class FakeFixed extends TransformStream<Uint8Array, Uint8Array> {
+      constructor(expected: number) {
+        let seen = 0;
+        lengths.push(expected);
+        super({
+          transform(c, ctrl) { seen += c.byteLength; if (seen > expected) ctrl.error(new Error("too long")); else ctrl.enqueue(c); },
+          flush(ctrl) { if (seen !== expected) ctrl.error(new Error("too short")); },
+        });
+      }
+    }
+    vi.stubGlobal("FixedLengthStream", FakeFixed);
+    const env = envWith();
+    const calls = stubFetch({ [CHAT]: mp4(1234) });
+    const r = await body(await call(env, post("/api/media/import", { openaiFileIdRefs: [ref()] })));
+    expect(r.results[0].ok).toBe(true);
+    const upload = (calls as any).uploaded as Uint8Array;
+    expect(lengths).toEqual([1234, upload.length]); // R2 master, then the multipart upload
+  });
+});

@@ -419,7 +419,8 @@
                   },
                   "asset": {
                     "type": "string",
-                    "description": "Existing asset id to replace, or the id to create (one file only)."
+                    "pattern": "^[a-z][a-z0-9-]{0,63}$",
+                    "description": "Asset id (the part after asset: — e.g. aria-rehearsal for asset:aria-rehearsal). An existing id replaces that asset's media; a new id names the new asset. One file only."
                   },
                   "title": {
                     "type": "string"
@@ -1445,13 +1446,15 @@
                   "type": "array",
                   "items": {
                     "type": "string"
-                  }
+                  },
+                  "description": "Things to fix on the new asset (it was still saved): missing alt text or transcript, consent kept as pending because granted had no consent_note, or values outside the asset vocabulary."
                 },
                 "name": {
                   "type": "string"
                 },
                 "error": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Why this file was not imported (type, size, link, or Stream's reason)."
                 }
               }
             }
