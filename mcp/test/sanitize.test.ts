@@ -154,3 +154,11 @@ describe("landing stacking", () => {
   });
 });
 
+
+describe("disallowed tags are stripped and noted (Sprint 17 regression)", () => {
+  it("keeps the text of a disallowed tag and records a note for it", () => {
+    const r = sanitizeLandingHtml("<p><b>bold</b> and <marquee>moving</marquee></p>");
+    expect(r.html).toBe("<p>bold and moving</p>");
+    expect(r.notes).toEqual(["removed <b> element", "removed <marquee> element"]);
+  });
+});
