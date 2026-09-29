@@ -58,3 +58,38 @@ describe("searchAssets", () => {
     expect(searchAssets(rows, {}).find((a) => a.ref === "asset:group")!.usable).toBe(false);
   });
 });
+
+describe("imported media helpers (Sprint 16)", async () => {
+  const { buildImportedAsset, replaceAssetMedia, applyStreamDetails, cleanText } = await import("../src/assets");
+  const media = { type: "video" as const, file: "a".repeat(32), master: "masters/x/r/f.mp4", status: "processing" as const, size: 10, source: { kind: "url" as const, name: "f.mp4" } };
+  it("defaults consent to pending and requires a note for granted", () => {
+    expect(buildImportedAsset(media, {}).doc.consent).toBe("pending");
+    const g = buildImportedAsset(media, { consent: "granted" });
+    expect(g.doc.consent).toBe("pending");
+    expect(g.warnings[0]).toMatch(/consent_note/);
+    expect(buildImportedAsset(media, { consent: "granted", consent_note: "Signed form, 2026-09-29" }).doc.consent).toBe("granted");
+  });
+  it("cleans and caps text, and filters usage/roles to the vocabulary", () => {
+    const { doc } = buildImportedAsset(media, { title: "A\u0000b".padEnd(200, "x"), usage: ["concert", "party"], roles: ["poster", 5] });
+    expect((doc.title as string).length).toBe(120);
+    expect(doc.title).not.toContain("\u0000");
+    expect(doc.usage).toEqual(["concert"]);
+    expect(doc.roles).toEqual(["poster"]);
+    expect(cleanText(5, 10)).toBeUndefined();
+  });
+  it("replacement keeps non-media fields and caps history at 5", () => {
+    let prev: any = { title: "T", consent: "granted", consent_note: "n", caption: "c", file: "old0", master: "m0", status: "ready", width: 1 };
+    for (let i = 1; i <= 7; i++) prev = replaceAssetMedia(prev, { ...media, file: `f${i}` });
+    expect(prev).toMatchObject({ title: "T", consent: "granted", caption: "c", file: "f7" });
+    expect(prev.width).toBeUndefined();
+    expect(prev.previous_files).toHaveLength(5);
+    expect(prev.previous_files[0].file).toBe("f6");
+  });
+  it("applies only validated Stream numbers", () => {
+    const out = applyStreamDetails({ file: "a".repeat(32) }, { duration: -1, size: "big", input: { width: 720, height: 1280 }, readyToStream: false, status: { state: "inprogress" } });
+    expect(out).toMatchObject({ width: 720, height: 1280, orientation: "portrait", status: "processing" });
+    expect(out.duration).toBeUndefined();
+    expect(out.size).toBeUndefined();
+    expect(applyStreamDetails({ file: "not-a-uid" }, {}).thumbnail).toBeUndefined();
+  });
+});

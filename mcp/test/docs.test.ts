@@ -113,3 +113,12 @@ describe("Sprint 14 CSS guards", () => {
   });
 });
 
+
+describe("media import docs", () => {
+  it("name every public term and tool", () => {
+    const doc = read("../context/content-model.md");
+    const section = doc.slice(doc.indexOf("## Importing video and audio"));
+    for (const t of ["pending", "granted", "not-needed", "processing", "ready", "error", "master", "previous_files", "poster_at", "importMedia", "import_media_from_url", "refresh_media_asset", "alt", "transcript"])
+      expect(section, t).toContain(t);
+  });
+});

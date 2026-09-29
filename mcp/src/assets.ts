@@ -123,3 +123,86 @@ export function searchAssets(rows: Array<{ id: string; doc: any }>, query: Asset
       usage: doc.usage, roles: doc.roles, people: doc.people, consent: doc.consent, usable: consentOk(doc),
     }));
 }
+
+/* ---------------------- Imported media (Sprint 16) ----------------------- */
+
+/** Media fields an import may set or replace; everything else on an asset is kept. */
+export const MEDIA_FIELDS = ["file", "master", "status", "size", "duration", "width", "height", "orientation", "thumbnail", "source"] as const;
+export const MEDIA_STATUS = ["processing", "ready", "error"] as const;
+const STREAM_UID_RE = /^[a-f0-9]{32}$/;
+
+/** Plain text: strings only, control characters removed, trimmed, capped. */
+export function cleanText(v: unknown, max: number): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const t = v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim();
+  return t ? t.slice(0, max) : undefined;
+}
+
+export interface ImportedMedia {
+  type: "video" | "audio";
+  file: string;
+  master: string;
+  status: (typeof MEDIA_STATUS)[number];
+  size?: number;
+  source: { kind: "chatgpt" | "url"; name: string };
+}
+export interface ImportMeta {
+  title?: unknown; alt?: unknown; consent?: unknown; consent_note?: unknown; usage?: unknown; roles?: unknown; caption?: unknown; transcript?: unknown;
+}
+
+/** A new asset record for imported media. Consent defaults to pending; granted needs a note. */
+export function buildImportedAsset(media: ImportedMedia, meta: ImportMeta): { doc: Record<string, unknown>; warnings: string[] } {
+  const warnings: string[] = [];
+  let consent = typeof meta.consent === "string" && (ASSET_OPTIONS.consent as readonly string[]).includes(meta.consent) ? meta.consent : "pending";
+  const note = cleanText(meta.consent_note, 500);
+  if (consent === "granted" && !note) {
+    consent = "pending";
+    warnings.push("consent kept as pending: granted needs a consent_note saying who agreed, when and how.");
+  }
+  const list = (v: unknown, allowed: readonly string[]) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && allowed.includes(x)) : undefined);
+  const doc: Record<string, unknown> = {
+    ...media,
+    title: cleanText(meta.title, 120) || media.source.name,
+    ...(cleanText(meta.alt, 300) ? { alt: cleanText(meta.alt, 300) } : {}),
+    ...(cleanText(meta.caption, 300) ? { caption: cleanText(meta.caption, 300) } : {}),
+    ...(cleanText(meta.transcript, 20000) ? { transcript: cleanText(meta.transcript, 20000) } : {}),
+    consent,
+    ...(note ? { consent_note: note } : {}),
+    ...(list(meta.usage, ASSET_OPTIONS.usage)?.length ? { usage: list(meta.usage, ASSET_OPTIONS.usage) } : {}),
+    ...(list(meta.roles, ASSET_OPTIONS.roles)?.length ? { roles: list(meta.roles, ASSET_OPTIONS.roles) } : {}),
+  };
+  return { doc, warnings };
+}
+
+/**
+ * Replace a placeholder's media, keeping everything else (title, alt, consent,
+ * usage, roles, suits, caption, transcript, notes). The previous file/master go
+ * to previous_files (newest first, at most 5) for rollback and manual cleanup.
+ */
+export function replaceAssetMedia(prev: Record<string, any>, media: ImportedMedia, now = new Date().toISOString()): Record<string, unknown> {
+  const kept: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(prev)) if (!(MEDIA_FIELDS as readonly string[]).includes(k)) kept[k] = v;
+  const history = [
+    ...(prev.file ? [{ file: prev.file, master: prev.master, replaced_at: now }] : []),
+    ...(Array.isArray(prev.previous_files) ? prev.previous_files : []),
+  ].slice(0, 5);
+  return { ...kept, ...media, previous_files: history };
+}
+
+export const orientationOf = (w: number, h: number) => (w > h ? "landscape" : w < h ? "portrait" : "square");
+export const streamThumbnail = (uid: string) => (STREAM_UID_RE.test(uid) ? `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg` : undefined);
+
+/** Fold Stream's video details into an asset: validated numbers only; thumbnail derived from the uid. */
+export function applyStreamDetails(asset: Record<string, any>, d: any): Record<string, unknown> {
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined);
+  const width = num(d?.input?.width), height = num(d?.input?.height);
+  const out: Record<string, unknown> = { ...asset };
+  const duration = num(d?.duration), size = num(d?.size);
+  if (duration !== undefined) out.duration = Math.round(duration * 10) / 10;
+  if (size !== undefined) out.size = size;
+  if (width && height) Object.assign(out, { width, height, orientation: orientationOf(width, height) });
+  const thumb = streamThumbnail(String(asset.file || ""));
+  if (thumb) out.thumbnail = thumb;
+  out.status = d?.status?.state === "error" ? "error" : d?.readyToStream === true ? "ready" : "processing";
+  return out;
+}

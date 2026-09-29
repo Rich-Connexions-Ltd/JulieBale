@@ -49,3 +49,23 @@ export const pageWith = (sections: unknown[]) => ({ title: "Test page", sections
 export const authed = (url: string, init: RequestInit = {}) =>
   new Request(`https://x.test${url}`, { ...init, headers: { ...(init.headers as any), authorization: `Bearer ${API_KEY}`, "content-type": "application/json" } });
 export const anon = (url: string, init: RequestInit = {}) => new Request(`https://x.test${url}`, init);
+
+/** In-memory R2 bucket: records puts (fully reading streams) and deletes. */
+export function fakeMedia() {
+  const objects = new Map<string, { data: Uint8Array; contentType?: string }>();
+  const deleted: string[] = [];
+  return {
+    objects, deleted,
+    async put(key: string, body: any, opts?: any) {
+      const buf = body instanceof ReadableStream ? new Uint8Array(await new Response(body).arrayBuffer()) : new Uint8Array(await new Response(body).arrayBuffer());
+      objects.set(key, { data: buf, contentType: opts?.httpMetadata?.contentType });
+    },
+    async get(key: string) {
+      const o = objects.get(key);
+      if (!o) return null;
+      return { body: new Response(o.data).body, httpEtag: '"e"', writeHttpMetadata: (h: Headers) => o.contentType && h.set("content-type", o.contentType) };
+    },
+    async delete(key: string) { deleted.push(key); objects.delete(key); },
+    async list() { return { objects: [...objects.keys()].map((key) => ({ key, size: objects.get(key)!.data.length, uploaded: new Date() })) }; },
+  };
+}

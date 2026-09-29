@@ -90,6 +90,17 @@ Writes to `pages` and `variants` return presentation `warnings` for any
 
 Landing HTML/CSS is sanitised on every render by `src/sanitize.ts` (allowlist, scoped CSS, no URLs in CSS, namespaced ids) and served with a strict CSP; the rules for authors live in `context/content-model.md` ("Landing pages").
 
+## Media import (0.10.0)
+
+`POST /api/media/import` (ChatGPT `openaiFileIdRefs` or `urls`) and MCP
+`import_media_from_url` copy each file's original into R2 (`masters/…`, private;
+served only with a 15-minute HMAC signature derived from `API_KEY`), keep audio as
+the playable file (`imports/…`, served only while the asset's consent allows),
+and hand video to Cloudflare Stream (`STREAM_TOKEN`, `CF_ACCOUNT_ID`) from the
+signed master URL. `POST /api/media/refresh/{id}` / `refresh_media_asset` pulls
+Stream's details. Old Stream videos listed in an asset's `previous_files` are not
+deleted automatically: remove them in the Stream dashboard when no longer needed.
+
 ## Tests
 
 ```bash

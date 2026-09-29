@@ -398,3 +398,43 @@ replacement), and give every input a `label`.
 **Instead of blocked content:** for video, audio or embeds use a `media` block
 on a normal page (or link to one); for images upload them to `/media/` or use
 files in `/assets/`; for interactive widgets or scripts, request a feature.
+
+## Importing video and audio (Sprint 16)
+Two doors, the same result: an asset you can use as `asset:<id>` in a `media`
+block (`video`, `audio` or `poster`) or a testimonial.
+- **Files uploaded in a ChatGPT chat:** call `importMedia`; ChatGPT attaches the
+  files for you (up to 10 at once).
+- **Claude / MCP clients:** `import_media_from_url` with a public https link.
+- Images still go through the upload page.
+
+Limits: video mp4, mov or webm up to 200 MB; audio mp3, m4a, wav or ogg up to
+50 MB. Anything else is refused with a reason.
+
+**Terms:**
+- `master` — the exact original file, kept privately.
+- `status` — `processing` (video still being prepared), `ready`, or `error`.
+- `source` — where the file came from (`chatgpt` or `url`) and its name.
+- `previous_files` — earlier versions after a replacement (up to 5).
+- `poster_at` — where the poster frame is taken, as a percent through the
+  video (0–100, default 10).
+
+**Details to give:** `title`; `alt` — what the poster/video shows (used as the
+poster image's alternative text); optionally `caption` (shown under it) and
+`transcript` (speech or lyrics; strongly recommended), `usage`, `roles`.
+
+**Consent:** new imports are `pending`, so they are **not shown or even
+downloadable** until consent is `granted` (with a `consent_note`: who agreed,
+when and how) or `not-needed` (no identifiable people other than Julie, e.g. a
+placeholder clip). Never set `granted` without Julie's confirmation.
+
+**Video takes a while:** after importing, call `refresh_media_asset` (or
+`refreshMedia`) until `status` is `ready`; it fills in duration, size,
+dimensions and orientation. Pass `poster_at` to move the poster frame.
+
+**Replacing a placeholder:** import the new file with `asset` set to the
+placeholder's id. Only the media changes (file, master, status, size, duration,
+dimensions, orientation, thumbnail, source); the title, alt, consent, usage,
+roles, caption, transcript and notes are kept, and every page using
+`asset:<id>` shows the new file. The old file is listed in `previous_files`, and
+`undo_content` on `assets/<id>` puts it back.
+

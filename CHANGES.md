@@ -109,3 +109,14 @@ Owner decision to sanitise `/l/{slug}` landing pages. Council review (security).
 - `mcp/test/sanitize.test.ts` — XSS/CSS corpus, real landing page regression, docs drift guard; route tests for CSP and editor
 - Fix: the existing landing page's CSS no longer restyles the site header/nav (now scoped)
 - `mcp/public/styles.css` — `.landing` stacking context (z-index capped at 20) and reduced-motion rule for landing transitions
+
+## Sprint 16: Media Import Bridge (0.10.0) — 2026-09-29
+
+Feature request #24. Council review (external fetches, secrets, consent).
+
+**Files changed:**
+- `mcp/src/media-import.ts` — new: source normalising (ChatGPT `openaiFileIdRefs` / https urls), fetch policy (every redirect hop), type and size checks, streamed copy of the original into R2, signed private master URLs, Cloudflare Stream copy/details/poster
+- `mcp/src/assets.ts` — `buildImportedAsset`, `replaceAssetMedia`, `applyStreamDetails`, text cleaning
+- `mcp/src/index.ts` — `POST /api/media/import`, `POST /api/media/refresh/{id}`, MCP `import_media_from_url` / `refresh_media_asset`; `/media/masters/*` signature-only and `/media/imports/*` consent-only, uncached; OpenAPI 0.10.0
+- `mcp/context/content-model.md`, `mcp/README.md` — import workflow, terms, consent, replacement
+- `mcp/test/media-import.test.ts`, `assets.test.ts`, `docs.test.ts`, `helpers.ts` (fake R2)

@@ -3,6 +3,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { renderPage, render404, pageFromDoc, renderLanding, MOTION_GUARD } from "./render";
 import { landingWarnings } from "./sanitize";
+import { normaliseSources, storeSource, streamConfigured, streamDetails, streamSetPoster, verifyMasterSig, posterPercent, slugForAsset } from "./media-import";
+import { buildImportedAsset, replaceAssetMedia, applyStreamDetails, consentOk as assetConsentOk } from "./assets";
 import { PRESENTATION_OPTIONS, CONCEPT_EXAMPLES, presentationWarnings, presentationJsonSchema } from "./presentation";
 import { ASSET_OPTIONS, CONSENT_MEANINGS, assetWarnings, testimonialWarnings, searchAssets, type AssetQuery } from "./assets";
 import {
@@ -295,6 +297,63 @@ const presentationOptions = () => ({
   examples: CONCEPT_EXAMPLES,
 });
 
+/* --------------------------- Media import (#24) --------------------------- */
+
+/**
+ * Import 1-10 files (ChatGPT openaiFileIdRefs or https urls) as assets.
+ * Top-level metadata are defaults for every file; `asset` (replace a
+ * placeholder) needs exactly one file. Per-file results: one bad file does not
+ * fail the others.
+ */
+async function importMedia(env: Env, origin: string, body: any) {
+  const n = normaliseSources(body);
+  if ("error" in n) return { status: 400, body: { ok: false, error: n.error } };
+  if (body?.asset !== undefined && (!isValidId(body.asset) || n.sources.length !== 1))
+    return { status: 400, body: { ok: false, error: "asset (to replace or name one file) must be an id like 'aria-rehearsal', with exactly one file" } };
+  const posterAt = posterPercent(body?.poster_at);
+  const results: unknown[] = [];
+  for (const src of n.sources) {
+    let id: string = body?.asset;
+    if (!id) {
+      const base = slugForAsset(typeof body?.title === "string" && n.sources.length === 1 ? body.title : src.name);
+      id = base;
+      for (let i = 2; await readDoc(env, "assets", id); i++) id = `${base}-${i}`;
+    }
+    const stored = await storeSource(env, origin, src, id, posterAt);
+    if ("error" in stored) {
+      results.push({ ok: false, name: src.name.slice(0, 120), error: stored.error });
+      continue;
+    }
+    const prev = parse(await readDoc(env, "assets", id));
+    let doc: Record<string, unknown>;
+    let warnings: string[] = [];
+    if (prev) doc = replaceAssetMedia(prev, stored.media);
+    else ({ doc, warnings } = buildImportedAsset(stored.media, body || {}));
+    const w = await writeDoc(env, "assets", id, JSON.stringify(doc));
+    results.push({ ok: true, asset: id, ref: `asset:${id}`, type: stored.media.type, status: stored.media.status, replaced: !!prev, warnings: [...warnings, ...w.warnings] });
+  }
+  return { status: 200, body: { results } };
+}
+
+/** Fill in Stream's details for a video asset (and optionally move its poster frame). */
+async function refreshMedia(env: Env, id: unknown, posterAt: unknown) {
+  if (!isValidId(id)) return { status: 400, body: { ok: false, error: "id must be an asset id" } };
+  const asset = parse(await readDoc(env, "assets", id));
+  if (!asset) return { status: 404, body: { ok: false, error: `no asset at assets/${id}` } };
+  if (asset.type !== "video" || !/^[a-f0-9]{32}$/.test(String(asset.file || ""))) return { status: 400, body: { ok: false, error: "only imported videos can be refreshed" } };
+  if (!streamConfigured(env)) return { status: 501, body: { ok: false, error: "Cloudflare Stream is not configured" } };
+  if (posterAt !== undefined) {
+    const r = await streamSetPoster(env, asset.file, posterPercent(posterAt));
+    if (r !== true) return { status: 502, body: { ok: false, error: r.error } };
+  }
+  const d = await streamDetails(env, asset.file);
+  if (d && "error" in d) return { status: 502, body: { ok: false, error: d.error } };
+  const updated = applyStreamDetails(asset, d);
+  await writeDoc(env, "assets", id, JSON.stringify(updated));
+  const { status, duration, width, height, orientation, size, thumbnail } = updated as any;
+  return { status: 200, body: { ok: true, asset: id, ref: `asset:${id}`, status, duration, width, height, orientation, size, thumbnail } };
+}
+
 /* --------------------------- Feature requests ----------------------------- */
 
 async function createFeatureRequest(
@@ -321,7 +380,7 @@ async function listFeatureRequests(env: Env, status?: string) {
 /* ------------------------------ MCP adapter ------------------------------- */
 
 export class ContentMCP extends McpAgent<Env> {
-  server = new McpServer({ name: "juliebale-content", version: "0.9.0" });
+  server = new McpServer({ name: "juliebale-content", version: "0.10.0" });
 
   async init() {
     this.server.tool(
@@ -432,6 +491,33 @@ export class ContentMCP extends McpAgent<Env> {
         usable: z.boolean().optional().describe("true = only assets that may be shown now"),
       },
       async (args) => ({ content: [{ type: "text", text: JSON.stringify(await findAssets(this.env, args), null, 2) }] })
+    );
+
+    this.server.tool(
+      "import_media_from_url",
+      "Import a video (mp4, mov, webm; up to 200 MB) or audio file (mp3, m4a, wav, ogg; up to 50 MB) from a public https link into the asset library, returning asset:<id> for media blocks. WHEN: you have a link to the file (files uploaded in a ChatGPT chat use the importMedia action instead). Video processes for a while: call refresh_media_asset later. Consent defaults to pending; granted needs consent_note. Give asset to replace a placeholder (its title, consent and other details are kept).",
+      {
+        url: z.string(),
+        asset: z.string().optional().describe("Existing asset id to replace, or the id to create"),
+        title: z.string().optional(), alt: z.string().optional().describe("What the video's poster shows"),
+        consent: z.enum(["granted", "not-needed", "pending", "refused"]).optional(), consent_note: z.string().optional(),
+        usage: z.array(z.string()).optional(), roles: z.array(z.string()).optional(),
+        poster_at: z.number().optional().describe("Poster frame: percent 0-100 through the video (default 10)"),
+      },
+      async ({ url, ...rest }) => {
+        const r = await importMedia(this.env, SITE_BASE, { urls: [url], ...rest });
+        return { content: [{ type: "text", text: JSON.stringify(r.body, null, 2) }], isError: r.status !== 200 };
+      }
+    );
+
+    this.server.tool(
+      "refresh_media_asset",
+      "Update an imported video asset with Cloudflare Stream's details (ready/processing, duration, size, dimensions, orientation, poster). WHEN: after importing a video, until status is ready. Optionally move the poster frame with poster_at (percent 0-100).",
+      { id: z.string(), poster_at: z.number().optional() },
+      async ({ id, poster_at }) => {
+        const r = await refreshMedia(this.env, id, poster_at);
+        return { content: [{ type: "text", text: JSON.stringify(r.body, null, 2) }], isError: r.status !== 200 };
+      }
     );
 
     this.server.tool(
@@ -548,6 +634,19 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
 
   const parts = pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean);
   const method = request.method.toUpperCase();
+
+  // Media import (#24): POST /api/media/import, POST /api/media/refresh/{id}
+  if (parts[0] === "media" && parts[1] === "import" && parts.length === 2) {
+    if (method !== "POST") return json({ error: "method not allowed" }, 405);
+    const r = await importMedia(env, new URL(request.url).origin, await request.json().catch(() => ({})));
+    return json(r.body, r.status);
+  }
+  if (parts[0] === "media" && parts[1] === "refresh" && parts.length === 3) {
+    if (method !== "POST") return json({ error: "method not allowed" }, 405);
+    const b = (await request.json().catch(() => ({}))) as any;
+    const r = await refreshMedia(env, safeDecode(parts[2]), b?.poster_at);
+    return json(r.body, r.status);
+  }
 
   // List media in R2: GET /api/media
   if (parts[0] === "media" && parts.length === 1 && method === "GET") {
@@ -712,7 +811,7 @@ function openApiSchema(origin: string) {
     info: {
       title: "Julie Bale content API",
       description: "Read and write Julie Bale's website content, undo changes, explore unpublished page variants, and raise feature requests. Documents are JSON stored by collection and id. IMPORTANT: to edit, read the document first, then use updateContent (merge) so you never lose fields; use writeContent only to create or fully rewrite a document. Page sections carry a `key`; keep it when editing. Layout/motion go in a section's `style` and a page's `design` using only values from presentationOptions.",
-      version: "0.9.0",
+      version: "0.10.0",
     },
     servers: [{ url: origin }],
     paths: {
@@ -737,6 +836,31 @@ function openApiSchema(origin: string) {
           description: "Find assets by words and filters. Use a result's ref (asset:<id>) in image, image_2, poster, video or audio fields or as a testimonial portrait. Only assets with usable: true are shown on the site (consent granted or not needed).",
           parameters: ["q", "type", "usage", "role", "orientation", "consent"].map((name) => ({ name, in: "query", required: false, schema: { type: "string" } })).concat([{ name: "usable", in: "query", required: false, schema: { type: "string", enum: ["true"] } } as any]),
           responses: { "200": { description: "Matching assets", content: { "application/json": { schema: { $ref: "#/components/schemas/AssetList" } } } } },
+        },
+      },
+      "/api/media/import": {
+        post: {
+          operationId: "importMedia", summary: "Import chat-uploaded video/audio as assets",
+          description: "Attach video (mp4/mov/webm, 200 MB) or audio (mp3/m4a/wav/ogg, 50 MB) in the chat and call this. Returns asset:<id> per file. Consent defaults to pending. Give asset to replace a placeholder. Videos process: call refreshMedia later.",
+          requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: {
+            openaiFileIdRefs: { type: "array", items: { type: "string" }, description: "Files uploaded in the chat (filled in by ChatGPT)." },
+            urls: { type: "array", items: { type: "string" }, description: "Public https links (instead of chat files)." },
+            asset: { type: "string", description: "Existing asset id to replace, or the id to create (one file only)." },
+            title: { type: "string" }, alt: { type: "string", description: "What the poster/video shows." },
+            consent: { type: "string", enum: ["granted", "not-needed", "pending", "refused"] }, consent_note: { type: "string" },
+            usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } },
+            poster_at: { type: "integer", minimum: 0, maximum: 100, description: "Poster frame, percent through the video (default 10)." },
+          } } } } },
+          responses: { "200": { description: "Per-file results", content: { "application/json": { schema: { $ref: "#/components/schemas/ImportResults" } } } }, "400": { description: "Nothing to import or invalid request" } },
+        },
+      },
+      "/api/media/refresh/{id}": {
+        post: {
+          operationId: "refreshMedia", summary: "Update an imported video's details",
+          description: "Fill in Stream's details for an imported video (ready/processing, duration, size, dimensions, orientation). Call after importMedia until status is ready. Optional poster_at (percent 0-100) moves the poster frame.",
+          parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+          requestBody: { required: false, content: { "application/json": { schema: { type: "object", properties: { poster_at: { type: "integer", minimum: 0, maximum: 100 } } } } } },
+          responses: { "200": { description: "Asset summary", content: { "application/json": { schema: { $ref: "#/components/schemas/MediaSummary" } } } } },
         },
       },
       "/api/presentation-options": {
@@ -776,6 +900,8 @@ function openApiSchema(origin: string) {
         PageDesign: { ...presentationJsonSchema("design"), description: "Page-level presentation (on a page or a variant)." },
         PresentationOptions: { type: "object", description: "Allowed presentation values with meanings and examples.", properties: { style: { type: "object", description: "Section style keys: each has values (value -> meaning), optional blocks it applies to, or a pattern.", additionalProperties: true }, design: { type: "object", description: "Page design keys, same shape as style.", additionalProperties: true }, rules: { type: "array", items: { type: "string" } }, examples: { type: "object", description: "One worked variant per concept (stage, editorial, journey).", additionalProperties: true } } },
         VariantList: { type: "object", properties: { ok: { type: "boolean" }, base: { type: "string" }, limit: { type: "integer" }, error: { type: "string" }, variants: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, note: { type: "string" }, previewUrl: { type: "string" }, unresolved: { type: "array", items: { type: "string" } }, warnings: { type: "array", items: { type: "string" } } } } }, sections: { type: "array", description: "The live page's section keys", items: { type: "object", properties: { key: { type: "string" }, type: { type: "string" }, heading: { type: "string" } } } } } },
+        ImportResults: { type: "object", properties: { results: { type: "array", items: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string", description: "Asset id" }, ref: { type: "string", description: "Use in pages, e.g. asset:aria-rehearsal" }, type: { type: "string" }, status: { type: "string", enum: ["processing", "ready", "error"] }, replaced: { type: "boolean" }, warnings: { type: "array", items: { type: "string" } }, name: { type: "string" }, error: { type: "string" } } } }, ok: { type: "boolean" }, error: { type: "string" } } },
+        MediaSummary: { type: "object", properties: { ok: { type: "boolean" }, asset: { type: "string" }, ref: { type: "string" }, status: { type: "string" }, duration: { type: "number" }, width: { type: "integer" }, height: { type: "integer" }, orientation: { type: "string" }, size: { type: "integer" }, thumbnail: { type: "string" }, error: { type: "string" } } },
         AssetList: { type: "object", properties: { assets: { type: "array", items: { type: "object", properties: { ref: { type: "string" }, title: { type: "string" }, type: { type: "string" }, file: { type: "string" }, orientation: { type: "string" }, usage: { type: "array", items: { type: "string" } }, roles: { type: "array", items: { type: "string" } }, people: { type: "array", items: { type: "string" } }, consent: { type: "string" }, usable: { type: "boolean" } } } }, vocabulary: { type: "object", additionalProperties: true }, consent: { type: "object", additionalProperties: true } } },
         Asset: { type: "object", description: "Collection 'assets'. Refer to one as asset:<id>. Shown only when consent is granted or not-needed (and not expired).", properties: { file: { type: "string", description: "Filename in /assets, media key, or Stream video id" }, type: { type: "string", enum: [...ASSET_OPTIONS.type] }, title: { type: "string" }, alt: { type: "string" }, people: { type: "array", items: { type: "string" } }, setting: { type: "string" }, orientation: { type: "string", enum: [...ASSET_OPTIONS.orientation] }, focus: { type: "string", description: "Default focal point, e.g. 60% 20%" }, tone: { type: "array", items: { type: "string" } }, usage: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.usage] } }, roles: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.roles] } }, suits: { type: "array", items: { type: "string", enum: [...ASSET_OPTIONS.suits] } }, consent: { type: "string", enum: [...ASSET_OPTIONS.consent] }, consent_note: { type: "string" }, consent_expires: { type: "string" }, date: { type: "string" }, lighting: { type: "string" }, crop_zones: { type: "string" }, notes: { type: "string" } } },
         Testimonial: { type: "object", description: "Collection 'testimonials'. Shown only when consent is granted.", properties: { name: { type: "string" }, role: { type: "string" }, quote: { type: "string" }, story: { type: "string", description: "Markdown" }, before: { type: "string" }, after: { type: "string" }, portrait: { type: "string", description: "asset:<id>" }, video: { type: "string", description: "asset:<id> or Stream id" }, tags: { type: "array", items: { type: "string" } }, consent: { type: "string", enum: ["granted", "pending", "refused"] }, consent_note: { type: "string" }, consent_expires: { type: "string" } } },
@@ -794,15 +920,32 @@ function openApiSchema(origin: string) {
 const htmlResponse = (body: string, status = 200) =>
   new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8" } });
 
-async function handleMediaGet(env: Env, pathname: string): Promise<Response> {
-  const key = decodeURIComponent(pathname.replace(/^\/media\/?/, ""));
-  if (!key) return new Response("Not found", { status: 404 });
+/**
+ * Public media, with two protected areas (Sprint 16):
+ *   masters/<asset>/...  private originals: only with a valid 15-minute signature (for Stream)
+ *   imports/<asset>/...  imported audio: only while that asset's consent allows it
+ * Protected responses are never cached (signatures expire, consent can be revoked).
+ */
+async function handleMediaGet(env: Env, url: URL): Promise<Response> {
+  const key = safeDecode(url.pathname.replace(/^\/media\/?/, "")) ?? "";
+  const notFound = () => new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
+  if (!key || key.includes("..")) return notFound();
+  let protectedArea = false;
+  if (key.startsWith("masters/")) {
+    if (!(await verifyMasterSig(key, url.searchParams.get("exp"), url.searchParams.get("sig"), env.API_KEY))) return notFound();
+    protectedArea = true;
+  } else if (key.startsWith("imports/")) {
+    const assetId = key.split("/")[1];
+    const asset = isValidId(assetId) ? parse(await readDoc(env, "assets", assetId)) : null;
+    if (!asset || asset.file !== key || !assetConsentOk(asset)) return notFound();
+    protectedArea = true;
+  }
   const obj = await env.MEDIA.get(key);
-  if (!obj) return new Response("Not found", { status: 404 });
+  if (!obj) return notFound();
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
   headers.set("etag", obj.httpEtag);
-  headers.set("cache-control", "public, max-age=31536000, immutable");
+  headers.set("cache-control", protectedArea ? "no-store, private" : "public, max-age=31536000, immutable");
   return new Response(obj.body, { headers });
 }
 
@@ -975,7 +1118,7 @@ export default {
     if (pathname.startsWith("/ui/edit/")) return handleEditor(env, pathname);
     if (pathname === "/admin/upload")
       return new Response(renderUploadPage(), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
-    if (pathname.startsWith("/media/")) return handleMediaGet(env, pathname);
+    if (pathname.startsWith("/media/")) return handleMediaGet(env, url);
 
     return handleSite(env, pathname, url.origin);
   },
